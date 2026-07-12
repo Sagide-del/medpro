@@ -87,3 +87,5 @@ app.listen(port, () => {
 
 // Export for Vercel serverless deployment
 export default app;
+
+export default app;

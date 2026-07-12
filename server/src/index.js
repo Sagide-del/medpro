@@ -84,3 +84,6 @@ app.listen(port, () => {
   logger.info(`   http://localhost:${port}`);
   logger.info(`   Test: http://localhost:${port}/api/test`);
 });
+
+// Export for Vercel serverless deployment
+export default app;

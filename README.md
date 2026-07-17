@@ -19,6 +19,8 @@ users, institutions, and revenue.
 | Database | PostgreSQL 14+                                            |
 | Payments | M-Pesa Daraja API (STK Push) — simulated in local dev      |
 | Auth     | JWT (bcrypt password hashing), role-based                  |
+| Storage  | S3-compatible object storage for uploads (local disk fallback in dev) |
+| Hardening| Helmet, rate limiting, gzip compression, graceful shutdown  |
 
 ## Roles & portals
 
@@ -70,7 +72,19 @@ medpro/
 createdb medpro
 psql medpro -f database/schema.sql
 psql medpro -f database/seed.sql
+psql medpro -f database/migration_001_elibrary_research_alerts.sql
+psql medpro -f database/migration_002_fix_research_sources.sql
+psql medpro -f database/migration_003_subscription_index.sql
 ```
+
+Run the three `migration_00X_*.sql` files in that order, after `seed.sql` — migration 002 corrects
+seeded research data and depends on the demo student existing, and migration 003 adds an index
+schema.sql doesn't include. On a production database without demo data, skip `seed.sql` but still
+run all three migrations.
+
+No local `psql`? `npm --prefix server run migrate -- --seed` runs all of the above (via
+`server/scripts/migrate.js`) against whatever `DATABASE_URL` is set in `server/.env` — useful on
+Windows or anywhere without the Postgres CLI installed.
 
 ### 2. API server
 
@@ -88,6 +102,7 @@ without a real Daraja account so the full purchase → unlock flow is testable e
 
 ```bash
 cd client
+cp .env.example .env         # VITE_API_BASE_URL — leave as /api for local dev
 npm install
 npm run dev                 # http://localhost:5173 (proxies /api and /uploads to :5000)
 ```
@@ -154,6 +169,58 @@ instead of calling Safaricom, so the full flow works without a sandbox account.
 
 Every admin action (uploads, edits, deletions, user management, logins, approvals) is written to
 `super_admin_logs` with IP and user agent.
+
+## Deploying to production
+
+Three ready-made paths are included:
+
+- **Railway** (recommended) — see **[`RAILWAY_DEPLOY.md`](./RAILWAY_DEPLOY.md)** for the full
+  step-by-step: three services (managed Postgres + `api` + `client`), S3 for uploads, and the
+  exact env vars to set, including Railway's reference-variable syntax so `CLIENT_ORIGIN` and
+  `VITE_API_BASE_URL` stay correct automatically.
+- **`docker-compose.yml`** — self-hosted (a VPS, or any platform that runs Docker Compose/a
+  Dockerfile). Builds Postgres + the API + the client (served by nginx, which also proxies `/api`
+  and `/uploads` to the API container so the client can call same-origin `/api`). Copy `server/.env.example`
+  values into a `.env` file at the repo root (compose reads `DB_PASSWORD`, `JWT_SECRET`, `CLIENT_ORIGIN`,
+  `MPESA_*`, etc. from there), then:
+  ```bash
+  docker compose up -d --build
+  docker compose exec server npm run migrate            # schema + all 3 migrations
+  docker compose exec server npm run migrate -- --seed  # optional: also load demo data
+  ```
+- **`render.yaml`** — a Render Blueprint for a managed-Postgres, zero-ops deploy: import the repo
+  as a Blueprint, fill in the `sync: false` env vars (Daraja/Africa's Talking/WhatsApp/AWS
+  credentials, `CLIENT_ORIGIN`, the client's `VITE_API_BASE_URL`), then run the migration once
+  from your machine: `DATABASE_URL="<paste from Render dashboard>" npm --prefix server run migrate`.
+
+Either way, before going live:
+
+1. **Set every var in `server/.env.example`** in the real environment, with a long random
+   `JWT_SECRET` and real M-Pesa Daraja production credentials (`MPESA_ENV=production`) once
+   Safaricom go-live approval is granted.
+2. **Set `DB_SSL=true`** for any managed Postgres (Railway, Render, Supabase, Neon) — they
+   terminate TLS with a certificate chain Node won't validate by default, so this pairs with
+   `DB_SSL_REJECT_UNAUTHORIZED=false`. Leave `DB_SSL=false` for `docker-compose.yml`'s own
+   Postgres container, which has no TLS listener at all — this is *not* the same switch as
+   `NODE_ENV`, on purpose (see `server/src/config/database.js`).
+3. **`CLIENT_ORIGIN`** accepts a comma-separated list if staging and production frontends both
+   need API access, e.g. `CLIENT_ORIGIN=https://app.medpro.co.ke,https://staging.medpro.co.ke`.
+4. **Set the client's `VITE_API_BASE_URL`** (see `client/.env.example`) at *build* time — Vite
+   only bakes in `VITE_*` vars that are present when `npm run build` runs. Leave it as `/api` if
+   nginx/a reverse proxy serves the client and forwards `/api` to the backend on the same domain;
+   set it to the full API URL if client and API are on different domains (this is how Railway's
+   two-service setup works — see `RAILWAY_DEPLOY.md`).
+5. **File uploads default to local disk** (`multer`, 6 routes: worksheets, graphics, videos,
+   elibrary, logbook, research), which most PaaS free/standard tiers do **not** persist across
+   redeploys. Set `AWS_S3_BUCKET` (+ region/credentials — see `server/.env.example`) to switch
+   every upload route to S3 instead; `server/src/services/storage.js` handles the rest with no
+   other code changes. `docker-compose.yml` mounts a local volume as a fallback if you'd rather
+   not set up S3 immediately, but S3 is the only option that survives a Railway/Render redeploy
+   without extra config.
+6. **Run the database setup once**, in order (schema → optional seed → the three migrations —
+   see `database/`). `server/scripts/migrate.js` (`npm run migrate`, optionally `-- --seed`) does
+   this without needing `psql` installed locally; run it with the target environment's
+   `DATABASE_URL`/`DB_SSL` (e.g. `railway run npm run migrate` — see `RAILWAY_DEPLOY.md`).
 
 ## Roadmap (not yet built)
 

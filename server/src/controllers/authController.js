@@ -49,10 +49,12 @@ export const register = asyncHandler(async (req, res) => {
   if (existing) return res.status(409).json({ error: 'An account with this email already exists.' });
 
   // Public self-registration is limited to students; other roles are provisioned by admins.
-  const safeRole = role === 'student' || !role ? 'student' : 'student';
+  // `role` is intentionally destructured above and then ignored here so a crafted
+  // request body (e.g. { role: "super_admin" }) can never escalate on signup.
+  void role;
 
   const user = await User.create({
-    institutionId, regNumber, fullName, email, phone, password, role: safeRole, program, yearOfStudy,
+    institutionId, regNumber, fullName, email, phone, password, role: 'student', program, yearOfStudy,
   });
 
   const token = signToken({ sub: user.user_id, role: user.role, name: user.full_name, institutionId: user.institution_id });

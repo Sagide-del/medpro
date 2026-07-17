@@ -1,5 +1,4 @@
 import { Router } from 'express';
-import multer from 'multer';
 import {
   listResearch,
   listMyResearch,
@@ -14,8 +13,9 @@ import {
 import { Research } from '../models/Research.js';
 import { authenticate, optionalAuth } from '../middleware/auth.js';
 import { requireRole } from '../middleware/roleCheck.js';
+import { createUploader } from '../services/storage.js';
 
-const upload = multer({ dest: 'uploads/research/' });
+const { upload, urlFor } = createUploader('research');
 const router = Router();
 
 // Order matters: /mine and /pending must be declared before /:id.
@@ -38,7 +38,7 @@ router.post('/:id/file', authenticate, requireRole('super_admin', 'teacher', 'st
   if (req.user.role === 'student' && String(existing.uploaded_by) !== String(req.user.sub)) {
     return res.status(403).json({ error: 'You can only attach a file to your own submission.' });
   }
-  const research = await Research.setFile(req.params.id, `/uploads/research/${req.file.filename}`);
+  const research = await Research.setFile(req.params.id, urlFor(req.file));
   res.json({ research });
 });
 router.patch('/:id/file', authenticate, requireRole('super_admin', 'teacher', 'student'), setResearchFile);

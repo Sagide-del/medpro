@@ -1,11 +1,11 @@
 import { Router } from 'express';
-import multer from 'multer';
 import { listGraphics, getGraphic, createGraphic, setGraphicFiles, publishGraphic, deleteGraphic } from '../controllers/graphicController.js';
 import { MedicalGraphic } from '../models/MedicalGraphic.js';
 import { authenticate, optionalAuth } from '../middleware/auth.js';
 import { requireRole } from '../middleware/roleCheck.js';
+import { createUploader } from '../services/storage.js';
 
-const upload = multer({ dest: 'uploads/graphics/' });
+const { upload, urlFor } = createUploader('graphics');
 const router = Router();
 
 router.get('/', optionalAuth, listGraphics);
@@ -20,8 +20,8 @@ router.post(
   requireRole('super_admin'),
   upload.fields([{ name: 'file', maxCount: 1 }, { name: 'thumbnail', maxCount: 1 }]),
   async (req, res) => {
-    const fileUrl = req.files?.file?.[0] ? `/uploads/graphics/${req.files.file[0].filename}` : null;
-    const thumbnailUrl = req.files?.thumbnail?.[0] ? `/uploads/graphics/${req.files.thumbnail[0].filename}` : null;
+    const fileUrl = urlFor(req.files?.file?.[0]);
+    const thumbnailUrl = urlFor(req.files?.thumbnail?.[0]);
     const graphic = await MedicalGraphic.setFiles(req.params.id, { fileUrl, thumbnailUrl });
     res.json({ graphic });
   }

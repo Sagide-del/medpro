@@ -93,6 +93,11 @@ export const mpesaCallback = asyncHandler(async (req, res) => {
 export const paymentStatus = asyncHandler(async (req, res) => {
   const txn = await Payment.findByCheckoutId(req.params.checkoutId);
   if (!txn) return res.status(404).json({ error: 'Transaction not found.' });
+  // Prevent one student from viewing another student's transaction (amount, phone, mpesa code)
+  // by guessing/enumerating checkout IDs. Admins/super admins may look up any transaction.
+  const isOwner = String(txn.student_id) === String(req.user.sub);
+  const isStaff = ['super_admin', 'institution_admin'].includes(req.user.role);
+  if (!isOwner && !isStaff) return res.status(403).json({ error: 'You do not have permission to view this transaction.' });
   res.json({ status: txn.status, transaction: txn });
 });
 

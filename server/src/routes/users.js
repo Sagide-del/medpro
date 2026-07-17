@@ -14,6 +14,11 @@ router.get('/', requireRole('super_admin', 'institution_admin'), listUsers);
 router.get('/:id', asyncHandler(async (req, res) => {
   const user = await User.findById(req.params.id);
   if (!user) return res.status(404).json({ error: 'User not found.' });
+  // Scope non-super-admins to their own institution so a teacher/admin at one
+  // school can't look up a user record belonging to a different institution.
+  if (req.user.role !== 'super_admin' && String(user.institution_id) !== String(req.user.institutionId)) {
+    return res.status(403).json({ error: 'You do not have permission to view this user.' });
+  }
   res.json({ user });
 }));
 

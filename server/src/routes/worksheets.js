@@ -1,5 +1,4 @@
 import { Router } from 'express';
-import multer from 'multer';
 import {
   listWorksheets, getWorksheet, createWorksheet, publishWorksheet, deleteWorksheet,
   submitWorksheet, mySubmissions, worksheetSubmissions, gradeSubmission,
@@ -7,8 +6,9 @@ import {
 import { Worksheet } from '../models/Worksheet.js';
 import { authenticate, optionalAuth } from '../middleware/auth.js';
 import { requireRole } from '../middleware/roleCheck.js';
+import { createUploader } from '../services/storage.js';
 
-const upload = multer({ dest: 'uploads/worksheets/' });
+const { upload, urlFor } = createUploader('worksheets');
 const router = Router();
 
 router.get('/', optionalAuth, listWorksheets);
@@ -19,7 +19,7 @@ router.patch('/:id/publish', authenticate, requireRole('super_admin'), publishWo
 router.delete('/:id', authenticate, requireRole('super_admin'), deleteWorksheet);
 
 router.post('/:id/file', authenticate, requireRole('super_admin'), upload.single('file'), async (req, res) => {
-  const worksheet = await Worksheet.setFileUrl(req.params.id, `/uploads/worksheets/${req.file.filename}`);
+  const worksheet = await Worksheet.setFileUrl(req.params.id, urlFor(req.file));
   res.json({ worksheet });
 });
 

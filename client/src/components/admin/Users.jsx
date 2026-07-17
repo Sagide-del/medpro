@@ -1,71 +1,225 @@
 import { useEffect, useState } from 'react';
 import { api } from '../../services/api';
+import { useAuth } from '../../context/AuthContext';
 import Loading from '../shared/Loading';
 
 export default function Users() {
+  const { user } = useAuth();
+
   const [users, setUsers] = useState(null);
-  const [search, setSearch] = useState('');
-  const [role, setRole] = useState('');
+  const [institutions, setInstitutions] = useState([]);
   const [error, setError] = useState('');
 
+  const [form, setForm] = useState({
+    fullName: '',
+    email: '',
+    password: '',
+    role: 'student',
+    institutionId: '',
+  });
+
   function load() {
-    const params = new URLSearchParams();
-    if (search) params.set('search', search);
-    if (role) params.set('role', role);
-    api(`/users?${params}`).then((d) => setUsers(d.users)).catch((e) => setError(e.message));
+    api('/users')
+      .then((d) => setUsers(d.users))
+      .catch((e) => setError(e.message));
   }
-  useEffect(load, []);
+
+  useEffect(() => {
+    load();
+
+    if (user.role === 'super_admin') {
+      api('/admin/institutions')
+        .then((d) => setInstitutions(d.institutions))
+        .catch((e) => setError(e.message));
+    }
+  }, []);
+
+  async function createUser(e) {
+    e.preventDefault();
+
+    try {
+      await api('/users', {
+        method: 'POST',
+        body: form,
+      });
+
+      setForm({
+        fullName: '',
+        email: '',
+        password: '',
+        role: 'student',
+        institutionId: '',
+      });
+
+      load();
+    } catch (e) {
+      setError(e.message);
+    }
+  }
 
   async function toggleStatus(u) {
     try {
-      await api(`/users/${u.user_id}/${u.status === 'active' ? 'suspend' : 'reactivate'}`, { method: 'PATCH' });
+      await api(
+        `/users/${u.user_id}/${u.status === 'active' ? 'suspend' : 'reactivate'}`,
+        { method: 'PATCH' }
+      );
       load();
-    } catch (e) { setError(e.message); }
+    } catch (e) {
+      setError(e.message);
+    }
   }
 
   if (error) return <div className="alert">{error}</div>;
-  if (!users) return <Loading label="Loading users…" />;
+  if (!users) return <Loading label="Loading users..." />;
 
   return (
     <>
-      <div className="page-head"><div><h1>Users</h1><div className="sub">Students and teachers at your institution</div></div></div>
-
-      <div className="card">
-        <div className="form-grid" style={{ alignItems: 'end' }}>
-          <div className="field" style={{ marginBottom: 0 }}>
-            <label htmlFor="search">Search</label>
-            <input id="search" value={search} onChange={(e) => setSearch(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && load()} placeholder="Name, email, or reg number" />
+      <div className="page-head">
+        <div>
+          <h1>User management</h1>
+          <div className="sub">
+            Create and manage MedPro users
           </div>
-          <div className="field" style={{ marginBottom: 0 }}>
-            <label htmlFor="role">Role</label>
-            <select id="role" value={role} onChange={(e) => setRole(e.target.value)}>
-              <option value="">All roles</option>
-              <option value="student">Students</option>
-              <option value="teacher">Teachers</option>
-            </select>
-          </div>
-          <button onClick={load}>Apply filters</button>
         </div>
       </div>
 
       <div className="card">
-        <h2>{users.length} user{users.length === 1 ? '' : 's'}</h2>
+        <h2>Create user</h2>
+
+        <form onSubmit={createUser}>
+          <div className="form-grid">
+
+            <div className="field">
+              <label>Name</label>
+              <input
+                value={form.fullName}
+                onChange={(e) =>
+                  setForm({ ...form, fullName: e.target.value })
+                }
+              />
+            </div>
+
+            <div className="field">
+              <label>Email</label>
+              <input
+                type="email"
+                value={form.email}
+                onChange={(e) =>
+                  setForm({ ...form, email: e.target.value })
+                }
+              />
+            </div>
+
+            <div className="field">
+              <label>Password</label>
+              <input
+                type="password"
+                value={form.password}
+                onChange={(e) =>
+                  setForm({ ...form, password: e.target.value })
+                }
+              />
+            </div>
+
+            <div className="field">
+              <label>Role</label>
+              <select
+                value={form.role}
+                onChange={(e) =>
+                  setForm({ ...form, role: e.target.value })
+                }
+              >
+                {user.role === 'super_admin' && (
+                  <option value="institution_admin">
+                    Institution Admin
+                  </option>
+                )}
+
+                <option value="teacher">
+                  Teacher
+                </option>
+
+                <option value="student">
+                  Student
+                </option>
+              </select>
+            </div>
+
+            {user.role === 'super_admin' && (
+              <div className="field">
+                <label>Institution</label>
+
+                <select
+                  value={form.institutionId}
+                  onChange={(e) =>
+                    setForm({
+                      ...form,
+                      institutionId: e.target.value,
+                    })
+                  }
+                >
+                  <option value="">
+                    Select institution
+                  </option>
+
+                  {institutions.map((i) => (
+                    <option
+                      key={i.institution_id}
+                      value={i.institution_id}
+                    >
+                      {i.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+          </div>
+
+          <button type="submit">
+            Create user
+          </button>
+
+        </form>
+      </div>
+
+
+      <div className="card">
+        <h2>{users.length} users</h2>
+
         <table>
-          <thead><tr><th>Name</th><th>Reg no.</th><th>Role</th><th>Status</th><th></th></tr></thead>
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Email</th>
+              <th>Role</th>
+              <th>Status</th>
+              <th></th>
+            </tr>
+          </thead>
+
           <tbody>
             {users.map((u) => (
               <tr key={u.user_id}>
-                <td>{u.full_name}<br /><span style={{ color: 'var(--ink-soft)', fontSize: 12 }}>{u.email}</span></td>
-                <td className="num">{u.reg_number || '—'}</td>
+                <td>{u.full_name}</td>
+                <td>{u.email}</td>
                 <td>{u.role.replace('_', ' ')}</td>
-                <td><span className={`badge ${u.status}`}>{u.status}</span></td>
+                <td>{u.status}</td>
+
                 <td>
-                  <button className="ghost" onClick={() => toggleStatus(u)}>{u.status === 'active' ? 'Suspend' : 'Reactivate'}</button>
+                  <button
+                    className="ghost"
+                    onClick={() => toggleStatus(u)}
+                  >
+                    {u.status === 'active'
+                      ? 'Suspend'
+                      : 'Reactivate'}
+                  </button>
                 </td>
               </tr>
             ))}
-            {users.length === 0 && <tr><td colSpan="5" style={{ color: 'var(--ink-soft)' }}>No users match these filters.</td></tr>}
           </tbody>
+
         </table>
       </div>
     </>

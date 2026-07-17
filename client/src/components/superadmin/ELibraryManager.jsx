@@ -7,8 +7,23 @@ export default function ELibraryManager() {
 
   const [resources, setResources] = useState(null);
   const [error, setError] = useState('');
-  const [files, setFiles] = useState({});
-  const [uploading, setUploading] = useState('');
+  const [busy, setBusy] = useState(false);
+
+  const [form, setForm] = useState({
+    title: '',
+    description: '',
+    resourceType: 'Peer-reviewed Article',
+    category: '',
+    author: '',
+    journal: '',
+    publicationYear: '',
+    doi: '',
+    externalUrl: '',
+    learningObjectives: '',
+    evidenceLevel: '',
+    price: 0
+  });
+
 
   function load() {
     api('/elibrary?status=draft')
@@ -16,52 +31,46 @@ export default function ELibraryManager() {
       .catch((e) => setError(e.message));
   }
 
+
   useEffect(() => {
     load();
   }, []);
 
 
-  async function publish(id) {
-    try {
-      await api(`/elibrary/${id}/publish`, {
-        method: 'PATCH'
-      });
 
-      load();
+  async function createResource(e) {
 
-    } catch (e) {
-      setError(e.message);
-    }
-  }
+    e.preventDefault();
 
-
-  async function uploadFile(id) {
-
-    const selected = files[id];
-
-    if (!selected) {
-      alert('Please select a PDF first');
-      return;
-    }
-
-
-    const form = new FormData();
-
-    form.append('file', selected);
-
-
-    setUploading(id);
-
+    setBusy(true);
 
     try {
 
-      await api(`/elibrary/${id}/files`, {
+      await api('/elibrary', {
         method: 'POST',
-        body: form
+        body: {
+          ...form,
+          publicationYear: Number(form.publicationYear) || null,
+          price: Number(form.price)
+        }
       });
 
 
-      alert('PDF uploaded successfully');
+      setForm({
+        title: '',
+        description: '',
+        resourceType: 'Peer-reviewed Article',
+        category: '',
+        author: '',
+        journal: '',
+        publicationYear: '',
+        doi: '',
+        externalUrl: '',
+        learningObjectives: '',
+        evidenceLevel: '',
+        price: 0
+      });
+
 
       load();
 
@@ -72,11 +81,32 @@ export default function ELibraryManager() {
 
     } finally {
 
-      setUploading('');
+      setBusy(false);
 
     }
 
   }
+
+
+
+  async function publish(id) {
+
+    try {
+
+      await api(`/elibrary/${id}/publish`, {
+        method:'PATCH'
+      });
+
+      load();
+
+    } catch(e) {
+
+      setError(e.message);
+
+    }
+
+  }
+
 
 
 
@@ -85,7 +115,8 @@ export default function ELibraryManager() {
 
 
   if(!resources)
-    return <Loading label="Loading E-library..." />;
+    return <Loading label="Loading E-Library..." />;
+
 
 
 
@@ -93,121 +124,167 @@ export default function ELibraryManager() {
 
     <>
 
-    <div className="page-head">
-
-      <div>
-
-        <h1>E-Library Manager</h1>
-
-        <div className="sub">
-          Upload articles, guidelines and premium EMT resources
+      <div className="page-head">
+        <div>
+          <h1>E-Library Manager</h1>
+          <div className="sub">
+            Add peer-reviewed articles, clinical guidelines and premium e-books
+          </div>
         </div>
-
-      </div>
-
-    </div>
-
-
-
-    <div className="form-grid">
-
-
-    {resources.map((r)=>(
-
-
-      <div className="card" key={r.resource_id}>
-
-
-        <h2>{r.title}</h2>
-
-
-        <p>
-          {r.description}
-        </p>
-
-
-        <p>
-          <b>Type:</b> {r.resource_type}
-        </p>
-
-
-        <p>
-          <b>Category:</b> {r.category}
-        </p>
-
-
-        <p>
-          <b>Price:</b> {Number(r.price) > 0 ? kes(r.price) : "Free"}
-        </p>
-
-
-
-        <div className="field">
-
-          <label>
-            Upload PDF / Ebook
-          </label>
-
-
-          <input
-
-            type="file"
-
-            accept="application/pdf"
-
-            onChange={(e)=>
-              setFiles({
-                ...files,
-                [r.resource_id]:e.target.files[0]
-              })
-            }
-
-          />
-
-        </div>
-
-
-
-        <button
-
-          className="primary"
-
-          disabled={uploading===r.resource_id}
-
-          onClick={()=>uploadFile(r.resource_id)}
-
-        >
-
-          {uploading===r.resource_id
-          ? "Uploading..."
-          :"Upload PDF"}
-
-        </button>
-
-
-
-        <button
-
-          style={{marginLeft:10}}
-
-          className="ghost"
-
-          onClick={()=>publish(r.resource_id)}
-
-        >
-
-          Publish
-
-        </button>
-
-
       </div>
 
 
-    ))}
+
+      <div className="card">
+
+        <h2>Create Resource</h2>
 
 
-    </div>
+        <form onSubmit={createResource} className="form-grid">
+
+
+          {[
+            ['title','Title'],
+            ['category','Category'],
+            ['author','Author'],
+            ['journal','Journal'],
+            ['publicationYear','Publication Year'],
+            ['doi','DOI'],
+            ['externalUrl','External Source URL']
+          ].map(([key,label])=>(
+
+            <div className="field" key={key}>
+
+              <label>{label}</label>
+
+              <input
+                value={form[key]}
+                onChange={(e)=>
+                  setForm({...form,[key]:e.target.value})
+                }
+              />
+
+            </div>
+
+          ))}
+
+
+
+          <div className="field">
+
+            <label>Description</label>
+
+            <textarea
+              value={form.description}
+              onChange={(e)=>
+                setForm({...form,description:e.target.value})
+              }
+            />
+
+          </div>
+
+
+
+          <div className="field">
+
+            <label>Learning Objectives</label>
+
+            <textarea
+              value={form.learningObjectives}
+              onChange={(e)=>
+                setForm({...form,learningObjectives:e.target.value})
+              }
+            />
+
+          </div>
+
+
+
+          <div className="field">
+
+            <label>Evidence Level</label>
+
+            <input
+              value={form.evidenceLevel}
+              onChange={(e)=>
+                setForm({...form,evidenceLevel:e.target.value})
+              }
+            />
+
+          </div>
+
+
+
+          <div className="field">
+
+            <label>Price (KES)</label>
+
+            <input
+              type="number"
+              value={form.price}
+              onChange={(e)=>
+                setForm({...form,price:e.target.value})
+              }
+            />
+
+          </div>
+
+
+
+          <button className="primary" disabled={busy}>
+
+            {busy ? 'Creating...' : 'Create Resource'}
+
+          </button>
+
+
+        </form>
+
+      </div>
+
+
+
+
+      <div className="form-grid">
+
+
+        {resources.map((r)=>(
+
+          <div className="card" key={r.resource_id}>
+
+            <h2>{r.title}</h2>
+
+            <p>{r.description}</p>
+
+            <p>
+              <b>{r.resource_type}</b>
+            </p>
+
+            <p>
+              {r.category}
+            </p>
+
+
+            <p>
+              {Number(r.price)>0 ? kes(r.price) : 'Free'}
+            </p>
+
+
+            <button
+              className="primary"
+              onClick={()=>publish(r.resource_id)}
+            >
+              Publish
+            </button>
+
+
+          </div>
+
+
+        ))}
+
+
+      </div>
 
 
     </>

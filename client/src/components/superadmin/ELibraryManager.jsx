@@ -1,192 +1,217 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { api } from '../../services/api';
+import Loading from '../shared/Loading';
+import { kes } from '../format';
 
 export default function ELibraryManager() {
-  const [form, setForm] = useState({
-    title: '',
-    description: '',
-    category: '',
-    author: '',
-    resourceType: 'ebook',
-    journal: '',
-    publicationYear: '',
-    doi: '',
-    externalUrl: '',
-    learningObjectives: '',
-    evidenceLevel: '',
-    price: 0,
-    isPremium: false,
-  });
 
-  const [status, setStatus] = useState('');
+  const [resources, setResources] = useState(null);
+  const [error, setError] = useState('');
+  const [files, setFiles] = useState({});
+  const [uploading, setUploading] = useState('');
 
-  function update(e) {
-    const { name, value, type, checked } = e.target;
-
-    setForm({
-      ...form,
-      [name]: type === 'checkbox' ? checked : value,
-    });
+  function load() {
+    api('/elibrary?status=draft')
+      .then((d) => setResources(d.resources))
+      .catch((e) => setError(e.message));
   }
 
-  async function submit(e) {
-    e.preventDefault();
-    setStatus('');
+  useEffect(() => {
+    load();
+  }, []);
 
+
+  async function publish(id) {
     try {
-      await api('/elibrary', {
-        method: 'POST',
-        body: {
-          ...form,
-          publicationYear: form.publicationYear
-            ? Number(form.publicationYear)
-            : null,
-          price: Number(form.price),
-        },
+      await api(`/elibrary/${id}/publish`, {
+        method: 'PATCH'
       });
 
-      setStatus('Resource created successfully.');
-
-      setForm({
-        title: '',
-        description: '',
-        category: '',
-        author: '',
-        resourceType: 'ebook',
-        journal: '',
-        publicationYear: '',
-        doi: '',
-        externalUrl: '',
-        learningObjectives: '',
-        evidenceLevel: '',
-        price: 0,
-        isPremium: false,
-      });
+      load();
 
     } catch (e) {
-      setStatus(e.message);
+      setError(e.message);
     }
   }
 
+
+  async function uploadFile(id) {
+
+    const selected = files[id];
+
+    if (!selected) {
+      alert('Please select a PDF first');
+      return;
+    }
+
+
+    const form = new FormData();
+
+    form.append('file', selected);
+
+
+    setUploading(id);
+
+
+    try {
+
+      await api(`/elibrary/${id}/files`, {
+        method: 'POST',
+        body: form
+      });
+
+
+      alert('PDF uploaded successfully');
+
+      load();
+
+
+    } catch(e) {
+
+      setError(e.message);
+
+    } finally {
+
+      setUploading('');
+
+    }
+
+  }
+
+
+
+  if(error)
+    return <div className="alert">{error}</div>;
+
+
+  if(!resources)
+    return <Loading label="Loading E-library..." />;
+
+
+
   return (
+
     <>
-      <div className="page-head">
-        <div>
-          <h1>E-Library Manager</h1>
-          <div className="sub">
-            Add clinical articles, guidelines, and premium e-books
-          </div>
+
+    <div className="page-head">
+
+      <div>
+
+        <h1>E-Library Manager</h1>
+
+        <div className="sub">
+          Upload articles, guidelines and premium EMT resources
         </div>
+
       </div>
 
-      <form className="card" onSubmit={submit}>
+    </div>
+
+
+
+    <div className="form-grid">
+
+
+    {resources.map((r)=>(
+
+
+      <div className="card" key={r.resource_id}>
+
+
+        <h2>{r.title}</h2>
+
+
+        <p>
+          {r.description}
+        </p>
+
+
+        <p>
+          <b>Type:</b> {r.resource_type}
+        </p>
+
+
+        <p>
+          <b>Category:</b> {r.category}
+        </p>
+
+
+        <p>
+          <b>Price:</b> {Number(r.price) > 0 ? kes(r.price) : "Free"}
+        </p>
+
+
 
         <div className="field">
-          <label>Title</label>
-          <input name="title" value={form.title} onChange={update} />
-        </div>
 
-        <div className="field">
-          <label>Description</label>
-          <textarea name="description" value={form.description} onChange={update}/>
-        </div>
+          <label>
+            Upload PDF / Ebook
+          </label>
 
-        <div className="field">
-          <label>Resource Type</label>
-          <select name="resourceType" value={form.resourceType} onChange={update}>
-            <option value="article">Peer-reviewed Article</option>
-            <option value="guideline">Clinical Guideline</option>
-            <option value="ebook">E-book</option>
-            <option value="study_guide">Study Guide</option>
-          </select>
-        </div>
 
-        <div className="field">
-          <label>Category</label>
           <input
-            name="category"
-            placeholder="Trauma, BLS, Airway..."
-            value={form.category}
-            onChange={update}
+
+            type="file"
+
+            accept="application/pdf"
+
+            onChange={(e)=>
+              setFiles({
+                ...files,
+                [r.resource_id]:e.target.files[0]
+              })
+            }
+
           />
+
         </div>
 
-        <div className="field">
-          <label>Author</label>
-          <input name="author" value={form.author} onChange={update}/>
-        </div>
 
-        <div className="field">
-          <label>Journal</label>
-          <input name="journal" value={form.journal} onChange={update}/>
-        </div>
 
-        <div className="field">
-          <label>Publication Year</label>
-          <input
-            type="number"
-            name="publicationYear"
-            value={form.publicationYear}
-            onChange={update}
-          />
-        </div>
+        <button
 
-        <div className="field">
-          <label>DOI</label>
-          <input name="doi" value={form.doi} onChange={update}/>
-        </div>
+          className="primary"
 
-        <div className="field">
-          <label>External Source URL</label>
-          <input name="externalUrl" value={form.externalUrl} onChange={update}/>
-        </div>
+          disabled={uploading===r.resource_id}
 
-        <div className="field">
-          <label>Learning Objectives</label>
-          <textarea
-            name="learningObjectives"
-            value={form.learningObjectives}
-            onChange={update}
-          />
-        </div>
+          onClick={()=>uploadFile(r.resource_id)}
 
-        <div className="field">
-          <label>Evidence Level</label>
-          <input
-            name="evidenceLevel"
-            placeholder="Systematic Review, Guideline, RCT..."
-            value={form.evidenceLevel}
-            onChange={update}
-          />
-        </div>
+        >
 
-        <div className="field">
-          <label>Price (KES)</label>
-          <input
-            type="number"
-            name="price"
-            value={form.price}
-            onChange={update}
-          />
-        </div>
+          {uploading===r.resource_id
+          ? "Uploading..."
+          :"Upload PDF"}
 
-        <label>
-          <input
-            type="checkbox"
-            name="isPremium"
-            checked={form.isPremium}
-            onChange={update}
-          />
-          Premium resource
-        </label>
-
-        <button className="primary">
-          Create Resource
         </button>
 
-        {status && <div className="ok-note">{status}</div>}
 
-      </form>
+
+        <button
+
+          style={{marginLeft:10}}
+
+          className="ghost"
+
+          onClick={()=>publish(r.resource_id)}
+
+        >
+
+          Publish
+
+        </button>
+
+
+      </div>
+
+
+    ))}
+
+
+    </div>
+
+
     </>
+
   );
+
 }

@@ -5,14 +5,19 @@ import ErrorBoundary from './ErrorBoundary';
 
 /**
  * Shared authenticated-app shell: sidebar + <Outlet/>.
- * Each role's route group passes its own nav links and label.
- * Usage: <Route element={<Layout links={studentLinks} roleLabel="Student portal" />}>...</Route>
+ * Supports both:
+ * 1. Flat links:
+ *    [{to:'/student', label:'Dashboard'}]
  *
- * The page content is wrapped in an ErrorBoundary so a crash in one page
- * (like the Institutions bug) can never again wipe out the sidebar, the nav
- * links, or the "Back to home" / "Sign out" buttons — only the content area
- * shows a recovery message. Keyed on the route so navigating elsewhere
- * automatically clears a previous error.
+ * 2. Grouped links:
+ *    [
+ *      {
+ *        group:'Management',
+ *        items:[
+ *          {to:'/users', label:'Users'}
+ *        ]
+ *      }
+ *    ]
  */
 export default function Layout({ links, roleLabel }) {
   const { user, logout } = useAuth();
@@ -21,38 +26,110 @@ export default function Layout({ links, roleLabel }) {
 
   return (
     <div className="shell">
+
       <aside className="sidebar">
+
         <Link to="/" className="brand" style={{ textDecoration: 'none' }}>
           Med<span>Pro</span>
           <small>{roleLabel}</small>
         </Link>
+
         <PulseLine color="#cc0000" />
+
         <nav>
-          {links.map((l) => (
-            <NavLink key={l.to} to={l.to} end={l.end}>{l.label}</NavLink>
-          ))}
+
+          {links.map((item, index) => {
+
+            // Grouped navigation
+            if (item.group) {
+              return (
+                <div 
+                  key={`${item.group}-${index}`} 
+                  className="nav-group"
+                >
+
+                  <div className="nav-group-title">
+                    {item.group}
+                  </div>
+
+                  {item.items.map((link) => (
+                    <NavLink
+                      key={link.to}
+                      to={link.to}
+                      end={link.end}
+                    >
+                      {link.label}
+                    </NavLink>
+                  ))}
+
+                </div>
+              );
+            }
+
+
+            // Existing flat navigation
+            return (
+              <NavLink
+                key={item.to}
+                to={item.to}
+                end={item.end}
+              >
+                {item.label}
+              </NavLink>
+            );
+
+          })}
+
         </nav>
+
+
         <div className="foot">
-          Signed in as {user?.name}
-          <button className="ghost" onClick={() => navigate('/')}>
+
+          Signed in as {user?.name || user?.full_name}
+
+
+          <button
+            className="ghost"
+            onClick={() => navigate('/')}
+          >
             Back to home
           </button>
-          <button className="ghost" onClick={() => { logout(); navigate('/login'); }} style={{ marginTop: 6 }}>
+
+
+          <button
+            className="ghost"
+            onClick={() => {
+              logout();
+              navigate('/login');
+            }}
+            style={{ marginTop: 6 }}
+          >
             Sign out
           </button>
+
+
           <div style={{ marginTop: 14 }}>
-            MedPro &middot; SA Technologies<br />
-            South C (Bellevue), Red Cross Rd, Nairobi<br />
-            +254 748 519 923<br />
+            MedPro &middot; SA Technologies
+            <br />
+            <br />
             info@satechnologies.co.ke
           </div>
+
+
         </div>
+
       </aside>
+
+
       <main className="main">
+
         <ErrorBoundary key={location.pathname}>
           <Outlet />
         </ErrorBoundary>
+
       </main>
+
+
     </div>
   );
 }

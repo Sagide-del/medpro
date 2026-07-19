@@ -78,15 +78,66 @@ const ADMIN_LINKS = [
 
 
 const SUPERADMIN_LINKS = [
-  { to: '/superadmin', label: 'Dashboard', end: true },
-  { to: '/superadmin/institutions', label: 'Institutions' },
-  { to: '/superadmin/users', label: 'Users' },
-  { to: '/superadmin/content', label: 'Upload content' },
-  { to: '/superadmin/elibrary', label: 'E-Library' },
-  { to: '/superadmin/flashcards', label: 'Flashcard decks' },
-  { to: '/superadmin/worksheets', label: 'Worksheets' },
-  { to: '/superadmin/graphics', label: 'Graphics' },
-  { to: '/superadmin/revenue', label: 'Revenue analytics' },
+  {
+    group: "Main",
+    items: [
+      {
+        to: '/superadmin',
+        label: 'Dashboard',
+        end: true,
+      },
+    ],
+  },
+
+  {
+    group: "Management",
+    items: [
+      {
+        to: '/superadmin/institutions',
+        label: 'Institutions',
+      },
+      {
+        to: '/superadmin/users',
+        label: 'Users',
+      },
+    ],
+  },
+
+  {
+    group: "Content Management",
+    items: [
+      {
+        to: '/superadmin/content',
+        label: 'Upload Content',
+      },
+      {
+        to: '/superadmin/elibrary',
+        label: 'E-Library',
+      },
+      {
+        to: '/superadmin/flashcards',
+        label: 'Flashcard Decks',
+      },
+      {
+        to: '/superadmin/worksheets',
+        label: 'Worksheets',
+      },
+      {
+        to: '/superadmin/graphics',
+        label: 'Graphics',
+      },
+    ],
+  },
+
+  {
+    group: "Finance",
+    items: [
+      {
+        to: '/superadmin/revenue',
+        label: 'Revenue Analytics',
+      },
+    ],
+  },
 ];
 
 
@@ -158,21 +209,13 @@ function AppRoutes() {
         <Route element={<RequireRole role="super_admin"><Layout links={SUPERADMIN_LINKS} roleLabel="Super admin console" /></RequireRole>}>
 
           <Route path="/superadmin" element={<SuperAdminDashboard />} />
-
           <Route path="/superadmin/institutions" element={<SuperAdminInstitutions />} />
-
           <Route path="/superadmin/users" element={<AdminUsers />} />
-
           <Route path="/superadmin/content" element={<SuperAdminContentUpload />} />
-
           <Route path="/superadmin/elibrary" element={<SuperAdminELibraryManager />} />
-
           <Route path="/superadmin/flashcards" element={<SuperAdminFlashcardsManager />} />
-
           <Route path="/superadmin/worksheets" element={<SuperAdminWorksheetsManager />} />
-
           <Route path="/superadmin/graphics" element={<SuperAdminGraphicsManager />} />
-
           <Route path="/superadmin/revenue" element={<SuperAdminRevenueAnalytics />} />
 
         </Route>

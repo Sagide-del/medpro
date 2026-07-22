@@ -10,6 +10,7 @@ import Register from './pages/Register';
 
 import StudentDashboard from './components/student/Dashboard';
 import StudentAssessments from './components/student/Assessments';
+import StudentAssignments from './components/student/Assignments';
 import StudentClinicalReferenceCards from './components/student/ClinicalReferenceCards';
 import StudentExamPreparation from './components/student/ExamPreparation';
 import StudentWorksheets from './components/student/Worksheets';
@@ -25,6 +26,11 @@ import StudentResearch from './components/student/Research';
 import StudentSimulations from './components/student/Simulations';
 
 import TeacherDashboard from './components/teacher/Dashboard';
+import TeacherAssignments from './components/teacher/Assignments';
+import TeacherQuestionBank from './components/teacher/QuestionBank';
+import TeacherAiAssignmentGenerator from './components/teacher/AiAssignmentGenerator';
+import TeacherMarkingQueue from './components/teacher/MarkingQueue';
+import TeacherStudentPerformance from './components/teacher/StudentPerformance';
 import TeacherCreateAssessment from './components/teacher/CreateAssessment';
 import TeacherClinicalReferenceCards from './components/teacher/ClinicalReferenceCards';
 import TeacherGradeSubmissions from './components/teacher/GradeSubmissions';
@@ -92,6 +98,11 @@ const STUDENT_LINKS = [
 
 const TEACHER_LINKS = [
   { to: '/teacher', label: 'Dashboard', end: true },
+  { to: '/teacher/assignments', label: 'Assignments' },
+  { to: '/teacher/question-bank', label: 'Question Bank' },
+  { to: '/teacher/ai-generator', label: 'AI Assignment Generator' },
+  { to: '/teacher/marking-queue', label: 'Marking Queue' },
+  { to: '/teacher/student-performance', label: 'Student Performance' },
   { to: '/teacher/create-assessment', label: 'Create assessment' },
   { to: '/teacher/reference-cards', label: 'Clinical Reference Cards' },
   { to: '/teacher/grade-submissions', label: 'Grade submissions' },
@@ -211,7 +222,8 @@ function AppRoutes() {
           <Route path="/student/cats" element={<StudentAssessments />} />
           <Route path="/student/assessments" element={<StudentAssessments />} />
           <Route path="/student/assessments/:id" element={<StudentAssessments />} />
-          <Route path="/student/assignments" element={<StudentWorksheets />} />
+          <Route path="/student/assignments" element={<StudentAssignments />} />
+          <Route path="/student/assignments/:id" element={<StudentAssignments />} />
           <Route path="/student/worksheets" element={<StudentWorksheets />} />
           <Route path="/student/worksheets/:id" element={<StudentWorksheets />} />
           <Route path="/student/flashcards" element={<StudentFlashcards />} />
@@ -237,6 +249,11 @@ function AppRoutes() {
 
         <Route element={<RequireRole role="teacher"><Layout links={TEACHER_LINKS} roleLabel="Teacher portal" /></RequireRole>}>
           <Route path="/teacher" element={<TeacherDashboard />} />
+          <Route path="/teacher/assignments" element={<TeacherAssignments />} />
+          <Route path="/teacher/question-bank" element={<TeacherQuestionBank />} />
+          <Route path="/teacher/ai-generator" element={<TeacherAiAssignmentGenerator />} />
+          <Route path="/teacher/marking-queue" element={<TeacherMarkingQueue />} />
+          <Route path="/teacher/student-performance" element={<TeacherStudentPerformance />} />
           <Route path="/teacher/create-assessment" element={<TeacherCreateAssessment />} />
           <Route path="/teacher/reference-cards" element={<TeacherClinicalReferenceCards />} />
           <Route path="/teacher/reference-cards/:id" element={<TeacherClinicalReferenceCards />} />

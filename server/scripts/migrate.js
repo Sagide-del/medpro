@@ -28,6 +28,7 @@ const files = [
   'migration_002_fix_research_sources.sql',
   'migration_003_subscription_index.sql',
   'migration_004_clinical_reference_cards.sql',
+  'migration_005_assignment_workflow.sql',
 ];
 
 if (!process.env.DATABASE_URL) {

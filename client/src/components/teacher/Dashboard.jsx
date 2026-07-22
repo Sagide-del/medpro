@@ -39,6 +39,21 @@ export default function TeacherDashboard() {
       </div>
 
       <div className="form-grid">
+        <Link to="/teacher/assignments" style={{ textDecoration: 'none' }}>
+          <div className="card"><h2>Assignments</h2><p style={{ color: 'var(--ink-soft)', fontSize: 13 }}>Create and assign EMS coursework to your groups.</p></div>
+        </Link>
+        <Link to="/teacher/question-bank" style={{ textDecoration: 'none' }}>
+          <div className="card"><h2>Question bank</h2><p style={{ color: 'var(--ink-soft)', fontSize: 13 }}>Build reusable institution-scoped questions.</p></div>
+        </Link>
+        <Link to="/teacher/ai-generator" style={{ textDecoration: 'none' }}>
+          <div className="card"><h2>AI assignment generator</h2><p style={{ color: 'var(--ink-soft)', fontSize: 13 }}>Generate draft questions, then review and approve them.</p></div>
+        </Link>
+        <Link to="/teacher/marking-queue" style={{ textDecoration: 'none' }}>
+          <div className="card"><h2>Marking queue</h2><p style={{ color: 'var(--ink-soft)', fontSize: 13 }}>Review submissions, assign marks, and release feedback.</p></div>
+        </Link>
+        <Link to="/teacher/student-performance" style={{ textDecoration: 'none' }}>
+          <div className="card"><h2>Student performance</h2><p style={{ color: 'var(--ink-soft)', fontSize: 13 }}>Track submission volume and average scores.</p></div>
+        </Link>
         <Link to="/teacher/create-assessment" style={{ textDecoration: 'none' }}>
           <div className="card"><h2>Create an assessment</h2><p style={{ color: 'var(--ink-soft)', fontSize: 13 }}>Build a quiz, exam, or clinical judgment scenario.</p></div>
         </Link>

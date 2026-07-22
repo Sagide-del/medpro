@@ -10,6 +10,8 @@ import Register from './pages/Register';
 
 import StudentDashboard from './components/student/Dashboard';
 import StudentAssessments from './components/student/Assessments';
+import StudentClinicalReferenceCards from './components/student/ClinicalReferenceCards';
+import StudentExamPreparation from './components/student/ExamPreparation';
 import StudentWorksheets from './components/student/Worksheets';
 import StudentFlashcards from './components/student/Flashcards';
 import StudentGraphics from './components/student/Graphics';
@@ -18,16 +20,19 @@ import StudentVideos from './components/student/Videos';
 import StudentGroups from './components/student/Groups';
 import StudentPayments from './components/student/Payments';
 import StudentELibrary from './components/student/ELibrary';
+import StudentProgressAnalytics from './components/student/ProgressAnalytics';
 import StudentResearch from './components/student/Research';
 import StudentSimulations from './components/student/Simulations';
 
 import TeacherDashboard from './components/teacher/Dashboard';
 import TeacherCreateAssessment from './components/teacher/CreateAssessment';
+import TeacherClinicalReferenceCards from './components/teacher/ClinicalReferenceCards';
 import TeacherGradeSubmissions from './components/teacher/GradeSubmissions';
 import TeacherReviewLogbook from './components/teacher/ReviewLogbook';
 import TeacherAnalytics from './components/teacher/Analytics';
 import TeacherSendAlerts from './components/teacher/SendAlerts';
 
+import AdminClinicalReferenceCardsManager from './components/admin/ClinicalReferenceCardsManager';
 import AdminDashboard from './components/admin/Dashboard';
 import AdminInstitutions from './components/admin/Institutions';
 import AdminUsers from './components/admin/Users';
@@ -39,29 +44,56 @@ import SuperAdminContentUpload from './components/superadmin/ContentUpload';
 import SuperAdminFlashcardsManager from './components/superadmin/FlashcardsManager';
 import SuperAdminWorksheetsManager from './components/superadmin/WorksheetsManager';
 import SuperAdminGraphicsManager from './components/superadmin/GraphicsManager';
+import SuperAdminClinicalReferenceCardsManager from './components/superadmin/ClinicalReferenceCardsManager';
 import SuperAdminRevenueAnalytics from './components/superadmin/RevenueAnalytics';
 import SuperAdminELibraryManager from './components/superadmin/ELibraryManager';
 
 
 const STUDENT_LINKS = [
-  { to: '/student', label: 'Dashboard', end: true },
-  { to: '/student/assessments', label: 'Assessments' },
-  { to: '/student/simulations', label: 'Simulations' },
-  { to: '/student/worksheets', label: 'Worksheets' },
-  { to: '/student/flashcards', label: 'Flashcards' },
-  { to: '/student/graphics', label: 'Graphics' },
-  { to: '/student/elibrary', label: 'E-Library' },
-  { to: '/student/research', label: 'Research' },
-  { to: '/student/logbook', label: 'Logbook' },
-  { to: '/student/videos', label: 'Videos' },
-  { to: '/student/groups', label: 'Groups' },
-  { to: '/student/payments', label: 'Payments' },
+  {
+    group: 'Overview',
+    items: [
+      { to: '/student', label: 'Dashboard', end: true },
+      { to: '/student/progress-analytics', label: 'Progress Analytics' },
+      { to: '/student/subscription', label: 'Subscription' },
+    ],
+  },
+  {
+    group: 'Exam Preparation',
+    items: [
+      { to: '/student/exam-preparation', label: 'Overview' },
+      { to: '/student/question-bank', label: 'Question Bank' },
+      { to: '/student/mock-exams', label: 'Mock Exams' },
+      { to: '/student/cats', label: 'CATs' },
+      { to: '/student/assessments', label: 'Assessments' },
+      { to: '/student/flashcards', label: 'Clinical Recall Cards' },
+      { to: '/student/reference-cards', label: 'Clinical Reference Cards' },
+    ],
+  },
+  {
+    group: 'Clinical Practice',
+    items: [
+      { to: '/student/simulations', label: 'Skill Simulations' },
+      { to: '/student/assignments', label: 'Practical Assignments' },
+      { to: '/student/logbook', label: 'Clinical Logbook' },
+      { to: '/student/videos', label: 'Video Practicals' },
+    ],
+  },
+  {
+    group: 'Connected Learning',
+    items: [
+      { to: '/student/community', label: 'Community' },
+      { to: '/student/elibrary', label: 'E-Library' },
+      { to: '/student/research', label: 'Research' },
+    ],
+  },
 ];
 
 
 const TEACHER_LINKS = [
   { to: '/teacher', label: 'Dashboard', end: true },
   { to: '/teacher/create-assessment', label: 'Create assessment' },
+  { to: '/teacher/reference-cards', label: 'Clinical Reference Cards' },
   { to: '/teacher/grade-submissions', label: 'Grade submissions' },
   { to: '/teacher/review-logbook', label: 'Review submissions' },
   { to: '/teacher/send-alerts', label: 'Send alerts' },
@@ -71,6 +103,7 @@ const TEACHER_LINKS = [
 
 const ADMIN_LINKS = [
   { to: '/admin', label: 'Dashboard', end: true },
+  { to: '/admin/reference-cards', label: 'Clinical Reference Cards' },
   { to: '/admin/institution', label: 'Institution' },
   { to: '/admin/users', label: 'Users' },
   { to: '/admin/revenue', label: 'Revenue' },
@@ -126,6 +159,10 @@ const SUPERADMIN_LINKS = [
         to: '/superadmin/graphics',
         label: 'Graphics',
       },
+      {
+        to: '/superadmin/reference-cards',
+        label: 'Clinical Reference Cards',
+      },
     ],
   },
 
@@ -166,19 +203,29 @@ function AppRoutes() {
         <Route path="/register" element={<Register />} />
 
 
-        <Route element={<RequireRole role="student"><Layout links={STUDENT_LINKS} roleLabel="Student portal" /></RequireRole>}>
+        <Route element={<RequireRole role="student"><Layout links={STUDENT_LINKS} roleLabel="EMS competency dashboard" /></RequireRole>}>
           <Route path="/student" element={<StudentDashboard />} />
+          <Route path="/student/exam-preparation" element={<StudentExamPreparation />} />
+          <Route path="/student/question-bank" element={<StudentAssessments />} />
+          <Route path="/student/mock-exams" element={<StudentAssessments />} />
+          <Route path="/student/cats" element={<StudentAssessments />} />
           <Route path="/student/assessments" element={<StudentAssessments />} />
           <Route path="/student/assessments/:id" element={<StudentAssessments />} />
+          <Route path="/student/assignments" element={<StudentWorksheets />} />
           <Route path="/student/worksheets" element={<StudentWorksheets />} />
           <Route path="/student/worksheets/:id" element={<StudentWorksheets />} />
           <Route path="/student/flashcards" element={<StudentFlashcards />} />
           <Route path="/student/flashcards/:id" element={<StudentFlashcards />} />
+          <Route path="/student/reference-cards" element={<StudentClinicalReferenceCards />} />
+          <Route path="/student/reference-cards/:id" element={<StudentClinicalReferenceCards />} />
           <Route path="/student/graphics" element={<StudentGraphics />} />
           <Route path="/student/graphics/:id" element={<StudentGraphics />} />
+          <Route path="/student/progress-analytics" element={<StudentProgressAnalytics />} />
           <Route path="/student/logbook" element={<StudentLogbook />} />
           <Route path="/student/videos" element={<StudentVideos />} />
+          <Route path="/student/community" element={<StudentGroups />} />
           <Route path="/student/groups" element={<StudentGroups />} />
+          <Route path="/student/subscription" element={<StudentPayments />} />
           <Route path="/student/payments" element={<StudentPayments />} />
           <Route path="/student/simulations" element={<StudentSimulations />} />
           <Route path="/student/elibrary" element={<StudentELibrary />} />
@@ -191,6 +238,8 @@ function AppRoutes() {
         <Route element={<RequireRole role="teacher"><Layout links={TEACHER_LINKS} roleLabel="Teacher portal" /></RequireRole>}>
           <Route path="/teacher" element={<TeacherDashboard />} />
           <Route path="/teacher/create-assessment" element={<TeacherCreateAssessment />} />
+          <Route path="/teacher/reference-cards" element={<TeacherClinicalReferenceCards />} />
+          <Route path="/teacher/reference-cards/:id" element={<TeacherClinicalReferenceCards />} />
           <Route path="/teacher/grade-submissions" element={<TeacherGradeSubmissions />} />
           <Route path="/teacher/review-logbook" element={<TeacherReviewLogbook />} />
           <Route path="/teacher/send-alerts" element={<TeacherSendAlerts />} />
@@ -200,6 +249,7 @@ function AppRoutes() {
 
         <Route element={<RequireRole role="institution_admin"><Layout links={ADMIN_LINKS} roleLabel="Institution admin" /></RequireRole>}>
           <Route path="/admin" element={<AdminDashboard />} />
+          <Route path="/admin/reference-cards" element={<AdminClinicalReferenceCardsManager />} />
           <Route path="/admin/institution" element={<AdminInstitutions />} />
           <Route path="/admin/users" element={<AdminUsers />} />
           <Route path="/admin/revenue" element={<AdminRevenue />} />
@@ -216,6 +266,7 @@ function AppRoutes() {
           <Route path="/superadmin/flashcards" element={<SuperAdminFlashcardsManager />} />
           <Route path="/superadmin/worksheets" element={<SuperAdminWorksheetsManager />} />
           <Route path="/superadmin/graphics" element={<SuperAdminGraphicsManager />} />
+          <Route path="/superadmin/reference-cards" element={<SuperAdminClinicalReferenceCardsManager />} />
           <Route path="/superadmin/revenue" element={<SuperAdminRevenueAnalytics />} />
 
         </Route>

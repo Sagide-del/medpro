@@ -30,6 +30,7 @@ export const login = asyncHandler(async (req, res) => {
     role: user.role,
     name: user.full_name,
     institutionId: user.institution_id,
+    program: user.program,
   });
 
   await User.touchLastActive(user.user_id);
@@ -57,7 +58,7 @@ export const register = asyncHandler(async (req, res) => {
     institutionId, regNumber, fullName, email, phone, password, role: 'student', program, yearOfStudy,
   });
 
-  const token = signToken({ sub: user.user_id, role: user.role, name: user.full_name, institutionId: user.institution_id });
+  const token = signToken({ sub: user.user_id, role: user.role, name: user.full_name, institutionId: user.institution_id, program: user.program });
   res.status(201).json({ token, user: toPublicUser({ ...user, institution_name: null }) });
 });
 

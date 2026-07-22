@@ -78,6 +78,15 @@ a { color: var(--red); }
   padding: 0 10px 14px;
 }
 .sidebar nav { display: flex; flex-direction: column; gap: 2px; }
+.nav-group { margin-bottom: 14px; }
+.nav-group:last-child { margin-bottom: 0; }
+.nav-group-title {
+  color: rgba(255,255,255,0.64);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  padding: 10px 12px 6px;
+}
 .sidebar a {
   color: #ddd;
   text-decoration: none;
@@ -699,6 +708,8 @@ button:disabled { opacity: 0.5; cursor: default; }
   .shell { flex-direction: column; }
   .sidebar { width: 100%; height: auto; position: static; flex-direction: row; flex-wrap: wrap; align-items: center; }
   .sidebar nav { flex-direction: row; flex-wrap: wrap; }
+  .nav-group { display: contents; }
+  .nav-group-title { display: none; }
   .sidebar .foot { display: none; }
   .main { padding: 20px 16px 40px; }
   .navbar { padding: 12px 16px; }

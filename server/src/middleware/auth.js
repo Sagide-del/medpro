@@ -1,6 +1,6 @@
 import { verifyToken } from '../config/auth.js';
 
-/** Verifies the Bearer JWT and attaches { sub, role, name, institutionId } to req.user */
+/** Verifies the Bearer JWT and attaches { sub, role, name, institutionId, program } to req.user */
 export function authenticate(req, res, next) {
   const header = req.headers.authorization || '';
   const token = header.startsWith('Bearer ') ? header.slice(7) : null;

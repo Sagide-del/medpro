@@ -1,37 +1,59 @@
 import { useEffect, useState } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, useNavigate, Link, useLocation } from 'react-router-dom';
 import { api } from '../../services/api';
 import Loading from '../shared/Loading';
 
+const VIEW_META = {
+  '/student/question-bank': {
+    title: 'Question Bank',
+    subtitle: 'Browse published EMS question sets, quizzes, and clinical judgment items.',
+  },
+  '/student/mock-exams': {
+    title: 'Mock Exams',
+    subtitle: 'Use the current assessment catalogue as realistic exam-preparation practice.',
+  },
+  '/student/cats': {
+    title: 'CATs',
+    subtitle: 'Continuous assessment practice powered by the live MedProHub assessment engine.',
+  },
+  '/student/assessments': {
+    title: 'Assessments',
+    subtitle: 'Quizzes, exams, and clinical judgment scenarios.',
+  },
+};
+
 function AssessmentList() {
+  const location = useLocation();
   const [assessments, setAssessments] = useState(null);
   const [error, setError] = useState('');
 
   useEffect(() => {
-    api('/assessments').then((d) => setAssessments(d.assessments)).catch((e) => setError(e.message));
+    api('/assessments').then((data) => setAssessments(data.assessments)).catch((err) => setError(err.message));
   }, []);
 
   if (error) return <div className="alert">{error}</div>;
-  if (!assessments) return <Loading label="Loading assessments…" />;
+  if (!assessments) return <Loading label="Loading assessments..." />;
+
+  const meta = VIEW_META[location.pathname] || VIEW_META['/student/assessments'];
 
   return (
     <>
       <div className="page-head">
         <div>
-          <h1>Assessments</h1>
-          <div className="sub">Quizzes, exams, and clinical judgment scenarios</div>
+          <h1>{meta.title}</h1>
+          <div className="sub">{meta.subtitle}</div>
         </div>
       </div>
       <div className="form-grid">
-        {assessments.map((a) => (
-          <Link key={a.assessment_id} to={`/student/assessments/${a.assessment_id}`} style={{ textDecoration: 'none' }}>
+        {assessments.map((assessment) => (
+          <Link key={assessment.assessment_id} to={`/student/assessments/${assessment.assessment_id}`} style={{ textDecoration: 'none' }}>
             <div className="card">
-              <h2>{a.title}</h2>
-              <p style={{ fontSize: 13, color: 'var(--ink-soft)', marginBottom: 8 }}>{a.description}</p>
-              <span className="badge draft" style={{ marginRight: 6 }}>{a.type}</span>
-              <span className="badge draft">{a.difficulty}</span>
+              <h2>{assessment.title}</h2>
+              <p style={{ fontSize: 13, color: 'var(--ink-soft)', marginBottom: 8 }}>{assessment.description}</p>
+              <span className="badge draft" style={{ marginRight: 6 }}>{assessment.type}</span>
+              <span className="badge draft">{assessment.difficulty}</span>
               <div style={{ marginTop: 10, fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--ink-soft)' }}>
-                {a.total_points} pts &middot; {a.time_limit_minutes ? `${a.time_limit_minutes} min` : 'untimed'}
+                {assessment.total_points} pts &middot; {assessment.time_limit_minutes ? `${assessment.time_limit_minutes} min` : 'untimed'}
               </div>
             </div>
           </Link>
@@ -55,39 +77,59 @@ function TakeAssessment() {
   const [busy, setBusy] = useState(false);
   const [phone, setPhone] = useState('');
   const [subStatus, setSubStatus] = useState('');
+  const [subscriptionMeta, setSubscriptionMeta] = useState(null);
 
   useEffect(() => {
-    api(`/assessments/${id}`).then((d) => { setAssessment(d.assessment); setQuestions(d.questions); setUnlocked(d.unlocked !== false); }).catch((e) => setError(e.message));
+    api(`/assessments/${id}`).then((data) => {
+      setAssessment(data.assessment);
+      setQuestions(data.questions);
+      setUnlocked(data.unlocked !== false);
+    }).catch((err) => setError(err.message));
+    api('/payments/subscription').then((data) => setSubscriptionMeta(data)).catch(() => {});
   }, [id]);
 
   async function subscribe() {
-    setBusy(true); setSubStatus('');
+    setBusy(true);
+    setSubStatus('');
     try {
       const res = await api('/payments/subscribe', { method: 'POST', body: { phone } });
-      setSubStatus(res.simulated ? 'Subscription activated (dev mode) — reloading…' : 'Check your phone to complete the M-Pesa payment.');
+      setSubStatus(res.simulated ? 'Subscription activated (dev mode) - reloading...' : 'Check your phone to complete the M-Pesa payment.');
       if (res.simulated) {
-        const d = await api(`/assessments/${id}`);
-        setQuestions(d.questions);
-        setUnlocked(d.unlocked !== false);
+        const data = await api(`/assessments/${id}`);
+        setQuestions(data.questions);
+        setUnlocked(data.unlocked !== false);
       }
-    } catch (e) { setError(e.message); } finally { setBusy(false); }
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setBusy(false);
+    }
   }
 
   async function begin() {
     setBusy(true);
     try {
-      const { attempt } = await api(`/assessments/${id}/attempts`, { method: 'POST' });
-      setAttempt(attempt);
-    } catch (e) { setError(e.message); } finally { setBusy(false); }
+      const response = await api(`/assessments/${id}/attempts`, { method: 'POST' });
+      setAttempt(response.attempt);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setBusy(false);
+    }
   }
 
   async function submit() {
-    setBusy(true); setError('');
+    setBusy(true);
+    setError('');
     try {
       const payload = { answers: Object.entries(answers).map(([questionId, response]) => ({ questionId, response })) };
-      const { attempt: graded, needsManualReview } = await api(`/assessments/${id}/attempts/${attempt.attempt_id}/submit`, { method: 'POST', body: payload });
-      setResult({ ...graded, needsManualReview });
-    } catch (e) { setError(e.message); } finally { setBusy(false); }
+      const response = await api(`/assessments/${id}/attempts/${attempt.attempt_id}/submit`, { method: 'POST', body: payload });
+      setResult({ ...response.attempt, needsManualReview: response.needsManualReview });
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setBusy(false);
+    }
   }
 
   if (error) return <div className="alert">{error}</div>;
@@ -96,9 +138,9 @@ function TakeAssessment() {
   if (result) {
     return (
       <div className="card">
-        <h2>Results — {assessment.title}</h2>
+        <h2>Results - {assessment.title}</h2>
         <p style={{ fontSize: 28, fontFamily: 'var(--font-mono)', color: 'var(--red)', margin: '10px 0' }}>{result.score_pct}%</p>
-        {result.needsManualReview && <div className="alert info">Scenario steps in this assessment are pending teacher review — your final score may change.</div>}
+        {result.needsManualReview && <div className="alert info">Scenario steps in this assessment are pending teacher review - your final score may change.</div>}
         <button onClick={() => navigate('/student/assessments')}>Back to assessments</button>
       </div>
     );
@@ -110,14 +152,15 @@ function TakeAssessment() {
         <h1>{assessment.title}</h1>
         <p style={{ color: 'var(--ink-soft)', margin: '10px 0' }}>{assessment.description}</p>
         <div className="alert info" style={{ marginBottom: 14 }}>
-          This assessment requires an active subscription — Ksh 500/month unlocks every published assessment. Institutions with a MedPro site-license cover this automatically for their students.
+          This assessment requires an active subscription - Ksh {subscriptionMeta?.price ?? 500}/month unlocks every
+          published assessment. Institutions with a MedPro site-license cover this automatically for their students.
         </div>
         <div className="field">
           <label htmlFor="phone">M-Pesa phone number</label>
-          <input id="phone" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="07XX XXX XXX" />
+          <input id="phone" value={phone} onChange={(event) => setPhone(event.target.value)} placeholder="07XX XXX XXX" />
         </div>
         <button className="primary" onClick={subscribe} disabled={busy || !phone} style={{ marginTop: 10 }}>
-          {busy ? 'Processing…' : 'Subscribe — Ksh 500/month'}
+          {busy ? 'Processing...' : `Subscribe - Ksh ${subscriptionMeta?.price ?? 500}/month`}
         </button>
         {subStatus && <p style={{ marginTop: 10, fontSize: 13 }}>{subStatus}</p>}
         {error && <div className="error-note">{error}</div>}
@@ -134,7 +177,7 @@ function TakeAssessment() {
           {questions.length} questions &middot; {assessment.total_points} pts &middot; pass at {assessment.passing_score_pct}%
         </p>
         <button className="primary" onClick={begin} disabled={busy} style={{ marginTop: 14 }}>
-          {busy ? 'Starting…' : 'Start attempt'}
+          {busy ? 'Starting...' : 'Start attempt'}
         </button>
       </div>
     );
@@ -143,28 +186,33 @@ function TakeAssessment() {
   return (
     <>
       <div className="page-head"><h1>{assessment.title}</h1></div>
-      {questions.map((q, i) => (
-        <div className="card" key={q.question_id}>
-          <h2>Question {i + 1} {q.clinical_step && <span className="badge draft">{q.clinical_step.replace(/_/g, ' ')}</span>}</h2>
-          <p style={{ marginBottom: 10 }}>{q.prompt}</p>
-          {q.question_type === 'mcq' && q.options ? (
+      {questions.map((question, index) => (
+        <div className="card" key={question.question_id}>
+          <h2>Question {index + 1} {question.clinical_step && <span className="badge draft">{question.clinical_step.replace(/_/g, ' ')}</span>}</h2>
+          <p style={{ marginBottom: 10 }}>{question.prompt}</p>
+          {question.question_type === 'mcq' && question.options ? (
             <div>
-              {JSON.parse(typeof q.options === 'string' ? q.options : JSON.stringify(q.options)).map((opt) => (
-                <label key={opt} style={{ display: 'block', fontWeight: 400, marginBottom: 6 }}>
-                  <input type="radio" name={q.question_id} value={opt} style={{ width: 'auto', marginRight: 8 }}
-                    checked={answers[q.question_id] === opt}
-                    onChange={() => setAnswers((a) => ({ ...a, [q.question_id]: opt }))} />
-                  {opt}
+              {JSON.parse(typeof question.options === 'string' ? question.options : JSON.stringify(question.options)).map((option) => (
+                <label key={option} style={{ display: 'block', fontWeight: 400, marginBottom: 6 }}>
+                  <input
+                    type="radio"
+                    name={question.question_id}
+                    value={option}
+                    style={{ width: 'auto', marginRight: 8 }}
+                    checked={answers[question.question_id] === option}
+                    onChange={() => setAnswers((current) => ({ ...current, [question.question_id]: option }))}
+                  />
+                  {option}
                 </label>
               ))}
             </div>
           ) : (
-            <textarea rows="3" value={answers[q.question_id] || ''} onChange={(e) => setAnswers((a) => ({ ...a, [q.question_id]: e.target.value }))} />
+            <textarea rows="3" value={answers[question.question_id] || ''} onChange={(event) => setAnswers((current) => ({ ...current, [question.question_id]: event.target.value }))} />
           )}
         </div>
       ))}
       {error && <div className="error-note">{error}</div>}
-      <button className="primary" onClick={submit} disabled={busy}>{busy ? 'Submitting…' : 'Submit assessment'}</button>
+      <button className="primary" onClick={submit} disabled={busy}>{busy ? 'Submitting...' : 'Submit assessment'}</button>
     </>
   );
 }

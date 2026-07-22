@@ -9,25 +9,25 @@ function DeckList() {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    api('/flashcards').then((d) => setDecks(d.decks)).catch((e) => setError(e.message));
+    api('/flashcards').then((data) => setDecks(data.decks)).catch((err) => setError(err.message));
   }, []);
 
   if (error) return <div className="alert">{error}</div>;
-  if (!decks) return <Loading label="Loading flashcard decks…" />;
+  if (!decks) return <Loading label="Loading clinical recall cards..." />;
 
   return (
     <>
       <div className="page-head">
-        <div><h1>Flashcards</h1><div className="sub">Ksh 10 per deck &middot; spaced repetition study mode</div></div>
+        <div><h1>Clinical Recall Cards</h1><div className="sub">Ksh 10 per deck &middot; spaced repetition study mode for EMS memory work</div></div>
       </div>
       <div className="form-grid">
-        {decks.map((d) => (
-          <Link key={d.deck_id} to={`/student/flashcards/${d.deck_id}`} style={{ textDecoration: 'none' }}>
+        {decks.map((deck) => (
+          <Link key={deck.deck_id} to={`/student/flashcards/${deck.deck_id}`} style={{ textDecoration: 'none' }}>
             <div className="card">
-              <h2>{d.title}</h2>
-              <p style={{ fontSize: 13, color: 'var(--ink-soft)', marginBottom: 8 }}>{d.description}</p>
-              <span className="badge draft">{d.card_count} cards</span>
-              <div style={{ marginTop: 10, fontFamily: 'var(--font-mono)', color: 'var(--red)', fontWeight: 600 }}>{kes(d.price)}</div>
+              <h2>{deck.title}</h2>
+              <p style={{ fontSize: 13, color: 'var(--ink-soft)', marginBottom: 8 }}>{deck.description}</p>
+              <span className="badge draft">{deck.card_count} cards</span>
+              <div style={{ marginTop: 10, fontFamily: 'var(--font-mono)', color: 'var(--red)', fontWeight: 600 }}>{kes(deck.price)}</div>
             </div>
           </Link>
         ))}
@@ -48,28 +48,34 @@ function StudyDeck() {
   const [busy, setBusy] = useState(false);
 
   function load() {
-    api(`/flashcards/${id}`).then((d) => { setDeck(d.deck); setUnlocked(d.unlocked); });
+    api(`/flashcards/${id}`).then((data) => { setDeck(data.deck); setUnlocked(data.unlocked); });
   }
+
   useEffect(load, [id]);
 
   useEffect(() => {
-    if (unlocked) api(`/flashcards/${id}/study/due`).then((d) => setDueCards(d.cards));
+    if (unlocked) api(`/flashcards/${id}/study/due`).then((data) => setDueCards(data.cards));
   }, [unlocked, id]);
 
   async function purchase() {
-    setBusy(true); setStatus('');
+    setBusy(true);
+    setStatus('');
     try {
-      const res = await api('/payments/purchase', { method: 'POST', body: { itemType: 'flashcard_deck', itemId: id, phone } });
-      setStatus(res.simulated ? 'Purchase simulated (dev mode) — access granted.' : 'Check your phone to complete the M-Pesa payment.');
+      const response = await api('/payments/purchase', { method: 'POST', body: { itemType: 'flashcard_deck', itemId: id, phone } });
+      setStatus(response.simulated ? 'Purchase simulated (dev mode) - access granted.' : 'Check your phone to complete the M-Pesa payment.');
       setTimeout(load, 1500);
-    } catch (e) { setStatus(e.message); } finally { setBusy(false); }
+    } catch (err) {
+      setStatus(err.message);
+    } finally {
+      setBusy(false);
+    }
   }
 
   async function rate(quality) {
     const card = dueCards[index];
     await api(`/flashcards/cards/${card.card_id}/review`, { method: 'POST', body: { quality } });
     setFlipped(false);
-    setIndex((i) => i + 1);
+    setIndex((current) => current + 1);
   }
 
   if (!deck) return <Loading />;
@@ -82,11 +88,11 @@ function StudyDeck() {
         <div className="form-grid">
           <div className="field">
             <label htmlFor="phone">M-Pesa phone number</label>
-            <input id="phone" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="07XX XXX XXX" />
+            <input id="phone" value={phone} onChange={(event) => setPhone(event.target.value)} placeholder="07XX XXX XXX" />
           </div>
         </div>
         <button className="primary" onClick={purchase} disabled={busy || !phone}>
-          {busy ? 'Processing…' : `Unlock for ${kes(deck.price)}`}
+          {busy ? 'Processing...' : `Unlock for ${kes(deck.price)}`}
         </button>
         {status && <div className="ok-note">{status}</div>}
       </div>
@@ -99,7 +105,7 @@ function StudyDeck() {
     return (
       <div className="card">
         <h2>All caught up</h2>
-        <p style={{ color: 'var(--ink-soft)' }}>No more cards due right now for "{deck.title}". Come back later — spaced repetition schedules cards based on how well you know them.</p>
+        <p style={{ color: 'var(--ink-soft)' }}>No more cards due right now for "{deck.title}". Come back later - spaced repetition schedules cards based on how well you know them.</p>
       </div>
     );
   }
@@ -108,7 +114,7 @@ function StudyDeck() {
   return (
     <>
       <div className="page-head"><h1>{deck.title}</h1><div className="sub">Card {index + 1} of {dueCards.length} due</div></div>
-      <div className={`flip-card${flipped ? ' flipped' : ''}`} onClick={() => setFlipped((f) => !f)} style={{ maxWidth: 480 }}>
+      <div className={`flip-card${flipped ? ' flipped' : ''}`} onClick={() => setFlipped((current) => !current)} style={{ maxWidth: 480 }}>
         <div className="flip-card-inner">
           <div className="flip-card-face">{card.front}</div>
           <div className="flip-card-face flip-card-back">{card.back}</div>

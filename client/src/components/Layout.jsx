@@ -109,10 +109,7 @@ export default function Layout({ links, roleLabel }) {
 
 
           <div style={{ marginTop: 14 }}>
-            MedPro &middot; SA Technologies
-            <br />
-            <br />
-            info@satechnologies.co.ke
+            MedProHub &copy; 2026. All rights reserved.
           </div>
 
 

@@ -9,25 +9,25 @@ function GraphicList() {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    api('/graphics').then((d) => setGraphics(d.graphics)).catch((e) => setError(e.message));
+    api('/graphics').then((data) => setGraphics(data.graphics)).catch((err) => setError(err.message));
   }, []);
 
   if (error) return <div className="alert">{error}</div>;
-  if (!graphics) return <Loading label="Loading graphics…" />;
+  if (!graphics) return <Loading label="Loading clinical reference cards..." />;
 
   return (
     <>
       <div className="page-head">
-        <div><h1>Medical graphics</h1><div className="sub">Ksh 10 each &middot; interactive anatomy, ECG strips, and pathophysiology</div></div>
+        <div><h1>Clinical Reference Cards</h1><div className="sub">Ksh 10 each &middot; anatomy, ECG, and procedure reference material</div></div>
       </div>
       <div className="form-grid">
-        {graphics.map((g) => (
-          <Link key={g.graphic_id} to={`/student/graphics/${g.graphic_id}`} style={{ textDecoration: 'none' }}>
+        {graphics.map((graphic) => (
+          <Link key={graphic.graphic_id} to={`/student/reference-cards/${graphic.graphic_id}`} style={{ textDecoration: 'none' }}>
             <div className="card">
-              {g.thumbnail_url && <img src={g.thumbnail_url} alt="" style={{ width: '100%', borderRadius: 8, marginBottom: 10 }} />}
-              <h2>{g.title}</h2>
-              <span className="badge draft">{g.graphic_type}</span>
-              <div style={{ marginTop: 10, fontFamily: 'var(--font-mono)', color: 'var(--red)', fontWeight: 600 }}>{kes(g.price)}</div>
+              {graphic.thumbnail_url && <img src={graphic.thumbnail_url} alt="" style={{ width: '100%', borderRadius: 8, marginBottom: 10 }} />}
+              <h2>{graphic.title}</h2>
+              <span className="badge draft">{graphic.graphic_type}</span>
+              <div style={{ marginTop: 10, fontFamily: 'var(--font-mono)', color: 'var(--red)', fontWeight: 600 }}>{kes(graphic.price)}</div>
             </div>
           </Link>
         ))}
@@ -45,17 +45,23 @@ function GraphicDetail() {
   const [busy, setBusy] = useState(false);
 
   function load() {
-    api(`/graphics/${id}`).then((d) => { setGraphic(d.graphic); setUnlocked(d.unlocked); });
+    api(`/graphics/${id}`).then((data) => { setGraphic(data.graphic); setUnlocked(data.unlocked); });
   }
+
   useEffect(load, [id]);
 
   async function purchase() {
-    setBusy(true); setStatus('');
+    setBusy(true);
+    setStatus('');
     try {
-      const res = await api('/payments/purchase', { method: 'POST', body: { itemType: 'graphic', itemId: id, phone } });
-      setStatus(res.simulated ? 'Purchase simulated (dev mode) — access granted.' : 'Check your phone to complete the M-Pesa payment.');
+      const response = await api('/payments/purchase', { method: 'POST', body: { itemType: 'graphic', itemId: id, phone } });
+      setStatus(response.simulated ? 'Purchase simulated (dev mode) - access granted.' : 'Check your phone to complete the M-Pesa payment.');
       setTimeout(load, 1500);
-    } catch (e) { setStatus(e.message); } finally { setBusy(false); }
+    } catch (err) {
+      setStatus(err.message);
+    } finally {
+      setBusy(false);
+    }
   }
 
   if (!graphic) return <Loading />;
@@ -68,17 +74,17 @@ function GraphicDetail() {
         {unlocked ? (
           graphic.file_url
             ? <img src={graphic.file_url} alt={graphic.title} style={{ width: '100%', borderRadius: 8 }} />
-            : <p style={{ color: 'var(--ink-soft)' }}>This graphic hasn't had its file uploaded yet.</p>
+            : <p style={{ color: 'var(--ink-soft)' }}>This reference card has not had its file uploaded yet.</p>
         ) : (
           <>
             <div className="form-grid">
               <div className="field">
                 <label htmlFor="phone">M-Pesa phone number</label>
-                <input id="phone" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="07XX XXX XXX" />
+                <input id="phone" value={phone} onChange={(event) => setPhone(event.target.value)} placeholder="07XX XXX XXX" />
               </div>
             </div>
             <button className="primary" onClick={purchase} disabled={busy || !phone}>
-              {busy ? 'Processing…' : `Unlock for ${kes(graphic.price)}`}
+              {busy ? 'Processing...' : `Unlock for ${kes(graphic.price)}`}
             </button>
             {status && <div className="ok-note">{status}</div>}
           </>

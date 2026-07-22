@@ -27,6 +27,7 @@ const files = [
   'migration_001_elibrary_research_alerts.sql',
   'migration_002_fix_research_sources.sql',
   'migration_003_subscription_index.sql',
+  'migration_004_clinical_reference_cards.sql',
 ];
 
 if (!process.env.DATABASE_URL) {

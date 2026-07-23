@@ -26,7 +26,6 @@ export default function Layout({ links, roleLabel }) {
   const location = useLocation();
   const [navOpen, setNavOpen] = useState(false);
   const visibleLinks = links.filter((item) => item.group !== 'Aliases');
-  const mobileLinks = visibleLinks.flatMap((item) => item.items || []).slice(0, 4);
 
   useEffect(() => {
     setNavOpen(false);
@@ -56,14 +55,6 @@ export default function Layout({ links, roleLabel }) {
           </button>
         </div>
 
-        <div className="mobile-quicknav">
-          {mobileLinks.map((link) => (
-            <NavLink key={link.to} to={link.to} end={link.end} className="quick-pill">
-              {link.label}
-            </NavLink>
-          ))}
-        </div>
-
         <PulseLine color="#cc0000" />
 
         <nav>
@@ -88,7 +79,7 @@ export default function Layout({ links, roleLabel }) {
                       to={link.to}
                       end={link.end}
                     >
-                      {link.label}
+                      <span className="nav-link-copy">{link.label}</span>
                     </NavLink>
                   ))}
 
@@ -104,7 +95,7 @@ export default function Layout({ links, roleLabel }) {
                 to={item.to}
                 end={item.end}
               >
-                {item.label}
+                <span className="nav-link-copy">{item.label}</span>
               </NavLink>
             );
 

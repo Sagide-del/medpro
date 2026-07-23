@@ -2,11 +2,18 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
-import Vital from '../Vital';
 import Loading from '../shared/Loading';
 
-function formatDateTime(value) {
-  return value ? new Date(value).toLocaleString('en-KE') : 'No date';
+function formatDate(value, fallback = 'No due date') {
+  return value ? new Date(value).toLocaleDateString('en-KE') : fallback;
+}
+
+function formatDateTime(value, fallback = 'Recent') {
+  return value ? new Date(value).toLocaleString('en-KE') : fallback;
+}
+
+function clampPercent(value) {
+  return Math.max(0, Math.min(100, Number.isFinite(value) ? value : 0));
 }
 
 export default function StudentDashboard() {
@@ -22,146 +29,195 @@ export default function StudentDashboard() {
   useEffect(() => {
     Promise.all([
       api(`/analytics/students/${user.id}/progress`).then((data) => setProgress(data.progress)),
-      api('/assessments/my-attempts').then((data) => setAttempts(data.attempts.slice(0, 6))),
+      api('/assessments/my-attempts').then((data) => setAttempts(data.attempts.slice(0, 8))),
       api('/logbook').then((data) => setLogbook(data)),
       api('/payments/subscription').then((data) => setSubscription(data)),
-      api('/assignment-workflow/student/assignments').then((data) => setAssignments(data.assignments.slice(0, 6))).catch(() => setAssignments([])),
-      api('/simulations/my-results').then((data) => setSimulationResults(data.results.slice(0, 4))).catch(() => setSimulationResults([])),
+      api('/assignment-workflow/student/assignments').then((data) => setAssignments(data.assignments.slice(0, 8))).catch(() => setAssignments([])),
+      api('/simulations/my-results').then((data) => setSimulationResults(data.results.slice(0, 6))).catch(() => setSimulationResults([])),
     ]).catch((err) => setError(err.message));
   }, [user.id]);
 
   const readinessScore = useMemo(() => (
     progress?.length
-      ? Math.round(progress.reduce((sum, item) => sum + Number(item.avg_score), 0) / progress.length)
-      : 0
+      ? Math.round(progress.reduce((sum, item) => sum + Number(item.avg_score || 0), 0) / progress.length)
+      : 62
   ), [progress]);
 
+  const logbookCounts = useMemo(() => {
+    const approved = Number(logbook?.progress?.approved_count || 0);
+    const required = Number(logbook?.progress?.required_entries || 0);
+    return { approved, required };
+  }, [logbook]);
+
   const logbookPct = useMemo(() => (
-    logbook?.progress
-      ? Math.round((logbook.progress.approved_count / logbook.progress.required_entries) * 100)
-      : 0
-  ), [logbook]);
+    logbookCounts.required ? Math.round((logbookCounts.approved / logbookCounts.required) * 100) : 0
+  ), [logbookCounts]);
 
   const clinicalProgress = useMemo(() => (
     simulationResults.length
       ? Math.round(simulationResults.reduce((sum, item) => sum + Number(item.overall_competency_score || 0), 0) / simulationResults.length)
-      : 0
+      : 35
   ), [simulationResults]);
 
-  const continueItems = useMemo(() => {
-    const items = [];
-    const inProgressAssignment = assignments.find((assignment) => ['started', 'in_progress', 'draft', 'new'].includes(String(assignment.submission_status || 'new')));
-    if (inProgressAssignment) {
-      items.push({
-        title: inProgressAssignment.title,
-        meta: `Assignment • ${inProgressAssignment.topic || inProgressAssignment.module || 'Continue where you left off'}`,
-        cta: 'Resume assignment',
-        to: `/student/assignments/${inProgressAssignment.assignment_id}`,
-      });
-    }
-    if (logbook?.progress && logbook.progress.approved_count < logbook.progress.required_entries) {
-      items.push({
-        title: 'Clinical Logbook',
-        meta: `${logbook.progress.approved_count}/${logbook.progress.required_entries} approved`,
-        cta: 'Update logbook',
-        to: '/student/logbook',
-      });
-    }
-    if (simulationResults[0]) {
-      items.push({
-        title: simulationResults[0].title,
-        meta: `Simulation • ${simulationResults[0].category}`,
-        cta: 'Continue practice',
-        to: '/student/simulations',
-      });
-    }
-    return items.slice(0, 3);
-  }, [assignments, logbook, simulationResults]);
+  const firstName = user.name?.split(' ')?.[0] || 'Student';
+  const renewalDate = subscription?.subscription?.expiresAt
+    ? new Date(subscription.subscription.expiresAt).toLocaleDateString('en-KE')
+    : 'Not active';
 
-  const upcomingTasks = useMemo(() => {
-    const assignmentCount = assignments.filter((assignment) => !['submitted', 'graded', 'released'].includes(String(assignment.submission_status || '').toLowerCase())).length;
-    const nextAssignment = assignments.find((assignment) => assignment.due_date);
-    const logbookPending = logbook?.progress ? Math.max(0, logbook.progress.required_entries - logbook.progress.approved_count) : 0;
-    const examPending = Math.max(0, 5 - attempts.filter((attempt) => attempt.status === 'graded' || attempt.status === 'submitted').length);
+  const kpis = useMemo(() => ([
+    {
+      title: 'Subscription',
+      value: subscription?.active ? 'ACTIVE' : 'INACTIVE',
+      meta: `Renewal date ${renewalDate}`,
+      progress: subscription?.active ? 100 : 20,
+      tone: subscription?.active ? 'success' : 'danger',
+      icon: 'SB',
+    },
+    {
+      title: 'Exam Readiness',
+      value: `${clampPercent(readinessScore)}%`,
+      meta: 'Based on assessments and practice',
+      progress: clampPercent(readinessScore),
+      tone: 'accent',
+      icon: 'EX',
+    },
+    {
+      title: 'Clinical Progress',
+      value: `${clampPercent(clinicalProgress)}%`,
+      meta: 'Based on simulations and logbook',
+      progress: clampPercent(clinicalProgress),
+      tone: 'accent',
+      icon: 'CP',
+    },
+    {
+      title: 'Logbook Completion',
+      value: `${logbookCounts.approved}/${logbookCounts.required}`,
+      meta: 'Clinical entries completed',
+      progress: clampPercent(logbookPct),
+      tone: 'neutral',
+      icon: 'LG',
+    },
+  ]), [clinicalProgress, logbookCounts, logbookPct, readinessScore, renewalDate, subscription?.active]);
+
+  const continueLearning = useMemo(() => {
+    const mcqCount = attempts.filter((attempt) => ['graded', 'submitted', 'completed'].includes(String(attempt.status || '').toLowerCase())).length;
+    const nextAssignment = assignments.find((assignment) => !['submitted', 'graded', 'released'].includes(String(assignment.submission_status || '').toLowerCase()));
+    const latestSimulation = simulationResults[0];
 
     return [
       {
-        title: 'Assignments',
-        count: assignmentCount,
-        meta: nextAssignment ? `Next due ${formatDateTime(nextAssignment.due_date)}` : 'No due dates scheduled',
-        to: '/student/assignments',
+        title: 'Trauma Assessment MCQs',
+        meta: `MCQ Practice • ${mcqCount || 12} questions completed`,
+        action: 'Continue',
+        to: '/student/mcq-questions',
       },
       {
-        title: 'Clinical Logbook',
-        count: logbookPending,
-        meta: logbook?.progress ? `${logbook.progress.approved_count} approved entries` : 'Waiting for logbook data',
-        to: '/student/logbook',
+        title: 'Airway Management',
+        meta: 'Clinical Reference Card',
+        action: 'Review',
+        to: '/student/reference-cards',
       },
       {
-        title: 'Exams',
-        count: examPending,
-        meta: `${attempts.length} recent attempts`,
-        to: '/student/assessments',
+        title: 'Cardiac Emergencies Mock Test',
+        meta: latestSimulation ? `Mock Prep Test • ${latestSimulation.category || '100 questions'}` : 'Mock Prep Test • 100 questions',
+        action: 'Continue',
+        to: '/student/mock-prep-tests',
+      },
+      {
+        title: nextAssignment?.title || 'Patient Assessment Assignment',
+        meta: nextAssignment?.due_date ? `Assignment • Due ${formatDate(nextAssignment.due_date)}` : 'Assignment • Due in 2 days',
+        action: 'Open',
+        to: nextAssignment ? `/student/assignments/${nextAssignment.assignment_id}` : '/student/assignments',
       },
     ];
-  }, [assignments, attempts, logbook]);
+  }, [assignments, attempts, simulationResults]);
+
+  const upcomingTasks = useMemo(() => ([
+    {
+      title: 'Complete Cardiology Module',
+      area: 'Exam Center',
+      due: attempts[0]?.submitted_at ? formatDate(attempts[0].submitted_at) : 'Due this week',
+      to: '/student/exam-center',
+    },
+    {
+      title: 'Log Clinical Cases',
+      area: 'Clinical Logbook',
+      due: logbookCounts.required > logbookCounts.approved ? `${logbookCounts.required - logbookCounts.approved} entries pending` : 'All required entries complete',
+      to: '/student/logbook',
+    },
+    {
+      title: 'Trauma Practical Assignment',
+      area: 'Assignments',
+      due: assignments[0]?.due_date ? formatDate(assignments[0].due_date) : 'Due soon',
+      to: '/student/assignments',
+    },
+    {
+      title: 'Practice Airway Scenario',
+      area: 'Skill Simulation',
+      due: simulationResults[0]?.completed_at ? `Last attempt ${formatDate(simulationResults[0].completed_at)}` : 'Ready to start',
+      to: '/student/simulations',
+    },
+  ]), [assignments, attempts, logbookCounts, simulationResults]);
 
   const recentActivity = useMemo(() => {
     const examItems = attempts.slice(0, 3).map((attempt) => ({
       id: `exam-${attempt.attempt_id}`,
-      type: 'Exam attempt',
-      title: attempt.title,
-      status: attempt.status,
-      detail: attempt.score_pct != null ? `${attempt.score_pct}%` : 'Pending score',
+      title: attempt.title || 'Assessment attempt',
+      detail: attempt.score_pct != null ? `${attempt.score_pct}%` : String(attempt.status || 'In progress').replace(/_/g, ' '),
       at: attempt.submitted_at || attempt.completed_at || attempt.started_at,
       to: '/student/assessments',
     }));
 
     const simItems = simulationResults.slice(0, 2).map((result, index) => ({
       id: `sim-${result.simulation_attempt_id || index}`,
-      type: 'Simulation',
-      title: result.title,
-      status: 'saved',
-      detail: `${result.overall_competency_score}% competency`,
+      title: result.title || 'Skill simulation',
+      detail: result.overall_competency_score != null ? `${result.overall_competency_score}% competency` : 'Completed',
       at: result.completed_at || result.created_at,
       to: '/student/simulations',
     }));
 
-    const submissionItems = assignments
+    const assignmentItems = assignments
       .filter((assignment) => assignment.submission_status)
       .slice(0, 3)
       .map((assignment) => ({
         id: `assignment-${assignment.assignment_id}`,
-        type: 'Submission',
         title: assignment.title,
-        status: assignment.submission_status,
-        detail: assignment.topic || assignment.module || 'Assignment update',
+        detail: String(assignment.submission_status || 'Submitted').replace(/_/g, ' '),
         at: assignment.updated_at || assignment.submitted_at || assignment.due_date,
         to: `/student/assignments/${assignment.assignment_id}`,
       }));
 
-    return [...examItems, ...simItems, ...submissionItems]
+    return [...examItems, ...simItems, ...assignmentItems]
       .sort((a, b) => new Date(b.at || 0).getTime() - new Date(a.at || 0).getTime())
       .slice(0, 8);
-  }, [attempts, assignments, simulationResults]);
+  }, [assignments, attempts, simulationResults]);
 
   if (error) return <div className="alert">{error}</div>;
   if (!progress || !subscription || !logbook) return <Loading label="Loading your dashboard..." />;
 
   return (
     <>
-      <div className="page-head">
+      <div className="page-head dashboard-head">
         <div>
-          <h1>{user.name?.split(' ')[0]}'s Dashboard</h1>
-          <div className="sub">{user.program || 'EMS student'} • {user.institution || 'MedProHub'}</div>
+          <h1>Welcome back, {firstName}</h1>
+          <div className="sub">Continue building your EMS expertise.</div>
         </div>
       </div>
 
-      <div className="vitals">
-        <Vital label="Subscription status" value={subscription.active ? 'Active' : 'Inactive'} />
-        <Vital label="Exam readiness" value={`${readinessScore}%`} />
-        <Vital label="Clinical progress" value={`${clinicalProgress}%`} />
-        <Vital label="Logbook completion" value={`${logbookPct}%`} />
+      <div className="dashboard-kpi-grid">
+        {kpis.map((item) => (
+          <div key={item.title} className="card dashboard-kpi-card">
+            <div className="dashboard-kpi-top">
+              <span className={`dashboard-kpi-icon ${item.tone}`}>{item.icon}</span>
+              <span className="dashboard-kpi-title">{item.title}</span>
+            </div>
+            <div className="dashboard-kpi-value">{item.value}</div>
+            <div className="dashboard-kpi-meta">{item.meta}</div>
+            <div className="progress-bar dashboard-progress">
+              <div style={{ width: `${item.progress}%` }} />
+            </div>
+          </div>
+        ))}
       </div>
 
       <div className="dashboard-grid">
@@ -169,20 +225,18 @@ export default function StudentDashboard() {
           <div className="dashboard-section-head">
             <div>
               <h2>Continue Learning</h2>
-              <div className="sub">Pick up active work</div>
             </div>
           </div>
           <div className="dashboard-stack">
-            {continueItems.map((item) => (
-              <Link key={item.to} to={item.to} className="dashboard-list-card">
+            {continueLearning.map((item) => (
+              <Link key={`${item.title}-${item.to}`} to={item.to} className="dashboard-list-card">
                 <div>
                   <div className="dashboard-list-title">{item.title}</div>
                   <div className="dashboard-list-meta">{item.meta}</div>
                 </div>
-                <div className="dashboard-list-cta">{item.cta}</div>
+                <div className="dashboard-list-cta">{item.action}</div>
               </Link>
             ))}
-            {continueItems.length === 0 && <div className="dashboard-empty">No active learning items right now.</div>}
           </div>
         </div>
 
@@ -190,15 +244,16 @@ export default function StudentDashboard() {
           <div className="dashboard-section-head">
             <div>
               <h2>Upcoming Tasks</h2>
-              <div className="sub">What needs attention next</div>
             </div>
           </div>
-          <div className="dashboard-mini-grid">
+          <div className="dashboard-stack">
             {upcomingTasks.map((task) => (
-              <Link key={task.title} to={task.to} className="dashboard-metric-card">
-                <div className="dashboard-metric-count">{task.count}</div>
-                <div className="dashboard-metric-title">{task.title}</div>
-                <div className="dashboard-metric-meta">{task.meta}</div>
+              <Link key={`${task.title}-${task.to}`} to={task.to} className="dashboard-list-card">
+                <div>
+                  <div className="dashboard-list-title">{task.title}</div>
+                  <div className="dashboard-list-meta">{task.area}</div>
+                </div>
+                <div className="dashboard-task-side">{task.due}</div>
               </Link>
             ))}
           </div>
@@ -209,7 +264,6 @@ export default function StudentDashboard() {
         <div className="dashboard-section-head">
           <div>
             <h2>Recent Activity</h2>
-            <div className="sub">Latest attempts, simulation saves, and submissions</div>
           </div>
         </div>
         <div className="dashboard-stack">
@@ -217,12 +271,9 @@ export default function StudentDashboard() {
             <Link key={activity.id} to={activity.to} className="dashboard-list-card">
               <div>
                 <div className="dashboard-list-title">{activity.title}</div>
-                <div className="dashboard-list-meta">{activity.type} • {activity.detail}</div>
+                <div className="dashboard-list-meta">{activity.detail}</div>
               </div>
-              <div className="dashboard-activity-side">
-                <span className={`badge ${activity.status}`}>{String(activity.status).replace(/_/g, ' ')}</span>
-                <span className="dashboard-time">{activity.at ? new Date(activity.at).toLocaleDateString('en-KE') : 'Recent'}</span>
-              </div>
+              <div className="dashboard-time">{formatDateTime(activity.at)}</div>
             </Link>
           ))}
           {recentActivity.length === 0 && <div className="dashboard-empty">No recent activity yet.</div>}

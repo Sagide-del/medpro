@@ -4,30 +4,30 @@ const PREP_MODULES = [
   {
     to: '/student/mcq-questions',
     title: 'MCQ Questions',
-    description: 'Fast question drilling for short daily study sessions.',
+    description: 'Question practice',
     accent: '#c62828',
-    action: 'Open MCQs',
+    action: 'Open',
   },
   {
     to: '/student/mock-prep-tests',
     title: 'Mock Prep Tests',
-    description: 'Timed prep sets built for realistic revision on mobile or desktop.',
+    description: 'Timed revision sets',
     accent: '#ef6c00',
-    action: 'Start prep test',
+    action: 'Open',
   },
   {
     to: '/student/assessments',
     title: 'Assessments',
-    description: 'Full assessment runs for deeper competency checks.',
+    description: 'Scored assessments',
     accent: '#1565c0',
-    action: 'View assessments',
+    action: 'Open',
   },
   {
     to: '/student/reference-cards',
     title: 'Clinical Reference Cards',
-    description: 'Quick-look clinical references for airway, trauma, anatomy, and cardiology.',
+    description: 'Clinical review library',
     accent: '#2e7d32',
-    action: 'Open library',
+    action: 'Open',
   },
 ];
 
@@ -37,21 +37,7 @@ export default function ExamPreparation() {
       <div className="page-head">
         <div>
           <h1>Exam Center</h1>
-          <div className="sub">Focused revision lanes with less clutter.</div>
-        </div>
-      </div>
-
-      <div className="card student-hero-card" style={{ marginBottom: 18 }}>
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
-          {['Android ready', 'Fast review', 'Low clutter'].map((item) => (
-            <span key={item} className="badge draft">{item}</span>
-          ))}
-        </div>
-        <h2 style={{ marginBottom: 8 }}>Everything you need, grouped by action</h2>
-        <div className="student-chip-row">
-          {PREP_MODULES.map((module) => (
-            <span key={module.title} className="student-chip">{module.title}</span>
-          ))}
+          <div className="sub">Choose a study lane.</div>
         </div>
       </div>
 

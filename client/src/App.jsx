@@ -75,7 +75,6 @@ const STUDENT_LINKS = [
     group: 'Learn',
     items: [
       { to: '/student/exam-center', label: 'Exam Center' },
-      { to: '/student/clinical-library', label: 'Clinical Library' },
       { to: '/student/assignments', label: 'Assignments' },
       { to: '/student/simulations', label: 'Skill Simulations' },
     ],
@@ -91,14 +90,13 @@ const STUDENT_LINKS = [
     group: 'Progress',
     items: [
       { to: '/student/progress-analytics', label: 'Analytics' },
-      { to: '/student/assessments', label: 'Assessments' },
     ],
   },
   {
     group: 'Community',
     items: [
-      { to: '/student/community', label: 'Community' },
-      { to: '/student/elibrary', label: 'Resources' },
+      { to: '/student/community', label: 'My Study Group' },
+      { to: '/student/elibrary', label: 'E-Library' },
     ],
   },
   {

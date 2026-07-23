@@ -69,7 +69,7 @@ export default function Payments() {
       <div className="page-head">
         <div>
           <h1>Student Subscription</h1>
-          <div className="sub">One plan. Full student access.</div>
+          <div className="sub">Manage your student plan.</div>
         </div>
       </div>
 
@@ -77,7 +77,7 @@ export default function Payments() {
         <div className="card student-plan-card" style={{ marginBottom: 16 }}>
           <div className="student-plan-header">
             <div>
-              <div className="student-plan-kicker">Student plan</div>
+              <div className="student-plan-kicker">MedProHub Student Plan</div>
               <h2 style={{ marginBottom: 6 }}>MedProHub Student Plan</h2>
             </div>
             <div className="student-plan-price">KES {Number(currentPlan?.price || 300).toLocaleString('en-KE')}<small>/month</small></div>
@@ -97,12 +97,11 @@ export default function Payments() {
 
           <div className="student-feature-list">
             {[
-              'MCQ Questions',
-              'Mock Prep Tests',
+              'Exam Preparation',
               'Clinical Reference Cards',
-              'Assessments',
-              'Assignments',
               'Skill Simulations',
+              'Assignments',
+              'Progress Tracking',
             ].map((feature) => <div key={feature} className="student-feature-item">{feature}</div>)}
           </div>
 
@@ -111,7 +110,7 @@ export default function Payments() {
             <input id="student-phone" value={phone} onChange={(event) => setPhone(event.target.value)} placeholder="07XX XXX XXX" />
           </div>
           <button className="primary student-cta" onClick={renew} disabled={busy || !phone}>
-            {busy ? 'Processing...' : 'Pay with IntaSend'}
+            {busy ? 'Processing...' : 'Pay KES 300'}
           </button>
           {status && <div className="ok-note" style={{ marginTop: 12 }}>{status}</div>}
         </div>

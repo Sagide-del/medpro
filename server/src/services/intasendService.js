@@ -6,13 +6,33 @@ import { SubscriptionPlan } from '../models/SubscriptionPlan.js';
 import { handleCallback as finalizeSubscriptionPayment } from './paymentService.js';
 import { logger } from '../utils/logger.js';
 
-const BASE_URL = process.env.INTASEND_BASE_URL || 'https://sandbox.intasend.com/api/v1';
+function trimEnv(value) {
+  return typeof value === 'string' ? value.trim() : value;
+}
+
+function currentMode() {
+  const explicit = trimEnv(process.env.INTASEND_MODE);
+  if (explicit) return explicit.toLowerCase();
+  const key = trimEnv(process.env.INTASEND_PUBLIC_KEY) || '';
+  if (key.toLowerCase().includes('live')) return 'production';
+  return 'sandbox';
+}
+
+function baseUrl() {
+  const configured = trimEnv(process.env.INTASEND_BASE_URL);
+  if (configured) return configured.replace(/\/+$/, '');
+  return currentMode() === 'production'
+    ? 'https://api.intasend.com/api/v1'
+    : 'https://sandbox.intasend.com/api/v1';
+}
 
 function usingPlaceholders() {
-  return !process.env.INTASEND_PUBLIC_KEY
-    || !process.env.INTASEND_SECRET_KEY
-    || process.env.INTASEND_PUBLIC_KEY === 'your_intasend_public_key'
-    || process.env.INTASEND_SECRET_KEY === 'your_intasend_secret_key';
+  const publicKey = trimEnv(process.env.INTASEND_PUBLIC_KEY);
+  const secretKey = trimEnv(process.env.INTASEND_SECRET_KEY);
+  return !publicKey
+    || !secretKey
+    || publicKey === 'your_intasend_public_key'
+    || secretKey === 'your_intasend_secret_key';
 }
 
 function normalizeWebhookPayload(body = {}) {
@@ -41,25 +61,46 @@ export async function createPayment({ amount, currency = 'KES', email, phone, na
     };
   }
 
-  const res = await fetch(`${BASE_URL}/checkout/`, {
+  const endpoint = `${baseUrl()}/checkout/`;
+  const publicKey = trimEnv(process.env.INTASEND_PUBLIC_KEY);
+  const secretKey = trimEnv(process.env.INTASEND_SECRET_KEY);
+  const payload = {
+    public_key: publicKey,
+    amount,
+    currency,
+    email,
+    phone_number: phone,
+    first_name: name?.split(' ')?.[0] || 'MedProHub',
+    last_name: name?.split(' ')?.slice(1).join(' ') || 'Student',
+    api_ref: apiRef,
+    redirect_url: redirectUrl || trimEnv(process.env.INTASEND_REDIRECT_URL),
+    host: trimEnv(process.env.INTASEND_HOST_URL) || undefined,
+    method: 'M-PESA',
+    channel: 'MOBILE',
+  };
+
+  logger.info({
+    intasendConfigured: Boolean(secretKey),
+    hasPublicKey: Boolean(publicKey),
+    mode: currentMode(),
+    endpoint,
+  });
+
+  logger.info({
+    amount,
+    currency,
+    hasEmail: Boolean(email),
+    hasPhone: Boolean(phone),
+    referenceId: apiRef,
+  });
+
+  const res = await fetch(endpoint, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'X-IntaSend-Public-Key-API': process.env.INTASEND_PUBLIC_KEY,
-      Authorization: `Bearer ${process.env.INTASEND_SECRET_KEY}`,
+      'X-IntaSend-Public-API-Key': publicKey,
     },
-    body: JSON.stringify({
-      public_key: process.env.INTASEND_PUBLIC_KEY,
-      amount,
-      currency,
-      email,
-      phone_number: phone,
-      first_name: name?.split(' ')?.[0] || 'MedProHub',
-      last_name: name?.split(' ')?.slice(1).join(' ') || 'Student',
-      api_ref: apiRef,
-      redirect_url: redirectUrl || process.env.INTASEND_REDIRECT_URL,
-      host: process.env.INTASEND_HOST_URL || undefined,
-    }),
+    body: JSON.stringify(payload),
   });
 
   const data = await res.json().catch(() => ({}));

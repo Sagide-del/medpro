@@ -2,6 +2,7 @@ import { StudentSubscription } from '../models/StudentSubscription.js';
 import { Institution } from '../models/Institution.js';
 import { SubscriptionPlan } from '../models/SubscriptionPlan.js';
 import { Payment } from '../models/Payment.js';
+import { logger } from '../utils/logger.js';
 
 const REMINDER_OFFSETS = [7, 3, 1];
 const PREMIUM_FEATURES = {
@@ -11,6 +12,18 @@ const PREMIUM_FEATURES = {
   mock_exams: 'Mock Exams',
   premium_assessments: 'Premium Assessments',
 };
+let bypassLogged = false;
+
+function isBypassEnabled() {
+  return String(process.env.MEDPRO_SUBSCRIPTION_BYPASS || '').trim().toLowerCase() === 'true';
+}
+
+function logBypassOnce() {
+  if (!bypassLogged) {
+    logger.warn('Subscription bypass mode enabled');
+    bypassLogged = true;
+  }
+}
 
 function toIso(value) {
   return value ? new Date(value).toISOString() : null;
@@ -46,6 +59,19 @@ function normalizeStatus(record, fallback = 'expired') {
 
 export async function resolveStudentSubscriptionAccess(user) {
   const plan = await SubscriptionPlan.findActiveByCode('student_monthly');
+  if (isBypassEnabled()) {
+    logBypassOnce();
+    return {
+      allowed: true,
+      source: 'bypass',
+      status: 'active',
+      expiresAt: null,
+      plan,
+      reminders: [],
+      premiumFeatures: Object.values(PREMIUM_FEATURES),
+    };
+  }
+
   const personalActive = await StudentSubscription.findActive(user.sub);
   if (personalActive) {
     return {

@@ -3,85 +3,84 @@ import { api } from '../../services/api';
 import Loading from '../shared/Loading';
 
 export default function Videos() {
-  const [videos, setVideos] = useState(null);
-  const [error, setError] = useState('');
-  const [form, setForm] = useState({ title: '', description: '', skillCategory: '' });
-  const [file, setFile] = useState(null);
+  const [assignments, setAssignments] = useState(null);
   const [status, setStatus] = useState('');
-  const [busy, setBusy] = useState(false);
+  const [files, setFiles] = useState({});
+  const [notes, setNotes] = useState({});
+  const [busyId, setBusyId] = useState('');
 
-  function load() {
-    api('/videos').then((d) => setVideos(d.videos)).catch((e) => setError(e.message));
+  async function load() {
+    const data = await api('/practical-videos');
+    setAssignments(data.assignments);
   }
-  useEffect(load, []);
 
-  async function upload() {
+  useEffect(() => {
+    load().catch((error) => setStatus(error.message));
+  }, []);
+
+  async function upload(assignmentId) {
+    const file = files[assignmentId];
     if (!file) return;
-    setBusy(true); setStatus('');
+    setBusyId(assignmentId);
     try {
-      const fd = new FormData();
-      fd.append('file', file);
-      fd.append('title', form.title);
-      fd.append('description', form.description);
-      fd.append('skillCategory', form.skillCategory);
-      await api('/videos/upload', { method: 'POST', body: fd });
-      setStatus('Video uploaded and submitted for review.');
-      setForm({ title: '', description: '', skillCategory: '' });
-      setFile(null);
-      load();
-    } catch (e) { setStatus(e.message); } finally { setBusy(false); }
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('notes', notes[assignmentId] || '');
+      await api(`/practical-videos/${assignmentId}/submit`, { method: 'POST', body: formData });
+      setStatus('Practical video uploaded successfully.');
+      setFiles({ ...files, [assignmentId]: null });
+      setNotes({ ...notes, [assignmentId]: '' });
+      await load();
+    } catch (error) {
+      setStatus(error.message);
+    } finally {
+      setBusyId('');
+    }
   }
 
-  if (error) return <div className="alert">{error}</div>;
-  if (!videos) return <Loading label="Loading your videos…" />;
+  if (!assignments) return <Loading label="Loading video practicals..." />;
 
   return (
     <>
-      <div className="page-head"><div><h1>Skills videos</h1><div className="sub">Upload demonstrations for teacher review</div></div></div>
-
-      <div className="card">
-        <h2>Upload a new video</h2>
-        <div className="form-grid">
-          <div className="field">
-            <label htmlFor="title">Title</label>
-            <input id="title" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} />
-          </div>
-          <div className="field">
-            <label htmlFor="skill">Skill category</label>
-            <input id="skill" value={form.skillCategory} onChange={(e) => setForm({ ...form, skillCategory: e.target.value })} placeholder="e.g. BLS/CPR" />
-          </div>
+      <div className="page-head">
+        <div>
+          <h1>Video practicals</h1>
+          <div className="sub">Submit only teacher-assigned practical demonstrations. Simulations remain separate.</div>
         </div>
-        <div className="field">
-          <label htmlFor="desc">Description</label>
-          <textarea id="desc" rows="2" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
-        </div>
-        <div className="field">
-          <label htmlFor="file">Video file</label>
-          <input id="file" type="file" accept="video/*" onChange={(e) => setFile(e.target.files?.[0] || null)} />
-        </div>
-        <button className="primary" onClick={upload} disabled={busy || !file || !form.title}>
-          {busy ? 'Uploading…' : 'Upload video'}
-        </button>
-        {status && <div className="ok-note">{status}</div>}
       </div>
 
-      <div className="card">
-        <h2>Your submissions</h2>
-        <table>
-          <thead><tr><th>Title</th><th>Skill</th><th>Status</th><th>Uploaded</th></tr></thead>
-          <tbody>
-            {videos.map((v) => (
-              <tr key={v.video_id}>
-                <td>{v.title}</td>
-                <td>{v.skill_category || '—'}</td>
-                <td><span className={`badge ${v.status}`}>{v.status.replace('_', ' ')}</span></td>
-                <td className="num">{new Date(v.uploaded_at).toLocaleDateString('en-KE')}</td>
-              </tr>
-            ))}
-            {videos.length === 0 && <tr><td colSpan="4" style={{ color: 'var(--ink-soft)' }}>No videos yet.</td></tr>}
-          </tbody>
-        </table>
-      </div>
+      {status && <div className="ok-note">{status}</div>}
+
+      {assignments.map((assignment) => (
+        <div className="card" key={assignment.assignment_id}>
+          <h2>{assignment.title}</h2>
+          <div className="sub">{assignment.instructions || 'No instructions provided.'}</div>
+          <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginTop: 12 }}>
+            <span className={`badge ${assignment.submission_status || 'submitted'}`}>{assignment.submission_status || 'not submitted'}</span>
+            <span>Due: {assignment.due_date ? new Date(assignment.due_date).toLocaleString('en-KE') : 'Open submission'}</span>
+            <span>Result: {assignment.released_at ? 'Released' : 'Pending teacher release'}</span>
+          </div>
+          <div className="field" style={{ marginTop: 16 }}>
+            <label>Submission notes</label>
+            <textarea rows="3" value={notes[assignment.assignment_id] || ''} onChange={(event) => setNotes({ ...notes, [assignment.assignment_id]: event.target.value })} />
+          </div>
+          <div className="field">
+            <label>Upload practical video</label>
+            <input type="file" accept="video/*" onChange={(event) => setFiles({ ...files, [assignment.assignment_id]: event.target.files?.[0] || null })} />
+          </div>
+          <button className="primary" disabled={!files[assignment.assignment_id] || busyId === assignment.assignment_id} onClick={() => upload(assignment.assignment_id)}>
+            {busyId === assignment.assignment_id ? 'Uploading...' : 'Upload submission'}
+          </button>
+          {assignment.file_url && (
+            <p style={{ marginTop: 14 }}>
+              <a href={assignment.file_url} target="_blank" rel="noreferrer">View your uploaded submission</a>
+            </p>
+          )}
+          {assignment.teacher_feedback && <div className="ok-note">Teacher feedback: {assignment.teacher_feedback}</div>}
+        </div>
+      ))}
+
+      {assignments.length === 0 && <div className="card"><div className="sub">No practical video assignments have been issued yet.</div></div>}
     </>
   );
 }

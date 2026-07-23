@@ -102,4 +102,151 @@ export const analyticsService = {
     );
     return rows;
   },
+
+  async studentReadiness(studentId) {
+    const [{ rows: progress }, { rows: simulations }, { rows: assignments }, { rows: clinical }] = await Promise.all([
+      query(
+        `SELECT COALESCE(AVG(score_pct),0)::numeric(5,2) AS exam_readiness
+         FROM student_performance
+         WHERE student_id = $1`,
+        [studentId]
+      ),
+      query(
+        `SELECT COALESCE(AVG(score),0)::numeric(5,2) AS simulation_score
+         FROM simulation_attempts
+         WHERE student_id = $1`,
+        [studentId]
+      ).catch(() => ({ rows: [{ simulation_score: 0 }] })),
+      query(
+        `SELECT COUNT(*) FILTER (WHERE status = 'graded')::int AS graded_assignments,
+                COALESCE(AVG(score_pct),0)::numeric(5,2) AS assignment_score
+         FROM assignment_submissions
+         WHERE student_id = $1`,
+        [studentId]
+      ).catch(() => ({ rows: [{ graded_assignments: 0, assignment_score: 0 }] })),
+      query(
+        `SELECT COUNT(*) FILTER (WHERE status = 'approved')::int AS approved_skills,
+                COALESCE(SUM(hours_completed),0)::numeric(6,2) AS completed_hours
+         FROM clinical_activity_records
+         WHERE student_id = $1`,
+        [studentId]
+      ).catch(() => ({ rows: [{ approved_skills: 0, completed_hours: 0 }] })),
+    ]);
+
+    return {
+      examReadiness: progress[0]?.exam_readiness || 0,
+      simulationScore: simulations[0]?.simulation_score || 0,
+      assignmentPerformance: assignments[0] || { graded_assignments: 0, assignment_score: 0 },
+      clinicalCompetency: clinical[0] || { approved_skills: 0, completed_hours: 0 },
+    };
+  },
+
+  async teacherPerformance(teacherId) {
+    const [{ rows: practicalVideos }, { rows: exams }, { rows: analytics }] = await Promise.all([
+      query(
+        `SELECT COUNT(*)::int AS assignments_created,
+                COUNT(*) FILTER (WHERE status = 'published')::int AS published_assignments
+         FROM practical_video_assignments
+         WHERE teacher_id = $1`,
+        [teacherId]
+      ),
+      query(
+        `SELECT COUNT(*)::int AS exams_created,
+                COALESCE(AVG(a.score),0)::numeric(5,2) AS average_exam_score
+         FROM proctored_exams e
+         LEFT JOIN proctored_exam_attempts a ON a.exam_id = e.exam_id
+         WHERE e.teacher_id = $1`,
+        [teacherId]
+      ),
+      query(
+        `SELECT group_id, AVG(avg_score)::numeric(5,2) AS class_average
+         FROM (
+           SELECT gm.group_id, aa.student_id, AVG(aa.score_pct) AS avg_score
+           FROM group_members gm
+           JOIN assessment_attempts aa ON aa.student_id = gm.student_id
+           GROUP BY gm.group_id, aa.student_id
+         ) grouped
+         GROUP BY group_id
+         ORDER BY class_average DESC
+         LIMIT 10`
+      ),
+    ]);
+
+    return {
+      practicalVideos: practicalVideos[0] || { assignments_created: 0, published_assignments: 0 },
+      exams: exams[0] || { exams_created: 0, average_exam_score: 0 },
+      classPerformance: analytics,
+    };
+  },
+
+  async institutionAnalytics(institutionId) {
+    const [{ rows: users }, { rows: exams }, { rows: rotations }, { rows: activity }] = await Promise.all([
+      query(
+        `SELECT role, COUNT(*)::int AS total
+         FROM users
+         WHERE institution_id = $1
+         GROUP BY role`,
+        [institutionId]
+      ),
+      query(
+        `SELECT COUNT(*)::int AS exams,
+                COALESCE(AVG(a.score),0)::numeric(5,2) AS average_score
+         FROM proctored_exams e
+         LEFT JOIN proctored_exam_attempts a ON a.exam_id = e.exam_id
+         WHERE e.institution_id = $1`,
+        [institutionId]
+      ),
+      query(
+        `SELECT COUNT(*)::int AS rotations,
+                COUNT(*) FILTER (WHERE status = 'scheduled')::int AS scheduled
+         FROM clinical_rotations
+         WHERE institution_id = $1`,
+        [institutionId]
+      ),
+      query(
+        `SELECT COUNT(*)::int AS clinical_entries,
+                COUNT(*) FILTER (WHERE status = 'approved')::int AS approved_entries
+         FROM clinical_activity_records car
+         JOIN clinical_rotation_assignments cra ON cra.assignment_id = car.rotation_assignment_id
+         JOIN clinical_rotations r ON r.rotation_id = cra.rotation_id
+         WHERE r.institution_id = $1`,
+        [institutionId]
+      ),
+    ]);
+
+    return {
+      users,
+      exams: exams[0] || { exams: 0, average_score: 0 },
+      rotations: rotations[0] || { rotations: 0, scheduled: 0 },
+      activity: activity[0] || { clinical_entries: 0, approved_entries: 0 },
+    };
+  },
+
+  async platformMetrics() {
+    const [{ rows: growth }, { rows: revenue }, { rows: institutions }] = await Promise.all([
+      query(
+        `SELECT date_trunc('month', created_at) AS month, COUNT(*)::int AS users
+         FROM users
+         WHERE created_at >= now() - interval '12 months'
+         GROUP BY 1
+         ORDER BY 1`
+      ),
+      query(
+        `SELECT COALESCE(SUM(amount),0) AS total_revenue, COUNT(*)::int AS transactions
+         FROM revenue_transactions
+         WHERE status = 'completed'`
+      ),
+      query(
+        `SELECT COUNT(*)::int AS institutions,
+                COUNT(*) FILTER (WHERE status = 'active')::int AS active_institutions
+         FROM institutions`
+      ).catch(() => ({ rows: [{ institutions: 0, active_institutions: 0 }] })),
+    ]);
+
+    return {
+      growth,
+      revenue: revenue[0] || { total_revenue: 0, transactions: 0 },
+      institutions: institutions[0] || { institutions: 0, active_institutions: 0 },
+    };
+  },
 };

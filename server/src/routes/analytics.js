@@ -44,4 +44,26 @@ router.get('/subscriptions/expiring', authenticate, requireRole('super_admin'), 
   res.json({ expiring });
 }));
 
+router.get('/student-readiness', authenticate, requireRole('student', 'teacher', 'institution_admin', 'super_admin'), asyncHandler(async (req, res) => {
+  const studentId = req.user.role === 'student' ? req.user.sub : (req.query.studentId || req.user.sub);
+  const readiness = await analyticsService.studentReadiness(studentId);
+  res.json({ readiness });
+}));
+
+router.get('/teacher-performance', authenticate, requireRole('teacher', 'institution_admin', 'super_admin'), asyncHandler(async (req, res) => {
+  const performance = await analyticsService.teacherPerformance(req.user.sub);
+  res.json({ performance });
+}));
+
+router.get('/institution-dashboard', authenticate, requireRole('institution_admin', 'super_admin'), asyncHandler(async (req, res) => {
+  const institutionId = req.user.role === 'institution_admin' ? req.user.institutionId : req.query.institutionId;
+  const analytics = await analyticsService.institutionAnalytics(institutionId);
+  res.json({ analytics });
+}));
+
+router.get('/platform-metrics', authenticate, requireRole('super_admin'), asyncHandler(async (_req, res) => {
+  const metrics = await analyticsService.platformMetrics();
+  res.json({ metrics });
+}));
+
 export default router;

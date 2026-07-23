@@ -24,6 +24,7 @@ import StudentELibrary from './components/student/ELibrary';
 import StudentProgressAnalytics from './components/student/ProgressAnalytics';
 import StudentResearch from './components/student/Research';
 import StudentSimulations from './components/student/Simulations';
+import StudentProctoredExams from './components/student/ProctoredExams';
 
 import TeacherDashboard from './components/teacher/Dashboard';
 import TeacherAssignments from './components/teacher/Assignments';
@@ -38,12 +39,15 @@ import TeacherGradeSubmissions from './components/teacher/GradeSubmissions';
 import TeacherReviewLogbook from './components/teacher/ReviewLogbook';
 import TeacherAnalytics from './components/teacher/Analytics';
 import TeacherSendAlerts from './components/teacher/SendAlerts';
+import TeacherVideoAssessments from './components/teacher/VideoAssessments';
+import TeacherProctoredExams from './components/teacher/ProctoredExams';
 
 import AdminClinicalReferenceCardsManager from './components/admin/ClinicalReferenceCardsManager';
 import AdminDashboard from './components/admin/Dashboard';
 import AdminInstitutions from './components/admin/Institutions';
 import AdminUsers from './components/admin/Users';
 import AdminRevenue from './components/admin/Revenue';
+import AdminClinicalRotations from './components/admin/ClinicalRotations';
 
 import SuperAdminDashboard from './components/superadmin/Dashboard';
 import SuperAdminInstitutions from './components/superadmin/Institutions';
@@ -243,6 +247,7 @@ function AppRoutes() {
           <Route path="/student/subscription" element={<StudentPayments />} />
           <Route path="/student/payments" element={<StudentPayments />} />
           <Route path="/student/simulations" element={<StudentSimulations />} />
+          <Route path="/student/proctored-exams" element={<StudentProctoredExams />} />
           <Route path="/student/elibrary" element={<StudentELibrary />} />
           <Route path="/student/elibrary/:id" element={<StudentELibrary />} />
           <Route path="/student/research" element={<StudentResearch />} />
@@ -266,6 +271,8 @@ function AppRoutes() {
           <Route path="/teacher/review-logbook" element={<TeacherReviewLogbook />} />
           <Route path="/teacher/send-alerts" element={<TeacherSendAlerts />} />
           <Route path="/teacher/analytics" element={<TeacherAnalytics />} />
+          <Route path="/teacher/video-assessments" element={<TeacherVideoAssessments />} />
+          <Route path="/teacher/proctored-exams" element={<TeacherProctoredExams />} />
         </Route>
 
 
@@ -276,6 +283,7 @@ function AppRoutes() {
           <Route path="/admin/institution" element={<AdminInstitutions />} />
           <Route path="/admin/users" element={<AdminUsers />} />
           <Route path="/admin/revenue" element={<AdminRevenue />} />
+          <Route path="/admin/clinical-rotations" element={<AdminClinicalRotations />} />
         </Route>
 
 

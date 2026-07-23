@@ -32,6 +32,10 @@ import alertRoutes from './routes/alerts.js';
 import notificationRoutes from './routes/notifications.js';
 import contentRoutes from './routes/content.js';
 import subscriptionRoutes from './routes/subscriptions.js';
+import practicalVideoRoutes from './routes/practicalVideos.js';
+import clinicalRotationRoutes from './routes/clinicalRotations.js';
+import communicationRoutes from './routes/communications.js';
+import proctoredExamRoutes from './routes/proctoredExams.js';
 
 function assertRequiredEnv() {
   const missing = ['DATABASE_URL', 'JWT_SECRET'].filter((key) => !process.env[key]);
@@ -127,6 +131,10 @@ app.use('/api/alerts', alertRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/content', contentRoutes);
 app.use('/api/subscriptions', subscriptionRoutes);
+app.use('/api/practical-videos', practicalVideoRoutes);
+app.use('/api/clinical-rotations', clinicalRotationRoutes);
+app.use('/api/communications', communicationRoutes);
+app.use('/api/proctored-exams', proctoredExamRoutes);
 
 app.use((req, res) => {
   res.status(404).json({ error: `No route for ${req.method} ${req.originalUrl}` });

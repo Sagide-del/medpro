@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { api } from '../services/api';
 import { homeForRole } from '../services/auth';
 import PulseLine from '../components/PulseLine';
 
@@ -43,6 +44,11 @@ export default function Login() {
       if (!studentMode && isStudent) {
         logout();
         setError('This login is for staff accounts only. Students should use Student Login.');
+        return;
+      }
+      if (isStudent) {
+        const subscription = await api('/subscriptions/student/current');
+        navigate(subscription.subscription?.allowed ? '/student/dashboard' : '/student/subscription');
         return;
       }
       navigate(homeForRole(user.role));

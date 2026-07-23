@@ -1,8 +1,11 @@
+import { useEffect, useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { api } from './services/api';
 import { homeForRole } from './services/auth';
 import Layout from './components/Layout';
 import ErrorBoundary from './components/ErrorBoundary';
+import Loading from './components/shared/Loading';
 
 import Home from './pages/Home';
 import Login from './pages/Login';
@@ -207,6 +210,43 @@ function RequireRole({ role, children }) {
   return children;
 }
 
+function RequireStudentSubscription({ children }) {
+  const { user } = useAuth();
+  const location = useLocation();
+  const [state, setState] = useState({ loading: user?.role === 'student', allowed: false });
+
+  useEffect(() => {
+    let ignore = false;
+
+    if (user?.role !== 'student') {
+      setState({ loading: false, allowed: true });
+      return () => {};
+    }
+
+    api('/subscriptions/student/current')
+      .then((data) => {
+        if (!ignore) setState({ loading: false, allowed: !!data.subscription?.allowed });
+      })
+      .catch(() => {
+        if (!ignore) setState({ loading: false, allowed: false });
+      });
+
+    return () => {
+      ignore = true;
+    };
+  }, [user?.role, user?.sub]);
+
+  if (user?.role !== 'student') return children;
+  if (state.loading) return <Loading label="Checking subscription..." />;
+
+  const allowedPaths = ['/student/subscription', '/student/payments'];
+  if (!state.allowed && !allowedPaths.includes(location.pathname)) {
+    return <Navigate to="/student/subscription" replace state={{ from: location.pathname }} />;
+  }
+
+  return children;
+}
+
 
 function AppRoutes() {
   const location = useLocation();
@@ -220,7 +260,7 @@ function AppRoutes() {
         <Route path="/register" element={<Register />} />
 
 
-        <Route element={<RequireRole role="student"><Layout links={STUDENT_LINKS} roleLabel="EMS competency dashboard" /></RequireRole>}>
+        <Route element={<RequireRole role="student"><RequireStudentSubscription><Layout links={STUDENT_LINKS} roleLabel="EMS competency dashboard" /></RequireStudentSubscription></RequireRole>}>
           <Route path="/student" element={<Navigate to="/student/dashboard" replace />} />
           <Route path="/student/dashboard" element={<StudentDashboard />} />
           <Route path="/student/exam-preparation" element={<StudentExamPreparation />} />

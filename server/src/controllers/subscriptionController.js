@@ -4,6 +4,7 @@ import { Payment } from '../models/Payment.js';
 import { Institution } from '../models/Institution.js';
 import { Notification } from '../models/Notification.js';
 import { initiatePayment, recordPaymentAttempt, handleCallback } from '../services/paymentService.js';
+import { createPayment as createIntaSendPayment } from '../services/intasendService.js';
 import { resolveStudentSubscriptionAccess, resolveInstitutionSubscriptionAccess } from '../services/subscriptionAccess.js';
 import { asyncHandler } from '../utils/helpers.js';
 
@@ -29,12 +30,14 @@ export const renewStudentSubscription = asyncHandler(async (req, res) => {
   const plan = await SubscriptionPlan.findActiveByCode('student_monthly');
   if (!plan) return res.status(500).json({ error: 'Student subscription plan is not configured.' });
 
-  const payment = await initiatePayment({
-    provider: 'mpesa',
-    phone: req.body.phone,
+  const payment = await createIntaSendPayment({
     amount: Number(plan.price),
-    accountRef: plan.name,
-    description: 'MedPro student',
+    currency: plan.currency || 'KES',
+    email: req.user.email,
+    phone: req.body.phone,
+    name: req.user.name || req.user.full_name || 'MedProHub Student',
+    apiRef: `student-sub-${req.user.sub}-${Date.now()}`,
+    redirectUrl: process.env.INTASEND_REDIRECT_URL,
   });
 
   const transaction = await Payment.createPending({
@@ -46,12 +49,13 @@ export const renewStudentSubscription = asyncHandler(async (req, res) => {
     amount: Number(plan.price),
     phone: req.body.phone,
     mpesaCheckoutId: payment.checkoutRequestId,
+    paymentMethod: 'intasend',
   });
 
   await recordPaymentAttempt({
     transactionId: transaction.transaction_id,
     planId: plan.plan_id,
-    provider: payment.provider || 'mpesa',
+    provider: payment.provider || 'intasend',
     paymentResponse: payment,
     ownerUserId: req.user.sub,
     ownerInstitutionId: req.user.institutionId,
@@ -74,7 +78,13 @@ export const renewStudentSubscription = asyncHandler(async (req, res) => {
     });
   }
 
-  res.status(201).json({ transaction, checkoutRequestId: payment.checkoutRequestId, simulated: !!payment.simulated });
+  res.status(201).json({
+    transaction,
+    checkoutRequestId: payment.checkoutRequestId,
+    paymentUrl: payment.paymentUrl,
+    simulated: !!payment.simulated,
+    provider: 'intasend',
+  });
 });
 
 export const institutionLicenceSummary = asyncHandler(async (req, res) => {

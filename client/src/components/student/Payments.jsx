@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import { api } from '../../services/api';
 import { kes } from '../format';
 import Loading from '../shared/Loading';
@@ -14,6 +15,7 @@ const typeLabel = {
 };
 
 export default function Payments() {
+  const location = useLocation();
   const [data, setData] = useState(null);
   const [phone, setPhone] = useState('');
   const [busy, setBusy] = useState(false);
@@ -37,8 +39,13 @@ export default function Payments() {
     setError('');
     try {
       const response = await api('/subscriptions/student/renew', { method: 'POST', body: { phone } });
-      setStatus(response.simulated ? 'Subscription activated in dev mode.' : 'Check your phone to complete the M-Pesa payment.');
-      if (response.simulated) load();
+      if (response.paymentUrl && !response.simulated) {
+        setStatus('Redirecting you to IntaSend to complete your subscription payment...');
+        window.location.href = response.paymentUrl;
+        return;
+      }
+      setStatus(response.simulated ? 'Subscription activated in dev mode.' : 'Payment request created. Complete the IntaSend checkout to activate access.');
+      load();
     } catch (err) {
       setError(err.message);
     } finally {
@@ -61,39 +68,49 @@ export default function Payments() {
     <>
       <div className="page-head">
         <div>
-          <h1>Subscription &amp; Billing</h1>
+          <h1>Student Subscription</h1>
           <div className="sub">MedProHub Student Plan, renewal status, and payment history.</div>
         </div>
       </div>
 
       <div className="card" style={{ marginBottom: 16 }}>
-        <h2>{currentPlan?.name || 'MedProHub Student Plan'}</h2>
+        <h2>MedProHub Student Plan</h2>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', margin: '10px 0 14px' }}>
           <span className={`badge ${data.subscription?.allowed ? 'approved' : paymentStatus === 'pending' ? 'draft' : 'rejected'}`}>
             {paymentStatus}
           </span>
-          <span className="badge draft">{currentPlan?.currency || 'KES'} {Number(currentPlan?.price || 300).toLocaleString('en-KE')}/month</span>
+          <span className="badge draft">KES {Number(currentPlan?.price || 300).toLocaleString('en-KE')}/month</span>
           <span className="badge draft">Expiry: {expiry}</span>
         </div>
 
+        {!data.subscription?.allowed && location.state?.from && (
+          <div className="alert" style={{ marginBottom: 12 }}>
+            An active student subscription is required before accessing MedProHub student content.
+          </div>
+        )}
         <p style={{ color: 'var(--ink-soft)', marginBottom: 10 }}>
-          Current plan: {currentPlan?.name || 'Student Monthly'}.
-          {data.subscription?.source === 'institution' ? ' Your access is currently covered by an institution licence.' : ' Personal subscription renewals are billed monthly.'}
+          Current plan: {currentPlan?.name || 'Student Monthly'}. One payment unlocks all student content with no additional content charges.
         </p>
         <p style={{ color: 'var(--ink-soft)', marginBottom: 12 }}>
-          Payment status: {paymentStatus}. Benefits include Clinical Reference Cards, Skill Simulations, Practice Assessments, and Assignments.
+          Payment status: {paymentStatus}. Benefits include full MedProHub student access once payment is successful.
         </p>
 
         <ul style={{ paddingLeft: 18, marginBottom: 16 }}>
-          {(currentPlan?.features || []).map((feature) => <li key={feature}>{feature}</li>)}
+          {[
+            'Clinical Reference Cards',
+            'Assessments',
+            'Simulations',
+            'Assignments',
+            'Exam Preparation',
+          ].map((feature) => <li key={feature}>{feature}</li>)}
         </ul>
 
         <div className="field">
-          <label htmlFor="student-phone">Renew with M-Pesa</label>
+          <label htmlFor="student-phone">Pay with IntaSend</label>
           <input id="student-phone" value={phone} onChange={(event) => setPhone(event.target.value)} placeholder="07XX XXX XXX" />
         </div>
         <button className="primary" onClick={renew} disabled={busy || !phone}>
-          {busy ? 'Processing...' : 'Renew subscription'}
+          {busy ? 'Processing...' : 'Subscribe for KES 300/month'}
         </button>
         {status && <div className="ok-note" style={{ marginTop: 12 }}>{status}</div>}
       </div>

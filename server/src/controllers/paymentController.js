@@ -14,6 +14,7 @@ import {
   ACCESS_DURATION_HOURS,
   DEFAULT_STUDENT_SUBSCRIPTION_PRICE_KES,
 } from '../services/paymentService.js';
+import { handleWebhook as handleIntaSendWebhook } from '../services/intasendService.js';
 import { resolveStudentSubscriptionAccess } from '../services/subscriptionAccess.js';
 import { asyncHandler } from '../utils/helpers.js';
 
@@ -179,4 +180,13 @@ export const subscribeToAssessments = asyncHandler(async (req, res) => {
   }
 
   res.status(201).json({ transaction: txn, checkoutRequestId: stk.checkoutRequestId, simulated: !!stk.simulated });
+});
+
+export const intasendWebhook = asyncHandler(async (req, res) => {
+  const signature = req.headers['x-intasend-signature'] || req.headers['x-signature'];
+  const result = await handleIntaSendWebhook(req.body, signature);
+  if (!result.ok) {
+    return res.status(result.status || 400).json({ error: result.reason || 'Webhook verification failed.' });
+  }
+  return res.status(200).json({ ok: true });
 });

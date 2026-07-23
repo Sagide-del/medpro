@@ -1,11 +1,11 @@
 import { query } from '../config/database.js';
 
 export const Payment = {
-  async createPending({ studentId, institutionId, itemType, itemId, transactionType, amount, phone, mpesaCheckoutId }) {
+  async createPending({ studentId, institutionId, itemType, itemId, transactionType, amount, phone, mpesaCheckoutId, paymentMethod = 'mpesa' }) {
     const { rows } = await query(
       `INSERT INTO revenue_transactions (student_id, institution_id, item_type, item_id, transaction_type, amount, payment_method, phone, mpesa_checkout_id, status)
-       VALUES ($1,$2,$3,$4,$5,$6,'mpesa',$7,$8,'pending') RETURNING *`,
-      [studentId, institutionId || null, itemType, itemId, transactionType, amount, phone, mpesaCheckoutId]
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,'pending') RETURNING *`,
+      [studentId, institutionId || null, itemType, itemId, transactionType, amount, paymentMethod, phone, mpesaCheckoutId]
     );
     return rows[0];
   },

@@ -2,16 +2,28 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { api } from '../../services/api';
 import Loading from '../shared/Loading';
+import SubscriptionPrompt from './SubscriptionPrompt';
 
 function AssignmentList() {
   const [assignments, setAssignments] = useState(null);
   const [error, setError] = useState('');
+  const [subscription, setSubscription] = useState(null);
 
   useEffect(() => {
-    api('/assignment-workflow/student/assignments').then((data) => setAssignments(data.assignments)).catch((err) => setError(err.message));
+    api('/assignment-workflow/student/assignments')
+      .then((data) => setAssignments(data.assignments))
+      .catch((err) => {
+        if (err.code === 'SUBSCRIPTION_REQUIRED') {
+          setSubscription(err.subscription);
+          setAssignments([]);
+          return;
+        }
+        setError(err.message);
+      });
   }, []);
 
   if (error) return <div className="alert">{error}</div>;
+  if (subscription) return <SubscriptionPrompt subscription={subscription} title="Subscription required for Assignments" />;
   if (!assignments) return <Loading label="Loading assignments..." />;
 
   return (
@@ -51,13 +63,20 @@ export default function StudentAssignments() {
   const [status, setStatus] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const [subscription, setSubscription] = useState(null);
 
   useEffect(() => {
     if (!id) return;
     api(`/assignment-workflow/student/assignments/${id}`).then((data) => {
       setAssignment(data.assignment);
       setQuestions(data.questions);
-    }).catch((err) => setError(err.message));
+    }).catch((err) => {
+      if (err.code === 'SUBSCRIPTION_REQUIRED') {
+        setSubscription(err.subscription);
+        return;
+      }
+      setError(err.message);
+    });
   }, [id]);
 
   useEffect(() => {
@@ -71,7 +90,11 @@ export default function StudentAssignments() {
       await api(`/assignment-workflow/student/assignments/${id}/start`, { method: 'POST' });
       setStatus('Assignment started. Complete your responses and submit when ready.');
     } catch (err) {
-      setError(err.message);
+      if (err.code === 'SUBSCRIPTION_REQUIRED') {
+        setSubscription(err.subscription);
+      } else {
+        setError(err.message);
+      }
     } finally {
       setBusy(false);
     }
@@ -92,7 +115,11 @@ export default function StudentAssignments() {
       setStatus('Assignment submitted. Your teacher will release feedback when marking is complete.');
       navigate('/student/assignments');
     } catch (err) {
-      setError(err.message);
+      if (err.code === 'SUBSCRIPTION_REQUIRED') {
+        setSubscription(err.subscription);
+      } else {
+        setError(err.message);
+      }
     } finally {
       setBusy(false);
     }
@@ -100,6 +127,7 @@ export default function StudentAssignments() {
 
   if (!id) return <AssignmentList />;
   if (error) return <div className="alert">{error}</div>;
+  if (subscription) return <SubscriptionPrompt subscription={subscription} title="Subscription required for Assignments" />;
   if (!assignment) return <Loading label="Loading assignment..." />;
 
   if (result && result.submission?.released_at) {

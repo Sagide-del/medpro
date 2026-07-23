@@ -31,6 +31,7 @@ import researchRoutes from './routes/research.js';
 import alertRoutes from './routes/alerts.js';
 import notificationRoutes from './routes/notifications.js';
 import contentRoutes from './routes/content.js';
+import subscriptionRoutes from './routes/subscriptions.js';
 
 function assertRequiredEnv() {
   const missing = ['DATABASE_URL', 'JWT_SECRET'].filter((key) => !process.env[key]);
@@ -125,6 +126,7 @@ app.use('/api/research', researchRoutes);
 app.use('/api/alerts', alertRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/content', contentRoutes);
+app.use('/api/subscriptions', subscriptionRoutes);
 
 app.use((req, res) => {
   res.status(404).json({ error: `No route for ${req.method} ${req.originalUrl}` });

@@ -16,7 +16,15 @@ export async function api(path, { method = 'GET', body, headers = {} } = {}) {
     body: body instanceof FormData ? body : body ? JSON.stringify(body) : undefined,
   });
   const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(data.error || `Request failed (${res.status})`);
+  if (!res.ok) {
+    const error = new Error(data.error || `Request failed (${res.status})`);
+    error.status = res.status;
+    error.code = data.code;
+    error.subscription = data.subscription;
+    error.feature = data.feature;
+    error.details = data;
+    throw error;
+  }
   return data;
 }
 

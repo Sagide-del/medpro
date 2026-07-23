@@ -20,6 +20,7 @@ import {
 } from '../controllers/assignmentWorkflowController.js';
 import { authenticate } from '../middleware/auth.js';
 import { requireRole } from '../middleware/roleCheck.js';
+import { requirePremiumAccess } from '../middleware/subscriptionAccess.js';
 
 const router = Router();
 
@@ -38,10 +39,10 @@ router.get('/teacher/submissions/:id', requireRole('teacher'), getTeacherSubmiss
 router.patch('/teacher/submissions/:id/grade', requireRole('teacher'), gradeTeacherSubmission);
 router.get('/teacher/performance', requireRole('teacher'), teacherStudentPerformance);
 
-router.get('/student/assignments', requireRole('student'), listStudentAssignments);
-router.get('/student/assignments/:id', requireRole('student'), getStudentAssignment);
-router.post('/student/assignments/:id/start', requireRole('student'), startStudentAssignment);
-router.post('/student/assignments/:id/submit', requireRole('student'), submitStudentAssignment);
-router.get('/student/assignments/:id/results', requireRole('student'), studentAssignmentResults);
+router.get('/student/assignments', requireRole('student'), requirePremiumAccess('assignments'), listStudentAssignments);
+router.get('/student/assignments/:id', requireRole('student'), requirePremiumAccess('assignments'), getStudentAssignment);
+router.post('/student/assignments/:id/start', requireRole('student'), requirePremiumAccess('assignments'), startStudentAssignment);
+router.post('/student/assignments/:id/submit', requireRole('student'), requirePremiumAccess('assignments'), submitStudentAssignment);
+router.get('/student/assignments/:id/results', requireRole('student'), requirePremiumAccess('assignments'), studentAssignmentResults);
 
 export default router;

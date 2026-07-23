@@ -4,15 +4,17 @@ import { FlashcardDeck } from '../models/FlashcardDeck.js';
 import { MedicalGraphic } from '../models/MedicalGraphic.js';
 import { ElibraryResource } from '../models/ElibraryResource.js';
 import { Notification } from '../models/Notification.js';
-import { StudentSubscription } from '../models/StudentSubscription.js';
-import { Institution } from '../models/Institution.js';
+import { SubscriptionPlan } from '../models/SubscriptionPlan.js';
 import {
   stkPush,
   parseCallback,
+  initiatePayment,
+  recordPaymentAttempt,
+  handleCallback,
   ACCESS_DURATION_HOURS,
-  ASSESSMENT_SUBSCRIPTION_PRICE_KES,
-  ASSESSMENT_SUBSCRIPTION_MONTHS,
+  DEFAULT_STUDENT_SUBSCRIPTION_PRICE_KES,
 } from '../services/paymentService.js';
+import { resolveStudentSubscriptionAccess } from '../services/subscriptionAccess.js';
 import { asyncHandler } from '../utils/helpers.js';
 
 const MODELS = { worksheet: Worksheet, flashcard_deck: FlashcardDeck, graphic: MedicalGraphic, elibrary_resource: ElibraryResource };
@@ -58,7 +60,6 @@ export const purchase = asyncHandler(async (req, res) => {
 
 export const mpesaCallback = asyncHandler(async (req, res) => {
   const result = parseCallback(req.body);
-  // Always ack Safaricom with ResultCode 0 so they stop retrying, regardless of our internal handling.
   res.json({ ResultCode: 0, ResultDesc: 'Accepted' });
   if (!result) return;
 
@@ -66,10 +67,12 @@ export const mpesaCallback = asyncHandler(async (req, res) => {
   if (!txn) return;
 
   if (result.success) {
-    await Payment.markCompleted(result.checkoutRequestId, { mpesaCode: result.mpesaReceipt });
-    if (txn.transaction_type === 'student_subscription') {
-      await StudentSubscription.create({ studentId: txn.student_id, amount: txn.amount, months: ASSESSMENT_SUBSCRIPTION_MONTHS });
+    if (txn.transaction_type === 'student_subscription' || txn.transaction_type === 'institution_subscription') {
+      const code = txn.transaction_type === 'student_subscription' ? 'student_monthly' : 'institution_annual';
+      const plan = await SubscriptionPlan.findActiveByCode(code);
+      await handleCallback({ paymentModel: Payment, subscriptionPlan: plan, transaction: txn, callbackResult: result });
     } else {
+      await Payment.markCompleted(result.checkoutRequestId, { mpesaCode: result.mpesaReceipt });
       await Payment.grantAccess(txn.student_id, txn.item_type, txn.item_id, ACCESS_DURATION_HOURS[txn.item_type] || 48);
       if (MODELS[txn.item_type]) await MODELS[txn.item_type].incrementPurchases(txn.item_id);
     }
@@ -110,26 +113,32 @@ export const myPurchaseHistory = asyncHandler(async (req, res) => {
 // own Ksh 500/month subscription, or for free because their institution has
 // an active site-license subscription.
 export const subscriptionStatus = asyncHandler(async (req, res) => {
-  const personal = await StudentSubscription.findActive(req.user.sub);
-  if (personal) {
-    return res.json({ active: true, source: 'personal', expiresAt: personal.expires_at, price: ASSESSMENT_SUBSCRIPTION_PRICE_KES });
-  }
-  const viaInstitution = await Institution.hasActiveSubscription(req.user.institutionId);
-  if (viaInstitution) {
-    return res.json({ active: true, source: 'institution', expiresAt: null, price: ASSESSMENT_SUBSCRIPTION_PRICE_KES });
-  }
-  res.json({ active: false, source: null, expiresAt: null, price: ASSESSMENT_SUBSCRIPTION_PRICE_KES });
+  const subscription = await resolveStudentSubscriptionAccess(req.user);
+  res.json({
+    active: subscription.allowed,
+    source: subscription.source,
+    status: subscription.status,
+    expiresAt: subscription.expiresAt,
+    price: Number(subscription.plan?.price ?? DEFAULT_STUDENT_SUBSCRIPTION_PRICE_KES),
+    currency: subscription.plan?.currency || 'KES',
+    features: subscription.plan?.features || [],
+    reminders: subscription.reminders,
+    premiumFeatures: subscription.premiumFeatures,
+  });
 });
 
 export const subscribeToAssessments = asyncHandler(async (req, res) => {
   const { phone } = req.body;
-  const amount = ASSESSMENT_SUBSCRIPTION_PRICE_KES;
+  const plan = await SubscriptionPlan.findActiveByCode('student_monthly');
+  if (!plan) return res.status(500).json({ error: 'Student subscription plan is not configured.' });
+  const amount = Number(plan.price);
 
-  const stk = await stkPush({
+  const stk = await initiatePayment({
+    provider: 'mpesa',
     phone,
     amount,
-    accountRef: 'MedPro Subscription',
-    description: 'MedPro assessments',
+    accountRef: plan.name,
+    description: 'MedPro student',
   });
 
   const txn = await Payment.createPending({
@@ -142,10 +151,31 @@ export const subscribeToAssessments = asyncHandler(async (req, res) => {
     phone,
     mpesaCheckoutId: stk.checkoutRequestId,
   });
+  await recordPaymentAttempt({
+    transactionId: txn.transaction_id,
+    planId: plan.plan_id,
+    provider: stk.provider || 'mpesa',
+    paymentResponse: stk,
+    ownerUserId: req.user.sub,
+    ownerInstitutionId: req.user.institutionId,
+    expectedAmount: amount,
+    phone,
+  });
 
   if (stk.simulated) {
     await Payment.markCompleted(stk.checkoutRequestId, { mpesaCode: `SIM${Date.now().toString().slice(-8)}` });
-    await StudentSubscription.create({ studentId: req.user.sub, amount, months: ASSESSMENT_SUBSCRIPTION_MONTHS });
+    await handleCallback({
+      paymentModel: Payment,
+      subscriptionPlan: plan,
+      transaction: txn,
+      callbackResult: {
+        checkoutRequestId: stk.checkoutRequestId,
+        success: true,
+        mpesaReceipt: `SIM${Date.now().toString().slice(-8)}`,
+        amount,
+        phone,
+      },
+    });
   }
 
   res.status(201).json({ transaction: txn, checkoutRequestId: stk.checkoutRequestId, simulated: !!stk.simulated });

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { api } from '../../services/api';
 import Loading from '../shared/Loading';
-import { kes } from '../format';
+import SubscriptionPrompt from '../student/SubscriptionPrompt';
 import { MODULES_BY_PROGRAM, PROGRAM_OPTIONS } from './catalog';
 
 const MODE_META = {
@@ -24,6 +24,7 @@ function CardList({ mode }) {
   const location = useLocation();
   const [cards, setCards] = useState(null);
   const [error, setError] = useState('');
+  const [subscription, setSubscription] = useState(null);
   const [filters, setFilters] = useState({ program: '', module: '', topic: '', search: '' });
   const [searchDraft, setSearchDraft] = useState('');
 
@@ -36,7 +37,15 @@ function CardList({ mode }) {
 
     api(`/clinical-reference-cards${params.toString() ? `?${params.toString()}` : ''}`)
       .then((data) => setCards(data.cards))
-      .catch((err) => setError(err.message));
+      .catch((err) => {
+        if (err.code === 'SUBSCRIPTION_REQUIRED') {
+          setSubscription(err.subscription);
+          setCards([]);
+          setError('');
+          return;
+        }
+        setError(err.message);
+      });
   }, [filters]);
 
   const modules = filters.program ? MODULES_BY_PROGRAM[filters.program] || [] : [];
@@ -47,6 +56,7 @@ function CardList({ mode }) {
   const meta = MODE_META[mode] || MODE_META.student;
 
   if (error) return <div className="alert">{error}</div>;
+  if (subscription && mode === 'student') return <SubscriptionPrompt subscription={subscription} title="Subscription required for Clinical Reference Cards" />;
   if (!cards) return <Loading label="Loading clinical reference cards..." />;
 
   return (
@@ -144,6 +154,7 @@ function CardDetail({ mode }) {
   const [busy, setBusy] = useState(false);
   const [status, setStatus] = useState('');
   const [error, setError] = useState('');
+  const [subscription, setSubscription] = useState(null);
 
   function load() {
     api(`/clinical-reference-cards/${id}`)
@@ -151,29 +162,20 @@ function CardDetail({ mode }) {
         setCard(data.card);
         setUnlocked(data.unlocked !== false);
       })
-      .catch((err) => setError(err.message));
+      .catch((err) => {
+        if (err.code === 'SUBSCRIPTION_REQUIRED') {
+          setSubscription(err.subscription);
+          setError('');
+          return;
+        }
+        setError(err.message);
+      });
   }
 
   useEffect(load, [id]);
 
-  async function unlockCard() {
-    setBusy(true);
-    setStatus('');
-    try {
-      const response = await api('/payments/purchase', {
-        method: 'POST',
-        body: { itemType: 'graphic', itemId: card.graphic_id, phone },
-      });
-      setStatus(response.simulated ? 'Access granted in dev mode. Reloading card...' : 'Check your phone to complete the M-Pesa payment.');
-      setTimeout(load, 1200);
-    } catch (err) {
-      setStatus(err.message);
-    } finally {
-      setBusy(false);
-    }
-  }
-
   if (error) return <div className="alert">{error}</div>;
+  if (subscription && mode === 'student') return <SubscriptionPrompt subscription={subscription} title="Subscription required for this Clinical Reference Card" />;
   if (!card) return <Loading label="Loading clinical reference card..." />;
 
   return (
@@ -216,21 +218,7 @@ function CardDetail({ mode }) {
               </div>
             )}
           </>
-        ) : (
-          <>
-            <div className="alert info" style={{ marginTop: 14 }}>
-              This clinical reference card uses the existing content-access flow. Unlock it for {kes(card.price)} to view or download the full file.
-            </div>
-            <div className="field">
-              <label>M-Pesa phone number</label>
-              <input value={phone} onChange={(event) => setPhone(event.target.value)} placeholder="07XX XXX XXX" />
-            </div>
-            <button className="primary" onClick={unlockCard} disabled={busy || !phone}>
-              {busy ? 'Processing...' : `Unlock for ${kes(card.price)}`}
-            </button>
-            {status && <div className="ok-note">{status}</div>}
-          </>
-        )}
+        ) : <SubscriptionPrompt subscription={subscription} title="Subscription required for this Clinical Reference Card" />}
       </div>
     </>
   );

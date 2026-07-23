@@ -1,5 +1,5 @@
 import { ClinicalReferenceCard } from '../models/ClinicalReferenceCard.js';
-import { Payment } from '../models/Payment.js';
+import { resolveStudentSubscriptionAccess } from '../services/subscriptionAccess.js';
 import { asyncHandler } from '../utils/helpers.js';
 
 function canReadCard(user, card) {
@@ -57,7 +57,8 @@ export const getClinicalReferenceCard = asyncHandler(async (req, res) => {
 
   let unlocked = req.user.role !== 'student';
   if (req.user.role === 'student') {
-    unlocked = await Payment.hasActiveAccess(req.user.sub, 'graphic', card.graphic_id);
+    const subscription = await resolveStudentSubscriptionAccess(req.user);
+    unlocked = subscription.allowed;
   }
 
   res.json({

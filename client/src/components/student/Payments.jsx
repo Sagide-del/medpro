@@ -4,32 +4,40 @@ import { kes } from '../format';
 import Loading from '../shared/Loading';
 
 const typeLabel = {
+  student_subscription: 'Student subscription',
+  institution_subscription: 'Institution licence',
   worksheet: 'Worksheet',
-  flashcard_deck: 'Clinical recall card deck',
-  graphic: 'Clinical reference card',
+  flashcard_deck: 'Flashcard deck',
+  graphic: 'Graphic',
   assessment: 'Assessment',
-  student_subscription: 'Subscription',
+  elibrary_resource: 'E-Library',
 };
 
-function SubscriptionCard() {
-  const [sub, setSub] = useState(null);
-  const [error, setError] = useState('');
+export default function Payments() {
+  const [data, setData] = useState(null);
   const [phone, setPhone] = useState('');
   const [busy, setBusy] = useState(false);
   const [status, setStatus] = useState('');
+  const [error, setError] = useState('');
 
   function load() {
-    api('/payments/subscription').then((data) => setSub(data)).catch((err) => setError(err.message));
+    Promise.all([
+      api('/subscriptions/student/current'),
+      api('/subscriptions/plans?type=student'),
+    ])
+      .then(([subscriptionData, plansData]) => setData({ ...subscriptionData, plans: plansData.plans }))
+      .catch((err) => setError(err.message));
   }
 
   useEffect(load, []);
 
-  async function subscribe() {
+  async function renew() {
     setBusy(true);
     setStatus('');
+    setError('');
     try {
-      const response = await api('/payments/subscribe', { method: 'POST', body: { phone } });
-      setStatus(response.simulated ? 'Subscription activated (dev mode).' : 'Check your phone to complete the M-Pesa payment.');
+      const response = await api('/subscriptions/student/renew', { method: 'POST', body: { phone } });
+      setStatus(response.simulated ? 'Subscription activated in dev mode.' : 'Check your phone to complete the M-Pesa payment.');
       if (response.simulated) load();
     } catch (err) {
       setError(err.message);
@@ -39,70 +47,81 @@ function SubscriptionCard() {
   }
 
   if (error) return <div className="alert">{error}</div>;
-  if (!sub) return <Loading label="Loading subscription status..." />;
+  if (!data) return <Loading label="Loading subscription details..." />;
 
-  return (
-    <div className="card" style={{ marginBottom: 16 }}>
-      <h2>Assessment subscription</h2>
-      {sub.active ? (
-        <>
-          <span className="badge published" style={{ marginBottom: 8 }}>Active</span>
-          <p style={{ color: 'var(--ink-soft)', fontSize: 13 }}>
-            {sub.source === 'institution'
-              ? 'Covered by your institution site-license - no personal payment needed.'
-              : `Personal subscription${sub.expiresAt ? ` - renews/expires ${new Date(sub.expiresAt).toLocaleDateString('en-KE')}` : ''}.`}
-          </p>
-        </>
-      ) : (
-        <>
-          <p style={{ color: 'var(--ink-soft)', fontSize: 13, marginBottom: 10 }}>
-            Not subscribed - Ksh {sub.price}/month unlocks every published assessment.
-          </p>
-          <div className="field">
-            <label htmlFor="sub-phone">M-Pesa phone number</label>
-            <input id="sub-phone" value={phone} onChange={(event) => setPhone(event.target.value)} placeholder="07XX XXX XXX" />
-          </div>
-          <button className="primary" onClick={subscribe} disabled={busy || !phone} style={{ marginTop: 10 }}>
-            {busy ? 'Processing...' : `Subscribe - Ksh ${sub.price}/month`}
-          </button>
-          {status && <p style={{ marginTop: 10, fontSize: 13 }}>{status}</p>}
-        </>
-      )}
-    </div>
-  );
-}
-
-export default function Payments() {
-  const [transactions, setTransactions] = useState(null);
-  const [error, setError] = useState('');
-
-  useEffect(() => {
-    api('/payments/history').then((data) => setTransactions(data.transactions)).catch((err) => setError(err.message));
-  }, []);
-
-  if (error) return <div className="alert">{error}</div>;
-  if (!transactions) return <Loading label="Loading purchase history..." />;
-
-  const total = transactions.filter((transaction) => transaction.status === 'completed').reduce((sum, transaction) => sum + Number(transaction.amount), 0);
+  const currentPlan = data.subscription?.plan || data.plans?.[0];
+  const expiry = data.subscription?.expiresAt ? new Date(data.subscription.expiresAt).toLocaleDateString('en-KE') : 'Not active';
+  const paymentStatus = data.subscription?.status || 'expired';
+  const transactions = data.transactions || [];
+  const totalSpent = transactions
+    .filter((transaction) => transaction.status === 'completed')
+    .reduce((sum, transaction) => sum + Number(transaction.amount || 0), 0);
 
   return (
     <>
-      <div className="page-head"><div><h1>Subscription &amp; Billing</h1><div className="sub">Total spent: {kes(total)}</div></div></div>
-      <SubscriptionCard />
+      <div className="page-head">
+        <div>
+          <h1>Subscription &amp; Billing</h1>
+          <div className="sub">MedProHub Student Plan, renewal status, and payment history.</div>
+        </div>
+      </div>
+
+      <div className="card" style={{ marginBottom: 16 }}>
+        <h2>{currentPlan?.name || 'MedProHub Student Plan'}</h2>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', margin: '10px 0 14px' }}>
+          <span className={`badge ${data.subscription?.allowed ? 'approved' : paymentStatus === 'pending' ? 'draft' : 'rejected'}`}>
+            {paymentStatus}
+          </span>
+          <span className="badge draft">{currentPlan?.currency || 'KES'} {Number(currentPlan?.price || 300).toLocaleString('en-KE')}/month</span>
+          <span className="badge draft">Expiry: {expiry}</span>
+        </div>
+
+        <p style={{ color: 'var(--ink-soft)', marginBottom: 10 }}>
+          Current plan: {currentPlan?.name || 'Student Monthly'}.
+          {data.subscription?.source === 'institution' ? ' Your access is currently covered by an institution licence.' : ' Personal subscription renewals are billed monthly.'}
+        </p>
+        <p style={{ color: 'var(--ink-soft)', marginBottom: 12 }}>
+          Payment status: {paymentStatus}. Benefits include Clinical Reference Cards, Skill Simulations, Practice Assessments, and Assignments.
+        </p>
+
+        <ul style={{ paddingLeft: 18, marginBottom: 16 }}>
+          {(currentPlan?.features || []).map((feature) => <li key={feature}>{feature}</li>)}
+        </ul>
+
+        <div className="field">
+          <label htmlFor="student-phone">Renew with M-Pesa</label>
+          <input id="student-phone" value={phone} onChange={(event) => setPhone(event.target.value)} placeholder="07XX XXX XXX" />
+        </div>
+        <button className="primary" onClick={renew} disabled={busy || !phone}>
+          {busy ? 'Processing...' : 'Renew subscription'}
+        </button>
+        {status && <div className="ok-note" style={{ marginTop: 12 }}>{status}</div>}
+      </div>
+
       <div className="card">
+        <h2>Payment history</h2>
+        <p style={{ color: 'var(--ink-soft)', marginBottom: 12 }}>Total completed spend: {kes(totalSpent)}</p>
         <table>
-          <thead><tr><th>Item</th><th>Amount</th><th>Method</th><th>Status</th><th>Date</th></tr></thead>
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Type</th>
+              <th>Amount</th>
+              <th>Status</th>
+              <th>Method</th>
+            </tr>
+          </thead>
           <tbody>
             {transactions.map((transaction) => (
               <tr key={transaction.transaction_id}>
-                <td>{typeLabel[transaction.item_type] || transaction.item_type}</td>
-                <td className="num">{kes(transaction.amount)}</td>
+                <td>{new Date(transaction.transaction_date || transaction.created_at).toLocaleDateString('en-KE')}</td>
+                <td>{typeLabel[transaction.transaction_type] || transaction.transaction_type}</td>
+                <td>{kes(transaction.amount)}</td>
+                <td>{transaction.status}</td>
                 <td>{transaction.payment_method}</td>
-                <td><span className={`badge ${transaction.status}`}>{transaction.status}</span></td>
-                <td className="num">{new Date(transaction.transaction_date).toLocaleDateString('en-KE')}</td>
               </tr>
             ))}
-            {transactions.length === 0 && <tr><td colSpan="5" style={{ color: 'var(--ink-soft)' }}>No purchases yet.</td></tr>}
+            {transactions.length === 0 && <tr><td colSpan="5" style={{ color: 'var(--ink-soft)' }}>No payments recorded yet.</td></tr>}
           </tbody>
         </table>
       </div>

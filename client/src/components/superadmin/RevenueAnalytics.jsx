@@ -6,69 +6,101 @@ import { kes, kesShort } from '../format';
 import Loading from '../shared/Loading';
 
 export default function RevenueAnalytics() {
-  const [revenue, setRevenue] = useState(null);
-  const [topContent, setTopContent] = useState([]);
+  const [overview, setOverview] = useState(null);
   const [error, setError] = useState('');
 
   useEffect(() => {
-    api('/analytics/revenue').then(setRevenue).catch((e) => setError(e.message));
-    api('/analytics/content').then((d) => setTopContent(d.topContent)).catch(() => {});
+    api('/subscriptions/admin/overview').then(setOverview).catch((e) => setError(e.message));
   }, []);
 
   if (error) return <div className="alert">{error}</div>;
-  if (!revenue) return <Loading label="Loading revenue analytics…" />;
+  if (!overview) return <Loading label="Loading subscription management…" />;
 
-  const total = revenue.byStream.reduce((s, r) => s + Number(r.total), 0);
-  const byMonth = {};
-  for (const r of revenue.byStream) {
-    const key = new Date(r.month).toLocaleDateString('en-KE', { month: 'short', year: '2-digit' });
-    byMonth[key] = (byMonth[key] || 0) + Number(r.total);
-  }
-  const monthly = Object.entries(byMonth).map(([month, total]) => ({ month, total }));
+  const totalRevenue = overview.recentPayments
+    .filter((payment) => payment.status === 'completed')
+    .reduce((sum, payment) => sum + Number(payment.amount || 0), 0);
+  const activeSubscriptions = overview.subscriptionSummary
+    .filter((item) => item.status === 'completed' || item.status === 'active')
+    .reduce((sum, item) => sum + Number(item.count || 0), 0);
+  const monthly = [...(overview.revenueSummary || [])]
+    .reverse()
+    .map((row) => ({
+      month: new Date(row.month).toLocaleDateString('en-KE', { month: 'short', year: '2-digit' }),
+      total: Number(row.total),
+    }));
 
   return (
     <>
-      <div className="page-head"><div><h1>Revenue analytics</h1><div className="sub">Streams, institutions, and monthly trend</div></div></div>
+      <div className="page-head"><div><h1>Subscription management</h1><div className="sub">Plans, subscribers, revenue, and payment history.</div></div></div>
 
       <div className="vitals">
-        <Vital label="Total revenue" value={kesShort(total)} money />
-        <Vital label="Institutions generating revenue" value={revenue.byInstitution.filter((i) => Number(i.total) > 0).length} />
+        <Vital label="Plans" value={overview.plans.length} />
+        <Vital label="Active subscribers" value={activeSubscriptions} />
+        <Vital label="Subscription revenue" value={kesShort(totalRevenue)} money />
       </div>
 
       <div className="card">
-        <h2>Monthly trend</h2>
+        <h2>Revenue trend</h2>
         <ResponsiveContainer width="100%" height={240}>
           <LineChart data={monthly}>
             <CartesianGrid stroke="#e2e2e2" vertical={false} />
             <XAxis dataKey="month" tick={{ fontSize: 11, fontFamily: 'IBM Plex Mono' }} />
             <YAxis tickFormatter={kesShort} tick={{ fontSize: 11, fontFamily: 'IBM Plex Mono' }} width={80} />
-            <Tooltip formatter={(v) => kes(v)} />
+            <Tooltip formatter={(value) => kes(value)} />
             <Line type="monotone" dataKey="total" stroke="#cc0000" strokeWidth={2} dot={{ r: 3 }} />
           </LineChart>
         </ResponsiveContainer>
       </div>
 
       <div className="card">
-        <h2>By institution</h2>
+        <h2>Plans</h2>
         <table>
-          <thead><tr><th>Institution</th><th>Revenue</th></tr></thead>
+          <thead><tr><th>Name</th><th>Type</th><th>Price</th><th>Duration</th><th>Status</th></tr></thead>
           <tbody>
-            {revenue.byInstitution.map((r) => (
-              <tr key={r.institution_id}><td>{r.name}</td><td className="num">{kes(r.total)}</td></tr>
+            {overview.plans.map((plan) => (
+              <tr key={plan.plan_id}>
+                <td>{plan.name}</td>
+                <td>{plan.type}</td>
+                <td>{kes(plan.price)}</td>
+                <td>{plan.duration_days} days</td>
+                <td>{plan.is_active ? 'active' : 'inactive'}</td>
+              </tr>
             ))}
           </tbody>
         </table>
       </div>
 
       <div className="card">
-        <h2>Top content</h2>
+        <h2>Subscribers</h2>
         <table>
-          <thead><tr><th>Title</th><th>Type</th><th>Purchases</th></tr></thead>
+          <thead><tr><th>Transaction type</th><th>Status</th><th>Count</th><th>Total</th></tr></thead>
           <tbody>
-            {topContent.map((c) => (
-              <tr key={`${c.type}-${c.id}`}><td>{c.title}</td><td>{c.type.replace('_', ' ')}</td><td className="num">{c.purchase_count}</td></tr>
+            {overview.subscriptionSummary.map((item, index) => (
+              <tr key={`${item.transaction_type}-${item.status}-${index}`}>
+                <td>{item.transaction_type}</td>
+                <td>{item.status}</td>
+                <td>{item.count}</td>
+                <td>{kes(item.total)}</td>
+              </tr>
             ))}
-            {topContent.length === 0 && <tr><td colSpan="3" style={{ color: 'var(--ink-soft)' }}>No purchases yet.</td></tr>}
+          </tbody>
+        </table>
+      </div>
+
+      <div className="card">
+        <h2>Payment history</h2>
+        <table>
+          <thead><tr><th>Date</th><th>Type</th><th>Amount</th><th>Status</th><th>Method</th></tr></thead>
+          <tbody>
+            {overview.recentPayments.map((payment) => (
+              <tr key={payment.transaction_id}>
+                <td>{new Date(payment.transaction_date || payment.created_at).toLocaleDateString('en-KE')}</td>
+                <td>{payment.transaction_type}</td>
+                <td>{kes(payment.amount)}</td>
+                <td>{payment.status}</td>
+                <td>{payment.payment_method}</td>
+              </tr>
+            ))}
           </tbody>
         </table>
       </div>

@@ -4,6 +4,7 @@ import { speak, stopSpeaking, speechSupported } from '../../utils/speech';
 import { ResponderAvatar, PatientAvatar, SimScene } from './simulation/Characters';
 import { api } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
+import SubscriptionPrompt from './SubscriptionPrompt';
 
 function simulationCategoryForScenario(scenario) {
   const skill = String(scenario.skill || '').toLowerCase();
@@ -362,9 +363,14 @@ export default function Simulations() {
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState('');
   const [latestResult, setLatestResult] = useState(null);
+  const [subscription, setSubscription] = useState(null);
 
   function loadLatestResult() {
-    api('/simulations/my-results/latest').then((data) => setLatestResult(data.result)).catch(() => {});
+    api('/simulations/my-results/latest')
+      .then((data) => setLatestResult(data.result))
+      .catch((err) => {
+        if (err.code === 'SUBSCRIPTION_REQUIRED') setSubscription(err.subscription);
+      });
   }
 
   useEffect(loadLatestResult, []);
@@ -401,7 +407,11 @@ export default function Simulations() {
       setSavedResult(null);
       setStage('brief');
     } catch (err) {
-      setSaveError(err.message);
+      if (err.code === 'SUBSCRIPTION_REQUIRED') {
+        setSubscription(err.subscription);
+      } else {
+        setSaveError(err.message);
+      }
     } finally {
       setBusy(false);
     }
@@ -422,7 +432,11 @@ export default function Simulations() {
       setSavedResult(response);
       loadLatestResult();
     } catch (err) {
-      setSaveError(err.message);
+      if (err.code === 'SUBSCRIPTION_REQUIRED') {
+        setSubscription(err.subscription);
+      } else {
+        setSaveError(err.message);
+      }
     } finally {
       setSaving(false);
     }
@@ -439,6 +453,10 @@ export default function Simulations() {
         <span>Preparing scored simulation...</span>
       </div>
     );
+  }
+
+  if (subscription) {
+    return <SubscriptionPrompt subscription={subscription} title="Subscription required for Clinical Simulations" />;
   }
 
   if (stage === 'select' || !scenario) {

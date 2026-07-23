@@ -22,19 +22,23 @@ export const Payment = {
 
   async markCompleted(checkoutId, { mpesaCode }) {
     const { rows } = await query(
-      `UPDATE revenue_transactions SET status = 'completed', mpesa_code = $1, transaction_date = now()
-       WHERE mpesa_checkout_id = $2 RETURNING *`,
+      `UPDATE revenue_transactions
+       SET status = 'completed', mpesa_code = COALESCE($1, mpesa_code), transaction_date = now()
+       WHERE mpesa_checkout_id = $2 AND status = 'pending'
+       RETURNING *`,
       [mpesaCode, checkoutId]
     );
-    return rows[0];
+    if (rows[0]) return rows[0];
+    return this.findByCheckoutId(checkoutId);
   },
 
   async markFailed(checkoutId) {
     const { rows } = await query(
-      `UPDATE revenue_transactions SET status = 'failed' WHERE mpesa_checkout_id = $1 RETURNING *`,
+      `UPDATE revenue_transactions SET status = 'failed' WHERE mpesa_checkout_id = $1 AND status = 'pending' RETURNING *`,
       [checkoutId]
     );
-    return rows[0];
+    if (rows[0]) return rows[0];
+    return this.findByCheckoutId(checkoutId);
   },
 
   async grantAccess(studentId, contentType, contentId, hours = 48) {
@@ -60,5 +64,45 @@ export const Payment = {
       [studentId, limit]
     );
     return rows;
+  },
+
+  async historyForInstitution(institutionId, { limit = 30 } = {}) {
+    const { rows } = await query(
+      `SELECT * FROM revenue_transactions WHERE institution_id = $1 ORDER BY transaction_date DESC LIMIT $2`,
+      [institutionId, limit]
+    );
+    return rows;
+  },
+
+  async listRecent({ limit = 50 } = {}) {
+    const { rows } = await query(
+      `SELECT * FROM revenue_transactions ORDER BY transaction_date DESC, created_at DESC LIMIT $1`,
+      [limit]
+    );
+    return rows;
+  },
+
+  async findLatestPendingSubscriptionTransaction({ studentId, institutionId, transactionType }) {
+    const clauses = [`transaction_type = $1`, `status = 'pending'`];
+    const params = [transactionType];
+
+    if (studentId) {
+      params.push(studentId);
+      clauses.push(`student_id = $${params.length}`);
+    }
+
+    if (institutionId) {
+      params.push(institutionId);
+      clauses.push(`institution_id = $${params.length}`);
+    }
+
+    const { rows } = await query(
+      `SELECT * FROM revenue_transactions
+       WHERE ${clauses.join(' AND ')}
+       ORDER BY created_at DESC
+       LIMIT 1`,
+      params
+    );
+    return rows[0] || null;
   },
 };

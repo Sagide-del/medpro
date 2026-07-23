@@ -11,6 +11,7 @@ import {
 } from '../controllers/clinicalReferenceCardController.js';
 import { authenticate } from '../middleware/auth.js';
 import { requireRole } from '../middleware/roleCheck.js';
+import { requirePremiumAccess } from '../middleware/subscriptionAccess.js';
 import { createUploader } from '../services/storage.js';
 
 const ALLOWED_MIME_TYPES = new Set([
@@ -27,8 +28,8 @@ const { upload, urlFor } = createUploader('clinical-reference-cards');
 
 router.use(authenticate);
 
-router.get('/', requireRole('student', 'teacher', 'institution_admin', 'super_admin'), listClinicalReferenceCards);
-router.get('/:id', requireRole('student', 'teacher', 'institution_admin', 'super_admin'), getClinicalReferenceCard);
+router.get('/', requireRole('student', 'teacher', 'institution_admin', 'super_admin'), requirePremiumAccess('clinical_reference_cards'), listClinicalReferenceCards);
+router.get('/:id', requireRole('student', 'teacher', 'institution_admin', 'super_admin'), requirePremiumAccess('clinical_reference_cards'), getClinicalReferenceCard);
 router.post('/', requireRole('super_admin', 'institution_admin'), createClinicalReferenceCard);
 router.patch('/:id', requireRole('super_admin', 'institution_admin'), updateClinicalReferenceCard);
 router.patch('/:id/publish', requireRole('super_admin', 'institution_admin'), publishClinicalReferenceCard);

@@ -21,10 +21,24 @@ export const StudentSubscription = {
     const current = await this.findActive(studentId);
     const base = current ? new Date(current.expires_at) : new Date();
     const expiresAt = new Date(base.getTime() + months * 30 * 24 * 60 * 60 * 1000);
+    const startsAt = current ? current.expires_at : new Date();
     const { rows } = await query(
       `INSERT INTO student_subscriptions (student_id, status, amount, starts_at, expires_at)
-       VALUES ($1, 'active', $2, now(), $3) RETURNING *`,
-      [studentId, amount, expiresAt]
+       VALUES ($1, 'active', $2, $3, $4) RETURNING *`,
+      [studentId, amount, startsAt, expiresAt]
+    );
+    return rows[0];
+  },
+
+  async createForDays({ studentId, amount, durationDays = 30, status = 'active' }) {
+    const current = await this.findActive(studentId);
+    const base = current ? new Date(current.expires_at) : new Date();
+    const expiresAt = new Date(base.getTime() + durationDays * 24 * 60 * 60 * 1000);
+    const startsAt = current ? current.expires_at : new Date();
+    const { rows } = await query(
+      `INSERT INTO student_subscriptions (student_id, status, amount, starts_at, expires_at)
+       VALUES ($1, $2, $3, $4, $5) RETURNING *`,
+      [studentId, status, amount, startsAt, expiresAt]
     );
     return rows[0];
   },
@@ -35,6 +49,14 @@ export const StudentSubscription = {
       [studentId]
     );
     return rows;
+  },
+
+  async latestForStudent(studentId) {
+    const { rows } = await query(
+      `SELECT * FROM student_subscriptions WHERE student_id = $1 ORDER BY starts_at DESC LIMIT 1`,
+      [studentId]
+    );
+    return rows[0] || null;
   },
 
   async cancel(subscriptionId, studentId) {

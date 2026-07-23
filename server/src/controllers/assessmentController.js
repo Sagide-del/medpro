@@ -1,19 +1,14 @@
 import { Assessment } from '../models/Assessment.js';
 import { Notification } from '../models/Notification.js';
-import { StudentSubscription } from '../models/StudentSubscription.js';
-import { Institution } from '../models/Institution.js';
 import { gradeAnswers } from '../services/assessmentService.js';
+import { resolveStudentSubscriptionAccess } from '../services/subscriptionAccess.js';
 import { asyncHandler } from '../utils/helpers.js';
 
-// Staff (teachers/admins) always see full content. A student needs either
-// their own Ksh 500/month subscription or an active institution site-license.
-// Anonymous visitors never get access — they only see the list as a teaser.
 async function hasAssessmentAccess(user) {
   if (!user) return false;
   if (user.role !== 'student') return true;
-  const personal = await StudentSubscription.findActive(user.sub);
-  if (personal) return true;
-  return Institution.hasActiveSubscription(user.institutionId);
+  const subscription = await resolveStudentSubscriptionAccess(user);
+  return subscription.allowed;
 }
 
 export const listAssessments = asyncHandler(async (req, res) => {
@@ -57,7 +52,12 @@ export const deleteAssessment = asyncHandler(async (req, res) => {
 
 export const startAttempt = asyncHandler(async (req, res) => {
   if (!(await hasAssessmentAccess(req.user))) {
-    return res.status(402).json({ error: 'An active assessment subscription is required to start this assessment.', code: 'SUBSCRIPTION_REQUIRED' });
+    const subscription = await resolveStudentSubscriptionAccess(req.user);
+    return res.status(402).json({
+      error: 'An active subscription is required to start this assessment.',
+      code: 'SUBSCRIPTION_REQUIRED',
+      subscription,
+    });
   }
   const attempt = await Assessment.startAttempt(req.params.id, req.user.sub);
   res.status(201).json({ attempt });

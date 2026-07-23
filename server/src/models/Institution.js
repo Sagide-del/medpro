@@ -36,6 +36,19 @@ export const Institution = {
     return rows.length > 0;
   },
 
+  async getCurrentLicence(institutionId) {
+    if (!institutionId) return null;
+    const { rows } = await query(
+      `SELECT *
+       FROM institution_subscriptions
+       WHERE institution_id = $1
+       ORDER BY expires_at DESC, created_at DESC
+       LIMIT 1`,
+      [institutionId]
+    );
+    return rows[0] || null;
+  },
+
   async create({ name, shortCode, contactEmail, contactPhone, address, logoUrl }) {
     const { rows } = await query(
       `INSERT INTO institutions (name, short_code, contact_email, contact_phone, address, logo_url)
@@ -66,6 +79,33 @@ export const Institution = {
       [institutionId, plan, status, maxStudents, amount, expiresAt]
     );
     return rows[0];
+  },
+
+  async addSubscriptionForDays(institutionId, { amount, durationDays = 365, maxStudents = 1000, status = 'active' }) {
+    const current = await this.getCurrentLicence(institutionId);
+    const base = current && ['active', 'trial', 'expiring'].includes(current.status) && new Date(current.expires_at) > new Date()
+      ? new Date(current.expires_at)
+      : new Date();
+    const expiresAt = new Date(base.getTime() + durationDays * 24 * 60 * 60 * 1000);
+    return this.addSubscription(institutionId, {
+      plan: 'professional',
+      status,
+      maxStudents,
+      amount,
+      expiresAt,
+    });
+  },
+
+  async getCoverageCounts(institutionId) {
+    const { rows } = await query(
+      `SELECT
+          COUNT(*) FILTER (WHERE role = 'student' AND status <> 'deleted')::int AS students_covered,
+          COUNT(*) FILTER (WHERE role = 'teacher' AND status <> 'deleted')::int AS teachers_covered
+       FROM users
+       WHERE institution_id = $1`,
+      [institutionId]
+    );
+    return rows[0] || { students_covered: 0, teachers_covered: 0 };
   },
 
   async expiringWithin(days = 30) {

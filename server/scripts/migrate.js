@@ -32,6 +32,7 @@ const files = [
   'migration_006_simulation_engine.sql',
   'migration_007_subscription_refinement.sql',
   'migration_008_final_release_modules.sql',
+  'migration_009_intasend_payment_method.sql',
 ];
 
 if (!process.env.DATABASE_URL) {

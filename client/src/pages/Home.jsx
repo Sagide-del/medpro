@@ -97,7 +97,7 @@ export default function Home() {
             <CapIcon /> Get Started <ArrowIcon style={{ width: 14, height: 14 }} />
           </Link>
           <Link to="/login" className="btn-outline">
-            <UserIcon /> Login
+            <UserIcon /> Student or Staff Login
           </Link>
         </div>
       </header>
@@ -126,7 +126,7 @@ export default function Home() {
               <CapIcon /> Get Started <ArrowIcon style={{ width: 14, height: 14 }} />
             </Link>
             <Link to="/login" className="btn-outline">
-              <UserIcon /> Login
+              <UserIcon /> Student or Staff Login
             </Link>
           </div>
         </div>

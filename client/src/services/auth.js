@@ -21,10 +21,10 @@ export { setToken, clearToken };
 /** Home route per role, used after login and for redirect-if-authenticated guards */
 export function homeForRole(role) {
   switch (role) {
-    case 'super_admin': return '/superadmin';
-    case 'institution_admin': return '/admin';
-    case 'teacher': return '/teacher';
-    case 'student': return '/student';
+    case 'super_admin': return '/superadmin/dashboard';
+    case 'institution_admin': return '/admin/dashboard';
+    case 'teacher': return '/teacher/dashboard';
+    case 'student': return '/student/dashboard';
     default: return '/login';
   }
 }

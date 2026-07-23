@@ -54,6 +54,9 @@ export default function TeacherDashboard() {
         <Link to="/teacher/student-performance" style={{ textDecoration: 'none' }}>
           <div className="card"><h2>Student performance</h2><p style={{ color: 'var(--ink-soft)', fontSize: 13 }}>Track submission volume and average scores.</p></div>
         </Link>
+        <Link to="/teacher/simulation-performance" style={{ textDecoration: 'none' }}>
+          <div className="card"><h2>Simulation performance</h2><p style={{ color: 'var(--ink-soft)', fontSize: 13 }}>Review saved simulation attempts and weak competency areas.</p></div>
+        </Link>
         <Link to="/teacher/create-assessment" style={{ textDecoration: 'none' }}>
           <div className="card"><h2>Create an assessment</h2><p style={{ color: 'var(--ink-soft)', fontSize: 13 }}>Build a quiz, exam, or clinical judgment scenario.</p></div>
         </Link>

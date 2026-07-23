@@ -9,6 +9,7 @@ export default function ProgressAnalytics() {
   const [progress, setProgress] = useState(null);
   const [attempts, setAttempts] = useState([]);
   const [subscription, setSubscription] = useState(null);
+  const [simulationResults, setSimulationResults] = useState([]);
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -16,6 +17,7 @@ export default function ProgressAnalytics() {
       api(`/analytics/students/${user.id}/progress`).then((d) => setProgress(d.progress)),
       api('/assessments/my-attempts').then((d) => setAttempts(d.attempts)),
       api('/payments/subscription').then((d) => setSubscription(d)),
+      api('/simulations/my-results').then((d) => setSimulationResults(d.results)).catch(() => setSimulationResults([])),
     ]).catch((e) => setError(e.message));
   }, [user.id]);
 
@@ -73,6 +75,24 @@ export default function ProgressAnalytics() {
             Current listed monthly price: Ksh {subscription.price}.
           </p>
         </div>
+      </div>
+
+      <div className="card">
+        <h2>Simulation competency results</h2>
+        <table>
+          <thead><tr><th>Simulation</th><th>Competency</th><th>Critical errors</th><th>Weak areas</th></tr></thead>
+          <tbody>
+            {simulationResults.map((result, index) => (
+              <tr key={`${result.simulation_attempt_id}-${index}`}>
+                <td>{result.title}<br /><span style={{ color: 'var(--ink-soft)', fontSize: 12 }}>{result.category}</span></td>
+                <td className="num">{result.overall_competency_score}%</td>
+                <td className="num">{result.critical_errors}</td>
+                <td>{Array.isArray(result.weak_areas) ? result.weak_areas.join(', ') || '-' : result.weak_areas || '-'}</td>
+              </tr>
+            ))}
+            {simulationResults.length === 0 && <tr><td colSpan="4" style={{ color: 'var(--ink-soft)' }}>No simulation results saved yet.</td></tr>}
+          </tbody>
+        </table>
       </div>
 
       <div className="card">

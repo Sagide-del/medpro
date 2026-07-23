@@ -29,6 +29,7 @@ const files = [
   'migration_003_subscription_index.sql',
   'migration_004_clinical_reference_cards.sql',
   'migration_005_assignment_workflow.sql',
+  'migration_006_simulation_engine.sql',
 ];
 
 if (!process.env.DATABASE_URL) {

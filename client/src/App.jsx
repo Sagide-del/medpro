@@ -31,6 +31,7 @@ import TeacherQuestionBank from './components/teacher/QuestionBank';
 import TeacherAiAssignmentGenerator from './components/teacher/AiAssignmentGenerator';
 import TeacherMarkingQueue from './components/teacher/MarkingQueue';
 import TeacherStudentPerformance from './components/teacher/StudentPerformance';
+import TeacherSimulationPerformance from './components/teacher/SimulationPerformance';
 import TeacherCreateAssessment from './components/teacher/CreateAssessment';
 import TeacherClinicalReferenceCards from './components/teacher/ClinicalReferenceCards';
 import TeacherGradeSubmissions from './components/teacher/GradeSubmissions';
@@ -59,7 +60,7 @@ const STUDENT_LINKS = [
   {
     group: 'Overview',
     items: [
-      { to: '/student', label: 'Dashboard', end: true },
+      { to: '/student/dashboard', label: 'Dashboard', end: true },
       { to: '/student/progress-analytics', label: 'Progress Analytics' },
       { to: '/student/subscription', label: 'Subscription' },
     ],
@@ -97,12 +98,13 @@ const STUDENT_LINKS = [
 
 
 const TEACHER_LINKS = [
-  { to: '/teacher', label: 'Dashboard', end: true },
+  { to: '/teacher/dashboard', label: 'Dashboard', end: true },
   { to: '/teacher/assignments', label: 'Assignments' },
   { to: '/teacher/question-bank', label: 'Question Bank' },
   { to: '/teacher/ai-generator', label: 'AI Assignment Generator' },
   { to: '/teacher/marking-queue', label: 'Marking Queue' },
   { to: '/teacher/student-performance', label: 'Student Performance' },
+  { to: '/teacher/simulation-performance', label: 'Simulation Performance' },
   { to: '/teacher/create-assessment', label: 'Create assessment' },
   { to: '/teacher/reference-cards', label: 'Clinical Reference Cards' },
   { to: '/teacher/grade-submissions', label: 'Grade submissions' },
@@ -113,7 +115,7 @@ const TEACHER_LINKS = [
 
 
 const ADMIN_LINKS = [
-  { to: '/admin', label: 'Dashboard', end: true },
+  { to: '/admin/dashboard', label: 'Dashboard', end: true },
   { to: '/admin/reference-cards', label: 'Clinical Reference Cards' },
   { to: '/admin/institution', label: 'Institution' },
   { to: '/admin/users', label: 'Users' },
@@ -126,7 +128,7 @@ const SUPERADMIN_LINKS = [
     group: "Main",
     items: [
       {
-        to: '/superadmin',
+        to: '/superadmin/dashboard',
         label: 'Dashboard',
         end: true,
       },
@@ -215,7 +217,8 @@ function AppRoutes() {
 
 
         <Route element={<RequireRole role="student"><Layout links={STUDENT_LINKS} roleLabel="EMS competency dashboard" /></RequireRole>}>
-          <Route path="/student" element={<StudentDashboard />} />
+          <Route path="/student" element={<Navigate to="/student/dashboard" replace />} />
+          <Route path="/student/dashboard" element={<StudentDashboard />} />
           <Route path="/student/exam-preparation" element={<StudentExamPreparation />} />
           <Route path="/student/question-bank" element={<StudentAssessments />} />
           <Route path="/student/mock-exams" element={<StudentAssessments />} />
@@ -248,12 +251,14 @@ function AppRoutes() {
 
 
         <Route element={<RequireRole role="teacher"><Layout links={TEACHER_LINKS} roleLabel="Teacher portal" /></RequireRole>}>
-          <Route path="/teacher" element={<TeacherDashboard />} />
+          <Route path="/teacher" element={<Navigate to="/teacher/dashboard" replace />} />
+          <Route path="/teacher/dashboard" element={<TeacherDashboard />} />
           <Route path="/teacher/assignments" element={<TeacherAssignments />} />
           <Route path="/teacher/question-bank" element={<TeacherQuestionBank />} />
           <Route path="/teacher/ai-generator" element={<TeacherAiAssignmentGenerator />} />
           <Route path="/teacher/marking-queue" element={<TeacherMarkingQueue />} />
           <Route path="/teacher/student-performance" element={<TeacherStudentPerformance />} />
+          <Route path="/teacher/simulation-performance" element={<TeacherSimulationPerformance />} />
           <Route path="/teacher/create-assessment" element={<TeacherCreateAssessment />} />
           <Route path="/teacher/reference-cards" element={<TeacherClinicalReferenceCards />} />
           <Route path="/teacher/reference-cards/:id" element={<TeacherClinicalReferenceCards />} />
@@ -265,7 +270,8 @@ function AppRoutes() {
 
 
         <Route element={<RequireRole role="institution_admin"><Layout links={ADMIN_LINKS} roleLabel="Institution admin" /></RequireRole>}>
-          <Route path="/admin" element={<AdminDashboard />} />
+          <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
+          <Route path="/admin/dashboard" element={<AdminDashboard />} />
           <Route path="/admin/reference-cards" element={<AdminClinicalReferenceCardsManager />} />
           <Route path="/admin/institution" element={<AdminInstitutions />} />
           <Route path="/admin/users" element={<AdminUsers />} />
@@ -275,7 +281,8 @@ function AppRoutes() {
 
         <Route element={<RequireRole role="super_admin"><Layout links={SUPERADMIN_LINKS} roleLabel="Super admin console" /></RequireRole>}>
 
-          <Route path="/superadmin" element={<SuperAdminDashboard />} />
+          <Route path="/superadmin" element={<Navigate to="/superadmin/dashboard" replace />} />
+          <Route path="/superadmin/dashboard" element={<SuperAdminDashboard />} />
           <Route path="/superadmin/institutions" element={<SuperAdminInstitutions />} />
           <Route path="/superadmin/users" element={<AdminUsers />} />
           <Route path="/superadmin/content" element={<SuperAdminContentUpload />} />

@@ -32,7 +32,7 @@ export default function Register() {
     <div className="auth-wrap">
       <div className="auth-card">
         <Link to="/" className="back-link">&larr; Back to home</Link>
-        <h1>Med<span>Pro</span></h1>
+        <h1>Med<span>Pro</span>Hub</h1>
         <div className="tag">Create your student account</div>
         <PulseLine color="#cc0000" width={330} />
         <div className="field" style={{ marginTop: 18 }}>
@@ -68,6 +68,9 @@ export default function Register() {
         {error && <div className="error-note">{error}</div>}
         <div className="switch">
           Already have an account? <Link to="/login">Sign in</Link>
+        </div>
+        <div style={{ marginTop: 22, fontSize: 11, color: 'var(--ink-soft)' }}>
+          MedProHub © 2026. All rights reserved.
         </div>
       </div>
     </div>

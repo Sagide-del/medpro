@@ -11,6 +11,7 @@ export default function StudentDashboard() {
   const [attempts, setAttempts] = useState([]);
   const [logbook, setLogbook] = useState(null);
   const [subscription, setSubscription] = useState(null);
+  const [latestSimulation, setLatestSimulation] = useState(null);
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -19,6 +20,7 @@ export default function StudentDashboard() {
       api('/assessments/my-attempts').then((data) => setAttempts(data.attempts.slice(0, 5))),
       api('/logbook').then((data) => setLogbook(data)),
       api('/payments/subscription').then((data) => setSubscription(data)),
+      api('/simulations/my-results/latest').then((data) => setLatestSimulation(data.result)).catch(() => setLatestSimulation(null)),
     ]).catch((err) => setError(err.message));
   }, [user.id]);
 
@@ -87,11 +89,25 @@ export default function StudentDashboard() {
         </table>
       </div>
 
+      {latestSimulation && (
+        <div className="card">
+          <h2>Latest simulation result</h2>
+          <p style={{ marginBottom: 8 }}><strong>{latestSimulation.title}</strong> &middot; {latestSimulation.category}</p>
+          <div className="vitals">
+            <Vital label="Competency score" value={`${latestSimulation.overall_competency_score}%`} />
+            <Vital label="Clinical judgement" value={`${latestSimulation.clinical_decision_score}%`} />
+            <Vital label="Critical errors" value={latestSimulation.critical_errors} />
+            <Vital label="Weak areas" value={Array.isArray(latestSimulation.weak_areas) ? latestSimulation.weak_areas[0] || '-' : latestSimulation.weak_areas || '-'} />
+          </div>
+        </div>
+      )}
+
       <div className="form-grid">
         <Link to="/student/exam-preparation"><div className="card" style={{ cursor: 'pointer' }}><h2>Exam preparation</h2><p style={{ color: 'var(--ink-soft)', fontSize: 13 }}>Question bank, mock exams, CATs, and assessment practice.</p></div></Link>
         <Link to="/student/flashcards"><div className="card" style={{ cursor: 'pointer' }}><h2>Clinical recall cards</h2><p style={{ color: 'var(--ink-soft)', fontSize: 13 }}>Spaced repetition for critical EMS knowledge points.</p></div></Link>
         <Link to="/student/reference-cards"><div className="card" style={{ cursor: 'pointer' }}><h2>Clinical reference cards</h2><p style={{ color: 'var(--ink-soft)', fontSize: 13 }}>Visual bedside references for anatomy, ECGs, and procedures.</p></div></Link>
         <Link to="/student/progress-analytics"><div className="card" style={{ cursor: 'pointer' }}><h2>Progress analytics</h2><p style={{ color: 'var(--ink-soft)', fontSize: 13 }}>Track readiness, weak areas, and competency trends.</p></div></Link>
+        <Link to="/student/simulations"><div className="card" style={{ cursor: 'pointer' }}><h2>Scored simulations</h2><p style={{ color: 'var(--ink-soft)', fontSize: 13 }}>Complete persistent clinical simulations and save competency results.</p></div></Link>
       </div>
     </>
   );

@@ -76,11 +76,9 @@ const STUDENT_LINKS = [
     group: 'Exam Preparation',
     items: [
       { to: '/student/exam-preparation', label: 'Overview' },
-      { to: '/student/question-bank', label: 'Question Bank' },
-      { to: '/student/mock-exams', label: 'Mock Exams' },
-      { to: '/student/cats', label: 'CATs' },
+      { to: '/student/mcq-questions', label: 'MCQ Questions' },
+      { to: '/student/mock-prep-tests', label: 'Mock Prep Tests' },
       { to: '/student/assessments', label: 'Assessments' },
-      { to: '/student/flashcards', label: 'Clinical Recall Cards' },
       { to: '/student/reference-cards', label: 'Clinical Reference Cards' },
     ],
   },
@@ -264,6 +262,8 @@ function AppRoutes() {
           <Route path="/student" element={<Navigate to="/student/dashboard" replace />} />
           <Route path="/student/dashboard" element={<StudentDashboard />} />
           <Route path="/student/exam-preparation" element={<StudentExamPreparation />} />
+          <Route path="/student/mcq-questions" element={<StudentAssessments />} />
+          <Route path="/student/mock-prep-tests" element={<StudentAssessments />} />
           <Route path="/student/question-bank" element={<StudentAssessments />} />
           <Route path="/student/mock-exams" element={<StudentAssessments />} />
           <Route path="/student/cats" element={<StudentAssessments />} />

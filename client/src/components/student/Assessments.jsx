@@ -4,17 +4,25 @@ import { api } from '../../services/api';
 import Loading from '../shared/Loading';
 
 const VIEW_META = {
+  '/student/mcq-questions': {
+    title: 'MCQ Questions',
+    subtitle: 'Browse EMS multiple-choice practice sets optimized for quick daily revision.',
+  },
+  '/student/mock-prep-tests': {
+    title: 'Mock Prep Tests',
+    subtitle: 'Use realistic timed prep sets to build exam confidence before formal assessments.',
+  },
   '/student/question-bank': {
-    title: 'Question Bank',
-    subtitle: 'Browse published EMS question sets, quizzes, and clinical judgment items.',
+    title: 'MCQ Questions',
+    subtitle: 'Legacy alias for EMS multiple-choice practice sets and quick question drilling.',
   },
   '/student/mock-exams': {
-    title: 'Mock Exams',
-    subtitle: 'Use the current assessment catalogue as realistic exam-preparation practice.',
+    title: 'Mock Prep Tests',
+    subtitle: 'Legacy alias for realistic timed prep practice using the current assessment catalogue.',
   },
   '/student/cats': {
-    title: 'CATs',
-    subtitle: 'Continuous assessment practice powered by the live MedProHub assessment engine.',
+    title: 'Assessments',
+    subtitle: 'Legacy CAT route pointing to the active assessment practice catalogue.',
   },
   '/student/assessments': {
     title: 'Assessments',
@@ -152,15 +160,15 @@ function TakeAssessment() {
         <h1>{assessment.title}</h1>
         <p style={{ color: 'var(--ink-soft)', margin: '10px 0' }}>{assessment.description}</p>
         <div className="alert info" style={{ marginBottom: 14 }}>
-          This assessment requires an active subscription - Ksh {subscriptionMeta?.price ?? 500}/month unlocks every
-          published assessment. Institutions with a MedPro site-license cover this automatically for their students.
+          This assessment requires an active subscription - Ksh {subscriptionMeta?.price ?? 300}/month unlocks MCQ Questions,
+          Mock Prep Tests, Clinical Reference Cards, and the full published assessment catalogue.
         </div>
         <div className="field">
           <label htmlFor="phone">M-Pesa phone number</label>
           <input id="phone" value={phone} onChange={(event) => setPhone(event.target.value)} placeholder="07XX XXX XXX" />
         </div>
         <button className="primary" onClick={subscribe} disabled={busy || !phone} style={{ marginTop: 10 }}>
-          {busy ? 'Processing...' : `Subscribe - Ksh ${subscriptionMeta?.price ?? 500}/month`}
+          {busy ? 'Processing...' : `Subscribe - Ksh ${subscriptionMeta?.price ?? 300}/month`}
         </button>
         {subStatus && <p style={{ marginTop: 10, fontSize: 13 }}>{subStatus}</p>}
         {error && <div className="error-note">{error}</div>}

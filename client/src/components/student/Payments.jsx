@@ -97,11 +97,12 @@ export default function Payments() {
 
         <ul style={{ paddingLeft: 18, marginBottom: 16 }}>
           {[
+            'MCQ Questions',
+            'Mock Prep Tests',
             'Clinical Reference Cards',
             'Assessments',
             'Simulations',
             'Assignments',
-            'Exam Preparation',
           ].map((feature) => <li key={feature}>{feature}</li>)}
         </ul>
 

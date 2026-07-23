@@ -103,7 +103,7 @@ export default function StudentDashboard() {
       )}
 
       <div className="form-grid">
-        <Link to="/student/exam-preparation"><div className="card" style={{ cursor: 'pointer' }}><h2>Exam preparation</h2><p style={{ color: 'var(--ink-soft)', fontSize: 13 }}>Question bank, mock exams, CATs, and assessment practice.</p></div></Link>
+        <Link to="/student/exam-preparation"><div className="card" style={{ cursor: 'pointer' }}><h2>Exam preparation</h2><p style={{ color: 'var(--ink-soft)', fontSize: 13 }}>MCQ Questions, Mock Prep Tests, Clinical Reference Cards, and Assessments.</p></div></Link>
         <Link to="/student/flashcards"><div className="card" style={{ cursor: 'pointer' }}><h2>Clinical recall cards</h2><p style={{ color: 'var(--ink-soft)', fontSize: 13 }}>Spaced repetition for critical EMS knowledge points.</p></div></Link>
         <Link to="/student/reference-cards"><div className="card" style={{ cursor: 'pointer' }}><h2>Clinical reference cards</h2><p style={{ color: 'var(--ink-soft)', fontSize: 13 }}>Visual bedside references for anatomy, ECGs, and procedures.</p></div></Link>
         <Link to="/student/progress-analytics"><div className="card" style={{ cursor: 'pointer' }}><h2>Progress analytics</h2><p style={{ color: 'var(--ink-soft)', fontSize: 13 }}>Track readiness, weak areas, and competency trends.</p></div></Link>

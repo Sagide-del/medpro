@@ -361,6 +361,101 @@ input:focus, select:focus, textarea:focus, button:focus-visible, a:focus-visible
   font-weight: 700;
   color: var(--black);
 }
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+.dashboard-section-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.dashboard-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.dashboard-list-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 14px 14px;
+  text-decoration: none;
+  color: inherit;
+  background: #fcfcfc;
+}
+.dashboard-list-card:hover {
+  background: #f7f7f7;
+}
+.dashboard-list-title {
+  font-weight: 700;
+  color: var(--ink);
+  margin-bottom: 4px;
+}
+.dashboard-list-meta {
+  font-size: 12.5px;
+  color: var(--ink-soft);
+}
+.dashboard-list-cta {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--red);
+  white-space: nowrap;
+}
+.dashboard-mini-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+.dashboard-metric-card {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 14px 12px;
+  text-decoration: none;
+  color: inherit;
+  background: #fcfcfc;
+}
+.dashboard-metric-count {
+  font-family: var(--font-display);
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--red);
+  line-height: 1;
+  margin-bottom: 8px;
+}
+.dashboard-metric-title {
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+.dashboard-metric-meta {
+  font-size: 12px;
+  color: var(--ink-soft);
+  line-height: 1.45;
+}
+.dashboard-activity-side {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+}
+.dashboard-time {
+  font-size: 11px;
+  color: var(--ink-soft);
+  white-space: nowrap;
+}
+.dashboard-empty {
+  border: 1px dashed var(--line);
+  border-radius: 12px;
+  padding: 16px 14px;
+  color: var(--ink-soft);
+  font-size: 13px;
+}
 
 button {
   font: inherit;
@@ -883,9 +978,18 @@ button:disabled { opacity: 0.5; cursor: default; }
   .form-grid,
   .student-action-grid,
   .student-subscription-grid,
-  .student-feature-list { grid-template-columns: 1fr; }
+  .student-feature-list,
+  .dashboard-grid,
+  .dashboard-mini-grid { grid-template-columns: 1fr; }
   .card { padding: 16px 14px; }
   th, td { padding: 8px 6px; }
+  .dashboard-list-card {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .dashboard-activity-side {
+    align-items: flex-start;
+  }
 }
 
 @media (max-width: 420px) {

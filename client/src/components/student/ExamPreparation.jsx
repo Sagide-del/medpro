@@ -4,26 +4,30 @@ const PREP_MODULES = [
   {
     to: '/student/mcq-questions',
     title: 'MCQ Questions',
-    description: 'Practice mobile-friendly multiple-choice drills built from the current EMS assessment catalogue.',
+    description: 'Fast question drilling for short daily study sessions.',
     accent: '#c62828',
+    action: 'Open MCQs',
   },
   {
     to: '/student/mock-prep-tests',
     title: 'Mock Prep Tests',
-    description: 'Use realistic timed prep sets on Android or desktop while dedicated mock tracks continue to expand.',
+    description: 'Timed prep sets built for realistic revision on mobile or desktop.',
     accent: '#ef6c00',
+    action: 'Start prep test',
   },
   {
     to: '/student/assessments',
     title: 'Assessments',
-    description: 'Open the full assessment library for quizzes, exams, and structured readiness checks.',
+    description: 'Full assessment runs for deeper competency checks.',
     accent: '#1565c0',
+    action: 'View assessments',
   },
   {
     to: '/student/reference-cards',
     title: 'Clinical Reference Cards',
-    description: 'Review fast bedside references for airway, trauma, anatomy, cardiology, and core EMS workflows.',
+    description: 'Quick-look clinical references for airway, trauma, anatomy, and cardiology.',
     accent: '#2e7d32',
+    action: 'Open library',
   },
 ];
 
@@ -32,45 +36,38 @@ export default function ExamPreparation() {
     <>
       <div className="page-head">
         <div>
-          <h1>Exam Preparation</h1>
-          <div className="sub">Mobile-first revision tools for MCQ practice, mock prep, reference review, and assessment readiness.</div>
+          <h1>Exam Center</h1>
+          <div className="sub">Focused revision lanes with less clutter.</div>
         </div>
       </div>
 
-      <div className="card" style={{ marginBottom: 18, padding: '18px 16px' }}>
+      <div className="card student-hero-card" style={{ marginBottom: 18 }}>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
-          {['Android ready', 'Fast review', 'Responsive desktop'].map((item) => (
+          {['Android ready', 'Fast review', 'Low clutter'].map((item) => (
             <span key={item} className="badge draft">{item}</span>
           ))}
         </div>
-        <h2 style={{ marginBottom: 8 }}>Focused exam prep, without the clutter</h2>
-        <p style={{ color: 'var(--ink-soft)', marginBottom: 0 }}>
-          MedProHub now groups student revision into four clearer lanes: MCQ Questions, Mock Prep Tests,
-          Clinical Reference Cards, and Assessments. Legacy links still open if you already bookmarked them.
-        </p>
+        <h2 style={{ marginBottom: 8 }}>Everything you need, grouped by action</h2>
+        <div className="student-chip-row">
+          {PREP_MODULES.map((module) => (
+            <span key={module.title} className="student-chip">{module.title}</span>
+          ))}
+        </div>
       </div>
 
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
-          gap: 14,
-        }}
-      >
+      <div className="student-action-grid">
         {PREP_MODULES.map((module) => (
           <Link key={module.to} to={module.to} style={{ textDecoration: 'none' }}>
             <div
-              className="card"
+              className="card student-action-card"
               style={{
-                height: '100%',
-                padding: '18px 16px',
                 borderTop: `4px solid ${module.accent}`,
               }}
             >
-              <div className="badge draft" style={{ marginBottom: 10 }}>Exam Prep</div>
+              <div className="student-icon-dot" style={{ background: module.accent }} />
               <h2 style={{ marginBottom: 8 }}>{module.title}</h2>
               <p style={{ color: 'var(--ink-soft)', fontSize: 13, marginBottom: 12 }}>{module.description}</p>
-              <div style={{ color: module.accent, fontWeight: 600, fontSize: 13 }}>Open module</div>
+              <div className="student-action-label" style={{ color: module.accent }}>{module.action}</div>
             </div>
           </Link>
         ))}

@@ -69,79 +69,81 @@ export default function Payments() {
       <div className="page-head">
         <div>
           <h1>Student Subscription</h1>
-          <div className="sub">MedProHub Student Plan, renewal status, and payment history.</div>
+          <div className="sub">One plan. Full student access.</div>
         </div>
       </div>
 
-      <div className="card" style={{ marginBottom: 16 }}>
-        <h2>MedProHub Student Plan</h2>
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', margin: '10px 0 14px' }}>
+      <div className="student-subscription-grid">
+        <div className="card student-plan-card" style={{ marginBottom: 16 }}>
+          <div className="student-plan-header">
+            <div>
+              <div className="student-plan-kicker">Student plan</div>
+              <h2 style={{ marginBottom: 6 }}>MedProHub Student Plan</h2>
+            </div>
+            <div className="student-plan-price">KES {Number(currentPlan?.price || 300).toLocaleString('en-KE')}<small>/month</small></div>
+          </div>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', margin: '10px 0 14px' }}>
           <span className={`badge ${data.subscription?.allowed ? 'approved' : paymentStatus === 'pending' ? 'draft' : 'rejected'}`}>
             {paymentStatus}
           </span>
-          <span className="badge draft">KES {Number(currentPlan?.price || 300).toLocaleString('en-KE')}/month</span>
           <span className="badge draft">Expiry: {expiry}</span>
-        </div>
-
-        {!data.subscription?.allowed && location.state?.from && (
-          <div className="alert" style={{ marginBottom: 12 }}>
-            An active student subscription is required before accessing MedProHub student content.
           </div>
-        )}
-        <p style={{ color: 'var(--ink-soft)', marginBottom: 10 }}>
-          Current plan: {currentPlan?.name || 'Student Monthly'}. One payment unlocks all student content with no additional content charges.
-        </p>
-        <p style={{ color: 'var(--ink-soft)', marginBottom: 12 }}>
-          Payment status: {paymentStatus}. Benefits include full MedProHub student access once payment is successful.
-        </p>
 
-        <ul style={{ paddingLeft: 18, marginBottom: 16 }}>
-          {[
-            'MCQ Questions',
-            'Mock Prep Tests',
-            'Clinical Reference Cards',
-            'Assessments',
-            'Simulations',
-            'Assignments',
-          ].map((feature) => <li key={feature}>{feature}</li>)}
-        </ul>
+          {!data.subscription?.allowed && location.state?.from && (
+            <div className="alert" style={{ marginBottom: 12 }}>
+              Activate your plan to continue.
+            </div>
+          )}
 
-        <div className="field">
-          <label htmlFor="student-phone">Pay with IntaSend</label>
-          <input id="student-phone" value={phone} onChange={(event) => setPhone(event.target.value)} placeholder="07XX XXX XXX" />
+          <div className="student-feature-list">
+            {[
+              'MCQ Questions',
+              'Mock Prep Tests',
+              'Clinical Reference Cards',
+              'Assessments',
+              'Assignments',
+              'Skill Simulations',
+            ].map((feature) => <div key={feature} className="student-feature-item">{feature}</div>)}
+          </div>
+
+          <div className="field">
+            <label htmlFor="student-phone">Phone number</label>
+            <input id="student-phone" value={phone} onChange={(event) => setPhone(event.target.value)} placeholder="07XX XXX XXX" />
+          </div>
+          <button className="primary student-cta" onClick={renew} disabled={busy || !phone}>
+            {busy ? 'Processing...' : 'Pay with IntaSend'}
+          </button>
+          {status && <div className="ok-note" style={{ marginTop: 12 }}>{status}</div>}
         </div>
-        <button className="primary" onClick={renew} disabled={busy || !phone}>
-          {busy ? 'Processing...' : 'Subscribe for KES 300/month'}
-        </button>
-        {status && <div className="ok-note" style={{ marginTop: 12 }}>{status}</div>}
-      </div>
 
-      <div className="card">
-        <h2>Payment history</h2>
-        <p style={{ color: 'var(--ink-soft)', marginBottom: 12 }}>Total completed spend: {kes(totalSpent)}</p>
-        <table>
-          <thead>
-            <tr>
-              <th>Date</th>
-              <th>Type</th>
-              <th>Amount</th>
-              <th>Status</th>
-              <th>Method</th>
-            </tr>
-          </thead>
-          <tbody>
-            {transactions.map((transaction) => (
-              <tr key={transaction.transaction_id}>
-                <td>{new Date(transaction.transaction_date || transaction.created_at).toLocaleDateString('en-KE')}</td>
-                <td>{typeLabel[transaction.transaction_type] || transaction.transaction_type}</td>
-                <td>{kes(transaction.amount)}</td>
-                <td>{transaction.status}</td>
-                <td>{transaction.payment_method}</td>
+        <div className="card student-history-card">
+          <h2>Payment history</h2>
+          <div className="student-total-spend">{kes(totalSpent)}</div>
+          <div className="sub" style={{ marginBottom: 12 }}>Completed spend</div>
+          <table>
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Type</th>
+                <th>Amount</th>
+                <th>Status</th>
+                <th>Method</th>
               </tr>
-            ))}
-            {transactions.length === 0 && <tr><td colSpan="5" style={{ color: 'var(--ink-soft)' }}>No payments recorded yet.</td></tr>}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {transactions.map((transaction) => (
+                <tr key={transaction.transaction_id}>
+                  <td>{new Date(transaction.transaction_date || transaction.created_at).toLocaleDateString('en-KE')}</td>
+                  <td>{typeLabel[transaction.transaction_type] || transaction.transaction_type}</td>
+                  <td>{kes(transaction.amount)}</td>
+                  <td>{transaction.status}</td>
+                  <td>{transaction.payment_method}</td>
+                </tr>
+              ))}
+              {transactions.length === 0 && <tr><td colSpan="5" style={{ color: 'var(--ink-soft)' }}>No payments recorded yet.</td></tr>}
+            </tbody>
+          </table>
+        </div>
       </div>
     </>
   );

@@ -65,37 +65,48 @@ import SuperAdminELibraryManager from './components/superadmin/ELibraryManager';
 
 const STUDENT_LINKS = [
   {
-    group: 'Overview',
+    group: 'Dashboard',
     items: [
       { to: '/student/dashboard', label: 'Dashboard', end: true },
-      { to: '/student/progress-analytics', label: 'Progress Analytics' },
       { to: '/student/subscription', label: 'Subscription' },
     ],
   },
   {
-    group: 'Exam Preparation',
+    group: 'Learn',
     items: [
-      { to: '/student/exam-preparation', label: 'Overview' },
-      { to: '/student/mcq-questions', label: 'MCQ Questions' },
-      { to: '/student/mock-prep-tests', label: 'Mock Prep Tests' },
-      { to: '/student/assessments', label: 'Assessments' },
-      { to: '/student/reference-cards', label: 'Clinical Reference Cards' },
+      { to: '/student/exam-center', label: 'Exam Center' },
+      { to: '/student/clinical-library', label: 'Clinical Library' },
+      { to: '/student/assignments', label: 'Assignments' },
+      { to: '/student/simulations', label: 'Skill Simulations' },
     ],
   },
   {
-    group: 'Clinical Practice',
+    group: 'Practice',
     items: [
-      { to: '/student/simulations', label: 'Skill Simulations' },
-      { to: '/student/assignments', label: 'Practical Assignments' },
       { to: '/student/logbook', label: 'Clinical Logbook' },
       { to: '/student/videos', label: 'Video Practicals' },
     ],
   },
   {
-    group: 'Connected Learning',
+    group: 'Progress',
+    items: [
+      { to: '/student/progress-analytics', label: 'Analytics' },
+      { to: '/student/assessments', label: 'Assessments' },
+    ],
+  },
+  {
+    group: 'Community',
     items: [
       { to: '/student/community', label: 'Community' },
-      { to: '/student/elibrary', label: 'E-Library' },
+      { to: '/student/elibrary', label: 'Resources' },
+    ],
+  },
+  {
+    group: 'Aliases',
+    items: [
+      { to: '/student/mcq-questions', label: 'MCQ Questions' },
+      { to: '/student/mock-prep-tests', label: 'Mock Prep Tests' },
+      { to: '/student/reference-cards', label: 'Clinical Reference Cards' },
       { to: '/student/research', label: 'Research' },
     ],
   },
@@ -262,6 +273,8 @@ function AppRoutes() {
           <Route path="/student" element={<Navigate to="/student/dashboard" replace />} />
           <Route path="/student/dashboard" element={<StudentDashboard />} />
           <Route path="/student/exam-preparation" element={<StudentExamPreparation />} />
+          <Route path="/student/exam-center" element={<StudentExamPreparation />} />
+          <Route path="/student/clinical-library" element={<StudentClinicalReferenceCards />} />
           <Route path="/student/mcq-questions" element={<StudentAssessments />} />
           <Route path="/student/mock-prep-tests" element={<StudentAssessments />} />
           <Route path="/student/question-bank" element={<StudentAssessments />} />

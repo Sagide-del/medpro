@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { Link, NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import PulseLine from './PulseLine';
@@ -23,22 +24,51 @@ export default function Layout({ links, roleLabel }) {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const [navOpen, setNavOpen] = useState(false);
+  const visibleLinks = links.filter((item) => item.group !== 'Aliases');
+  const mobileLinks = visibleLinks.flatMap((item) => item.items || []).slice(0, 4);
+
+  useEffect(() => {
+    setNavOpen(false);
+  }, [location.pathname]);
 
   return (
     <div className="shell">
 
-      <aside className="sidebar">
+      <aside className={`sidebar${navOpen ? ' open' : ''}`}>
 
-        <Link to="/" className="brand" style={{ textDecoration: 'none' }}>
-          Med<span>Pro</span>
-          <small>{roleLabel}</small>
-        </Link>
+        <div className="sidebar-top">
+          <Link to="/" className="brand" style={{ textDecoration: 'none' }}>
+            Med<span>Pro</span>
+            <small>{roleLabel}</small>
+          </Link>
+
+          <button
+            type="button"
+            className="nav-toggle"
+            aria-label="Toggle navigation"
+            aria-expanded={navOpen}
+            onClick={() => setNavOpen((current) => !current)}
+          >
+            <span />
+            <span />
+            <span />
+          </button>
+        </div>
+
+        <div className="mobile-quicknav">
+          {mobileLinks.map((link) => (
+            <NavLink key={link.to} to={link.to} end={link.end} className="quick-pill">
+              {link.label}
+            </NavLink>
+          ))}
+        </div>
 
         <PulseLine color="#cc0000" />
 
         <nav>
 
-          {links.map((item, index) => {
+          {visibleLinks.map((item, index) => {
 
             // Grouped navigation
             if (item.group) {
@@ -85,7 +115,8 @@ export default function Layout({ links, roleLabel }) {
 
         <div className="foot">
 
-          Signed in as {user?.name || user?.full_name}
+          <div className="foot-label">Signed in as</div>
+          <div className="foot-user">{user?.name || user?.full_name}</div>
 
 
           <button

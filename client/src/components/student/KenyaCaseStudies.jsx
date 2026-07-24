@@ -201,7 +201,7 @@ function CaseSession() {
 
   const phases = payload?.phases || [];
   const caseStudy = payload?.caseStudy;
-  const patientTables = caseStudy?.content_json?.patient_information?.tables || [];
+  const patientTables = caseStudy?.content?.patient_information?.tables || [];
   const scoredActivities = useMemo(
     () => (payload?.activities || []).filter((activity) => Number(activity.points || 0) > 0),
     [payload]

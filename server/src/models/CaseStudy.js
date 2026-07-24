@@ -15,7 +15,7 @@ function requiredKeywordMatches(keywords) {
 }
 
 function resolveContentJson(row) {
-  return row?.content_json || row?.content || {};
+  return row?.content || {};
 }
 
 function extractCompetencies(contentJson) {
@@ -236,7 +236,6 @@ export const CaseStudy = {
          cs.difficulty,
          cs.description,
          cs.content,
-         cs.content_json,
          cs.order_number,
          cs.passing_percentage,
          COALESCE(progress.status, CASE WHEN cs.order_number = 1 THEN 'available' ELSE 'locked' END) AS status,
@@ -256,7 +255,7 @@ export const CaseStudy = {
       const contentJson = resolveContentJson(row);
       return {
         ...row,
-        content_json: contentJson,
+        content: contentJson,
         total_points: extractTotalPoints(contentJson),
         competencies: extractCompetencies(contentJson),
       };
@@ -274,7 +273,6 @@ export const CaseStudy = {
          cs.difficulty,
          cs.description,
          cs.content,
-         cs.content_json,
          cs.order_number,
          cs.passing_percentage,
          COALESCE(progress.status, CASE WHEN cs.order_number = 1 THEN 'available' ELSE 'locked' END) AS status,
@@ -293,7 +291,7 @@ export const CaseStudy = {
     const contentJson = resolveContentJson(rows[0]);
     return {
       ...rows[0],
-      content_json: contentJson,
+      content: contentJson,
       total_points: extractTotalPoints(contentJson),
       competencies: extractCompetencies(contentJson),
     };
@@ -303,8 +301,8 @@ export const CaseStudy = {
     const studyCase = await this.findForStudent(studentId, caseId);
     if (!studyCase) return null;
 
-    const activities = Array.isArray(studyCase.content_json?.activities)
-      ? [...studyCase.content_json.activities].sort((left, right) => {
+    const activities = Array.isArray(studyCase.content?.activities)
+      ? [...studyCase.content.activities].sort((left, right) => {
           const leftPhase = phaseSortValue(left.phase);
           const rightPhase = phaseSortValue(right.phase);
           if (leftPhase !== rightPhase) return leftPhase - rightPhase;
@@ -314,7 +312,7 @@ export const CaseStudy = {
 
     return {
       caseStudy: studyCase,
-      sections: buildContentSections(studyCase.content_json),
+      sections: buildContentSections(studyCase.content),
       activities,
       phases: groupActivitiesByPhase(activities),
     };
@@ -323,7 +321,7 @@ export const CaseStudy = {
   async submitAttempt({ studentId, caseId, answers = {} }) {
     return withTransaction(async (db) => {
       const { rows: caseRows } = await db.query(
-        `SELECT id, title, order_number, passing_percentage, content, content_json
+        `SELECT id, title, order_number, passing_percentage, content
          FROM case_studies
          WHERE id = $1
            AND is_active = true
@@ -466,8 +464,7 @@ export const CaseStudy = {
          cs.title,
          cs.order_number,
          cs.passing_percentage,
-         cs.content,
-         cs.content_json
+         cs.content
        FROM student_case_attempts sca
        INNER JOIN case_studies cs ON cs.id = sca.case_id
        WHERE sca.id = $1
@@ -479,7 +476,7 @@ export const CaseStudy = {
 
     return {
       ...rows[0],
-      content_json: resolveContentJson(rows[0]),
+      content: resolveContentJson(rows[0]),
     };
   },
 };

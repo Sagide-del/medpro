@@ -15,20 +15,6 @@ const PREP_MODULES = [
     accent: '#ef6c00',
     action: 'Open',
   },
-  {
-    to: '/student/assessments',
-    title: 'Assessments',
-    description: 'Scored assessments',
-    accent: '#1565c0',
-    action: 'Open',
-  },
-  {
-    to: '/student/reference-cards',
-    title: 'Clinical Reference Cards',
-    description: 'Clinical review library',
-    accent: '#2e7d32',
-    action: 'Open',
-  },
 ];
 
 export default function ExamPreparation() {

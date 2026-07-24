@@ -1047,6 +1047,87 @@ button:disabled { opacity: 0.5; cursor: default; }
   background: var(--red);
 }
 
+/* ---------- Kenya case studies ---------- */
+.case-study-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 16px;
+}
+.case-study-card,
+.case-study-overview-card,
+.case-question-card,
+.case-review-card,
+.case-study-result-card { padding: 20px 18px; }
+.case-study-card button,
+.case-study-actions button { min-height: 48px; }
+.case-study-card-top,
+.case-study-actions,
+.case-study-progress-row,
+.case-study-summary,
+.case-study-layout {
+  display: flex;
+  gap: 12px;
+}
+.case-study-card-top,
+.case-study-actions,
+.case-study-progress-row {
+  align-items: center;
+  justify-content: space-between;
+}
+.case-study-order,
+.case-section-kicker,
+.case-study-brief-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+.case-study-meta,
+.case-study-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  color: var(--ink-soft);
+  font-size: 12px;
+}
+.case-study-meta span,
+.case-study-summary span {
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 6px 10px;
+  background: #f8fafc;
+}
+.case-study-description {
+  color: var(--ink-soft);
+  margin: 12px 0 14px;
+}
+.case-study-progress-row strong {
+  min-width: 48px;
+  text-align: right;
+  font-size: 13px;
+}
+.case-study-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.8fr);
+  margin-bottom: 20px;
+}
+.case-study-brief-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  margin-top: 16px;
+}
+.case-review-stack {
+  display: grid;
+  gap: 16px;
+}
+.case-review-row {
+  font-size: 13px;
+  color: var(--ink);
+  margin-top: 10px;
+}
+
 /* ---------- flashcards ---------- */
 .flip-card { perspective: 1200px; height: 220px; cursor: pointer; }
 .flip-card-inner {
@@ -1106,6 +1187,8 @@ button:disabled { opacity: 0.5; cursor: default; }
   .student-subscription-grid,
   .student-feature-list,
   .mcq-module-grid,
+  .case-study-layout,
+  .case-study-grid,
   .dashboard-kpi-grid,
   .dashboard-grid,
   .dashboard-mini-grid { grid-template-columns: 1fr; }
@@ -1122,11 +1205,16 @@ button:disabled { opacity: 0.5; cursor: default; }
   .mcq-review-head,
   .mcq-module-foot,
   .mcq-result-actions,
-  .mcq-submit-bar {
+  .mcq-submit-bar,
+  .case-study-card-top,
+  .case-study-actions,
+  .case-study-progress-row {
     flex-direction: column;
+    align-items: stretch;
   }
   .dashboard-task-side,
   .dashboard-time { text-align: left; }
+  .case-study-brief-grid { grid-template-columns: 1fr; }
 }
 
 @media (max-width: 420px) {

@@ -1,43 +1,35 @@
 import { useEffect, useMemo, useState } from 'react';
 import { api } from '../../services/api';
 import Loading from '../shared/Loading';
-import CaseRenderer from '../student/CaseRenderer';
 
-const EMPTY_FORM = {
-  title: '',
-  category: 'Mass Casualty',
-  difficulty: 'advanced',
-  passing_percentage: 80,
-  order_number: '',
-  is_active: false,
-};
-
-function safeJsonParse(text) {
-  try {
-    return { value: JSON.parse(text), error: null };
-  } catch (error) {
-    return { value: null, error: 'Invalid JSON file. Please check the case structure.' };
-  }
+function extractCaseArray(parsed) {
+  if (Array.isArray(parsed)) return parsed;
+  if (Array.isArray(parsed?.cases)) return parsed.cases;
+  if (Array.isArray(parsed?.kenya_ems_cases)) return parsed.kenya_ems_cases;
+  return [];
 }
 
-function extractPreviewCase(parsed) {
-  if (!parsed || typeof parsed !== 'object') return null;
-  const caseJson = parsed.content_json && typeof parsed.content_json === 'object' ? parsed.content_json : parsed;
-  const blocks = Array.isArray(caseJson.blocks) ? caseJson.blocks : [];
+function validateCaseItem(caseItem, index) {
+  const issues = [];
+  const contentJson = caseItem?.content_json && typeof caseItem.content_json === 'object'
+    ? caseItem.content_json
+    : {};
 
-  return {
-    title: parsed.title || caseJson.title || '',
-    category: parsed.category || caseJson.category || '',
-    difficulty: parsed.difficulty || caseJson.difficulty || '',
-    content_json: {
-      ...caseJson,
-      blocks,
-    },
-    grading_json: parsed.grading_json && typeof parsed.grading_json === 'object' ? parsed.grading_json : caseJson.grading_json || {},
-    passing_percentage: Number(parsed.passing_percentage || caseJson.passing_percentage || 80),
-    is_active: Boolean(parsed.is_active),
-    order_number: parsed.order_number || caseJson.order_number || '',
-  };
+  if (!String(caseItem?.title || '').trim()) issues.push('title is required');
+  if (!String(caseItem?.category || '').trim()) issues.push('category is required');
+  if (!String(caseItem?.difficulty || '').trim()) issues.push('difficulty is required');
+  if (!contentJson || typeof contentJson !== 'object') issues.push('content_json must be an object');
+  if (
+    !Array.isArray(contentJson.blocks)
+    && !String(contentJson.source_text || '').trim()
+    && !Array.isArray(contentJson.activities)
+    && !contentJson.incident
+    && !contentJson.dispatch_information
+  ) {
+    issues.push('content_json must include worksheet content');
+  }
+
+  return issues.map((issue) => `case ${index + 1}${caseItem?.title ? ` (${caseItem.title})` : ''}: ${issue}`);
 }
 
 function formatDate(value) {
@@ -49,12 +41,17 @@ function formatDate(value) {
   }
 }
 
+function previewText(caseItem) {
+  const contentJson = caseItem?.content_json || {};
+  return String(contentJson.source_text || contentJson.dispatch_information || JSON.stringify(contentJson, null, 2));
+}
+
 export default function KenyaEmsCasesManager() {
   const [cases, setCases] = useState([]);
-  const [form, setForm] = useState(EMPTY_FORM);
+  const [uploadedCases, setUploadedCases] = useState([]);
+  const [selectedIndex, setSelectedIndex] = useState(0);
   const [jsonText, setJsonText] = useState('');
-  const [previewCase, setPreviewCase] = useState(null);
-  const [editingId, setEditingId] = useState(null);
+  const [errors, setErrors] = useState([]);
   const [status, setStatus] = useState(null);
   const [busy, setBusy] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -71,66 +68,45 @@ export default function KenyaEmsCasesManager() {
     loadCases();
   }, []);
 
-  function applyParsedCase(parsed) {
-    const preview = extractPreviewCase(parsed);
-    if (!preview) {
-      setStatus({ kind: 'err', text: 'The uploaded file does not contain a valid case object.' });
-      return;
-    }
+  const selectedCase = useMemo(() => uploadedCases[selectedIndex] || null, [uploadedCases, selectedIndex]);
 
-    setPreviewCase(preview);
-    setForm({
-      title: preview.title || '',
-      category: preview.category || 'Mass Casualty',
-      difficulty: preview.difficulty || 'advanced',
-      passing_percentage: preview.passing_percentage || 80,
-      order_number: preview.order_number || '',
-      is_active: Boolean(preview.is_active),
-    });
-    setJsonText(JSON.stringify(parsed, null, 2));
-    setStatus({ kind: 'ok', text: 'JSON loaded. Review the preview before publishing.' });
+  function handleJsonText(text) {
+    setJsonText(text);
+    try {
+      const parsed = JSON.parse(text);
+      const nextCases = extractCaseArray(parsed);
+      setUploadedCases(nextCases);
+      setSelectedIndex(0);
+      const issues = nextCases.flatMap((caseItem, index) => validateCaseItem(caseItem, index));
+      setErrors(issues);
+      setStatus({
+        kind: issues.length ? 'err' : 'ok',
+        text: issues.length
+          ? `Loaded ${nextCases.length} case(s) with validation issues.`
+          : `Loaded ${nextCases.length} Kenya EMS case(s) successfully.`,
+      });
+    } catch {
+      setUploadedCases([]);
+      setErrors(['Invalid JSON file.']);
+      setStatus({ kind: 'err', text: 'Invalid JSON file.' });
+    }
   }
 
   function handleFile(event) {
     const file = event.target.files?.[0];
     if (!file) return;
-
     const reader = new FileReader();
-    reader.onload = () => {
-      const { value, error } = safeJsonParse(String(reader.result || ''));
-      if (error) {
-        setPreviewCase(null);
-        setStatus({ kind: 'err', text: error });
-        return;
-      }
-      applyParsedCase(value);
-    };
+    reader.onload = () => handleJsonText(String(reader.result || ''));
     reader.readAsText(file);
   }
 
-  function validatePayload() {
-    const { value, error } = safeJsonParse(jsonText);
-    if (error) return { error };
-    const parsed = value;
-    const caseJson = parsed?.content_json && typeof parsed.content_json === 'object' ? parsed.content_json : parsed;
-    const blocks = Array.isArray(caseJson?.blocks) ? caseJson.blocks : [];
-    const issues = [];
-
-    if (!String(parsed?.title || caseJson?.title || '').trim()) issues.push('title is required');
-    if (!String(parsed?.category || caseJson?.category || '').trim()) issues.push('category is required');
-    if (!String(parsed?.difficulty || caseJson?.difficulty || '').trim()) issues.push('difficulty is required');
-    if (blocks.length === 0) issues.push('content_json.blocks must contain at least one block');
-
-    return {
-      error: issues.length ? issues.join('; ') : null,
-      parsed,
-    };
-  }
-
-  async function saveCase(publishNow = false) {
-    const { error, parsed } = validatePayload();
-    if (error) {
-      setStatus({ kind: 'err', text: error });
+  async function importCases(activateAll = false) {
+    if (!uploadedCases.length) {
+      setStatus({ kind: 'err', text: 'Upload a JSON file with Kenya EMS cases first.' });
+      return;
+    }
+    if (errors.length) {
+      setStatus({ kind: 'err', text: 'Resolve validation issues before importing.' });
       return;
     }
 
@@ -138,58 +114,28 @@ export default function KenyaEmsCasesManager() {
     setStatus(null);
     try {
       const payload = {
-        ...(parsed || {}),
-        ...form,
-        title: String(form.title || parsed?.title || '').trim(),
-        category: String(form.category || parsed?.category || '').trim(),
-        difficulty: String(form.difficulty || parsed?.difficulty || 'advanced').trim(),
-        passing_percentage: Number(form.passing_percentage || parsed?.passing_percentage || 80),
-        order_number: form.order_number === '' ? null : Number(form.order_number),
-        is_active: publishNow ? true : Boolean(form.is_active),
+        cases: uploadedCases.map((caseItem, index) => ({
+          ...caseItem,
+          is_active: activateAll ? true : Boolean(caseItem.is_active),
+          order_number: Number(caseItem.order_number || index + 1),
+        })),
       };
 
-      let response;
-      if (editingId) {
-        response = await api(`/admin/cases/${editingId}`, { method: 'PUT', body: payload });
-      } else {
-        response = await api('/admin/cases/upload', { method: 'POST', body: payload });
-      }
+      const response = await api('/admin/cases/upload', {
+        method: 'POST',
+        body: payload,
+      });
 
       setStatus({
         kind: 'ok',
-        text: publishNow ? 'Case saved and published.' : 'Case saved as draft.',
+        text: `Imported ${response?.cases?.length || uploadedCases.length} case(s) successfully.`,
       });
-      setEditingId(null);
-      setPreviewCase(response?.caseStudy || previewCase);
       loadCases();
     } catch (error) {
       setStatus({ kind: 'err', text: error.message });
     } finally {
       setBusy(false);
     }
-  }
-
-  function editCase(studyCase) {
-    setEditingId(studyCase.id);
-    setForm({
-      title: studyCase.title || '',
-      category: studyCase.category || '',
-      difficulty: studyCase.difficulty || 'advanced',
-      passing_percentage: Number(studyCase.passing_percentage || 80),
-      order_number: studyCase.order_number || '',
-      is_active: Boolean(studyCase.is_active),
-    });
-    setPreviewCase({
-      ...studyCase,
-      content_json: studyCase.content_json || {},
-      grading_json: studyCase.grading_json || {},
-    });
-    setJsonText(JSON.stringify({
-      ...studyCase,
-      content_json: studyCase.content_json || {},
-      grading_json: studyCase.grading_json || {},
-    }, null, 2));
-    window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
   async function togglePublish(studyCase) {
@@ -200,8 +146,8 @@ export default function KenyaEmsCasesManager() {
         body: {
           ...studyCase,
           is_active: !studyCase.is_active,
-          order_number: studyCase.order_number ?? null,
-          passing_percentage: studyCase.passing_percentage ?? 80,
+          order_number: studyCase.order_number || 1,
+          passing_percentage: studyCase.passing_percentage || 80,
         },
       });
       loadCases();
@@ -227,7 +173,7 @@ export default function KenyaEmsCasesManager() {
     }
   }
 
-  async function removeCase(studyCase) {
+  async function deleteCase(studyCase) {
     if (!confirm(`Delete "${studyCase.title}"? This cannot be undone.`)) return;
     setBusy(true);
     try {
@@ -240,11 +186,6 @@ export default function KenyaEmsCasesManager() {
     }
   }
 
-  const previewBlocks = useMemo(
-    () => previewCase?.content_json?.blocks || [],
-    [previewCase]
-  );
-
   if (loading) return <Loading label="Loading Kenya EMS Cases manager..." />;
 
   return (
@@ -252,111 +193,110 @@ export default function KenyaEmsCasesManager() {
       <div className="page-head">
         <div>
           <h1>Kenya EMS Cases JSON Upload Manager</h1>
-          <div className="sub">Upload, preview, publish, reorder, and remove EMS worksheet cases.</div>
+          <div className="sub">Upload one JSON file containing all 15 cases, preview them, then import into the live content library.</div>
         </div>
       </div>
 
       <div className="card">
-        <h2>Upload JSON case</h2>
-        <div className="form-grid">
-          <div className="field">
-            <label>Title</label>
-            <input value={form.title} onChange={(event) => setForm({ ...form, title: event.target.value })} placeholder="CASE STUDY 1: THE DUSIT D2 HOTEL TERROR ATTACK" />
-          </div>
-          <div className="field">
-            <label>Category</label>
-            <input value={form.category} onChange={(event) => setForm({ ...form, category: event.target.value })} placeholder="Mass Casualty / Terror Incident" />
-          </div>
-          <div className="field">
-            <label>Difficulty</label>
-            <input value={form.difficulty} onChange={(event) => setForm({ ...form, difficulty: event.target.value })} placeholder="advanced" />
-          </div>
-          <div className="field">
-            <label>Passing percentage</label>
-            <input type="number" min="0" max="100" value={form.passing_percentage} onChange={(event) => setForm({ ...form, passing_percentage: event.target.value })} />
-          </div>
-          <div className="field">
-            <label>Order number</label>
-            <input type="number" min="1" value={form.order_number} onChange={(event) => setForm({ ...form, order_number: event.target.value })} />
-          </div>
-          <div className="field">
-            <label>Published</label>
-            <select value={String(form.is_active)} onChange={(event) => setForm({ ...form, is_active: event.target.value === 'true' })}>
-              <option value="false">Draft</option>
-              <option value="true">Published</option>
-            </select>
-          </div>
-        </div>
-
+        <h2>Bulk JSON upload</h2>
         <div className="field">
-          <label>Upload JSON file</label>
+          <label>Upload JSON case file</label>
           <input type="file" accept="application/json,.json" onChange={handleFile} />
         </div>
-
         <div className="field">
-          <label>Case JSON</label>
+          <label>Paste JSON</label>
           <textarea
-            rows={12}
+            rows={10}
             value={jsonText}
-            onChange={(event) => {
-              setJsonText(event.target.value);
-              const { value, error } = safeJsonParse(event.target.value);
-              if (!error && value) setPreviewCase(extractPreviewCase(value));
-            }}
-            placeholder='Paste a full case JSON object here.'
+            onChange={(event) => handleJsonText(event.target.value)}
+            placeholder="Upload or paste the full Kenya EMS cases JSON file."
           />
         </div>
-
-        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-          <button className="primary" onClick={() => saveCase(false)} disabled={busy}>
-            {busy && !editingId ? 'Saving...' : editingId ? 'Update case' : 'Save draft'}
-          </button>
-          <button className="ghost" onClick={() => saveCase(true)} disabled={busy}>
-            {busy && !editingId ? 'Publishing...' : editingId ? 'Update and publish' : 'Publish'}
-          </button>
-          {editingId ? (
-            <button
-              className="ghost"
-              onClick={() => {
-                setEditingId(null);
-                setForm(EMPTY_FORM);
-                setJsonText('');
-                setPreviewCase(null);
-              }}
-            >
-              Cancel edit
-            </button>
-          ) : null}
+        <div className="field">
+          <label>Detected cases</label>
+          <div className="sub">{uploadedCases.length} case(s) detected.</div>
         </div>
-
+        {errors.length > 0 ? (
+          <div className="error-note">
+            {errors.slice(0, 6).map((error) => <div key={error}>{error}</div>)}
+            {errors.length > 6 ? <div>...and {errors.length - 6} more</div> : null}
+          </div>
+        ) : null}
+        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+          <button className="primary" onClick={() => importCases(false)} disabled={busy || uploadedCases.length === 0 || errors.length > 0}>
+            {busy ? 'Importing...' : 'Import cases'}
+          </button>
+          <button className="ghost" onClick={() => importCases(true)} disabled={busy || uploadedCases.length === 0 || errors.length > 0}>
+            Import and publish all
+          </button>
+        </div>
         {status ? <div className={status.kind === 'ok' ? 'ok-note' : 'error-note'}>{status.text}</div> : null}
       </div>
 
       <div className="card">
-        <h2>Preview</h2>
-        {previewCase ? (
+        <h2>Detected case preview</h2>
+        {selectedCase ? (
           <>
-            <div className="sub" style={{ marginBottom: 12 }}>
-              {previewCase.title} | {previewCase.category} | {previewCase.difficulty} | Pass mark {previewCase.passing_percentage}%
+            <div className="form-grid">
+              <div className="field">
+                <label>Case title</label>
+                <input readOnly value={selectedCase.title || ''} />
+              </div>
+              <div className="field">
+                <label>Location</label>
+                <input readOnly value={selectedCase.location || ''} />
+              </div>
+              <div className="field">
+                <label>Incident date</label>
+                <input readOnly value={selectedCase.incident_date || ''} />
+              </div>
+              <div className="field">
+                <label>Passing score</label>
+                <input readOnly value={selectedCase.passing_percentage ?? 80} />
+              </div>
             </div>
-            <CaseRenderer blocks={previewBlocks} responses={{}} onChange={() => {}} />
+            <pre className="case-renderer-document" style={{ whiteSpace: 'pre-wrap', fontFamily: 'inherit', marginTop: 16 }}>
+              {previewText(selectedCase)}
+            </pre>
           </>
         ) : (
-          <div className="sub">Upload a JSON case file to preview the worksheet before publishing.</div>
+          <div className="sub">Preview the uploaded file here before importing.</div>
         )}
+        {uploadedCases.length > 1 ? (
+          <div className="case-library-list" style={{ marginTop: 16 }}>
+            {uploadedCases.map((caseItem, index) => (
+              <button
+                type="button"
+                key={caseItem.id || `${caseItem.title}-${index}`}
+                className="case-library-row"
+                onClick={() => setSelectedIndex(index)}
+                style={{ width: '100%', textAlign: 'left' }}
+              >
+                <div className="case-library-main">
+                  <div className="case-study-order">Case {index + 1}</div>
+                  <h2>{caseItem.title}</h2>
+                  <p>{caseItem.location} | {caseItem.incident_date}</p>
+                </div>
+                <div className="case-library-side">
+                  <span className={`badge ${caseItem.is_active ? 'published' : 'draft'}`}>{caseItem.is_active ? 'Published' : 'Draft'}</span>
+                  <span>Pass mark: {caseItem.passing_percentage || 80}%</span>
+                </div>
+              </button>
+            ))}
+          </div>
+        ) : null}
       </div>
 
       <div className="card">
-        <h2>Published and draft cases</h2>
+        <h2>Imported cases</h2>
         <table>
           <thead>
             <tr>
               <th>Order</th>
               <th>Title</th>
-              <th>Category</th>
-              <th>Difficulty</th>
+              <th>Location</th>
+              <th>Pass mark</th>
               <th>Status</th>
-              <th>Created by</th>
               <th>Created</th>
               <th></th>
             </tr>
@@ -379,21 +319,19 @@ export default function KenyaEmsCasesManager() {
                   />
                 </td>
                 <td>{studyCase.title}</td>
-                <td>{studyCase.category}</td>
-                <td>{studyCase.difficulty}</td>
+                <td>{studyCase.location || '—'}</td>
+                <td>{studyCase.passing_percentage || 80}%</td>
                 <td><span className={`badge ${studyCase.is_active ? 'published' : 'draft'}`}>{studyCase.is_active ? 'Published' : 'Draft'}</span></td>
-                <td>{studyCase.created_by_name || '—'}</td>
                 <td>{formatDate(studyCase.created_at)}</td>
                 <td style={{ whiteSpace: 'nowrap' }}>
-                  <button className="ghost" onClick={() => editCase(studyCase)}>Edit</button>{' '}
                   <button className="ghost" onClick={() => togglePublish(studyCase)}>{studyCase.is_active ? 'Unpublish' : 'Publish'}</button>{' '}
-                  <button className="ghost danger" onClick={() => removeCase(studyCase)}>Delete</button>
+                  <button className="ghost danger" onClick={() => deleteCase(studyCase)}>Delete</button>
                 </td>
               </tr>
             ))}
             {cases.length === 0 ? (
               <tr>
-                <td colSpan="8" style={{ color: 'var(--ink-soft)' }}>No Kenya EMS cases uploaded yet.</td>
+                <td colSpan="7" style={{ color: 'var(--ink-soft)' }}>No Kenya EMS cases imported yet.</td>
               </tr>
             ) : null}
           </tbody>

@@ -62,28 +62,30 @@ function CaseLibrary() {
           <div className="alert info">Your subscription is {subscription.status}. Renew to continue with Kenya EMS Cases.</div>
         ) : null}
 
-        <div className="case-library-list">
+        <div className="case-card-grid">
           {cases.map((studyCase) => (
-            <article key={studyCase.id} className="case-library-row">
-              <div className="case-library-main">
-                <div className="case-study-order">Case Study {studyCase.order_number}</div>
-                <h2>{formatCaseTitle(studyCase.title)}</h2>
-                <p>{studyCase.location} | {studyCase.incident_date}</p>
-              </div>
-              <div className="case-library-side">
+            <button
+              key={studyCase.id}
+              type="button"
+              className="case-card"
+              disabled={studyCase.status === 'locked'}
+              onClick={() => navigate(`/student/kenya-ems-cases/${studyCase.id}`)}
+            >
+              <div className="case-card-top">
+                <div className="case-study-order">Case {studyCase.order_number}</div>
                 <span className={`badge ${badgeClassForStatus(studyCase.status)}`}>{labelForStatus(studyCase.status)}</span>
-                <span>Pass mark: {studyCase.passing_percentage}%</span>
-                <span>Best score: {studyCase.score || 0}%</span>
-                <button
-                  type="button"
-                  className="primary"
-                  disabled={studyCase.status === 'locked'}
-                  onClick={() => navigate(`/student/kenya-ems-cases/${studyCase.id}`)}
-                >
-                  {studyCase.status === 'completed' ? 'Open Worksheet' : 'Start Case'}
-                </button>
               </div>
-            </article>
+              <h2>{formatCaseTitle(studyCase.title)}</h2>
+              <p className="case-card-location">{studyCase.location} | {studyCase.incident_date}</p>
+              <div className="case-card-meta">
+                <span>Completion: {studyCase.completed ? 'Completed' : 'In progress'}</span>
+                <span>Lock: {studyCase.status === 'locked' ? 'Locked' : 'Unlocked'}</span>
+                <span>Best score: {studyCase.score || 0}%</span>
+              </div>
+              <div className="case-card-action">
+                {studyCase.status === 'completed' ? 'Open Worksheet' : studyCase.status === 'locked' ? 'Locked' : 'Start Case'}
+              </div>
+            </button>
           ))}
         </div>
       </div>

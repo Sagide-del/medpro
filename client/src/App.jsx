@@ -133,7 +133,6 @@ const TEACHER_LINKS = [
 const ADMIN_LINKS = [
   { to: '/admin/dashboard', label: 'Dashboard', end: true },
   { to: '/admin/reference-cards', label: 'Clinical Reference Cards' },
-  { to: '/admin/kenya-ems-cases', label: 'Kenya EMS Cases' },
   { to: '/admin/institution', label: 'Institution' },
   { to: '/admin/users', label: 'Users' },
   { to: '/admin/revenue', label: 'Revenue' },
@@ -180,6 +179,10 @@ const SUPERADMIN_LINKS = [
       {
         to: '/superadmin/reference-cards',
         label: 'Clinical Reference Cards',
+      },
+      {
+        to: '/admin/kenya-ems-cases',
+        label: 'Kenya EMS Cases',
       },
     ],
   },
@@ -339,7 +342,7 @@ function AppRoutes() {
           <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
           <Route path="/admin/dashboard" element={<AdminDashboard />} />
           <Route path="/admin/reference-cards" element={<AdminClinicalReferenceCardsManager />} />
-          <Route path="/admin/kenya-ems-cases" element={<AdminKenyaEmsCasesManager />} />
+          <Route path="/admin/kenya-ems-cases" element={<RequireRole role="super_admin"><AdminKenyaEmsCasesManager /></RequireRole>} />
           <Route path="/admin/institution" element={<AdminInstitutions />} />
           <Route path="/admin/users" element={<AdminUsers />} />
           <Route path="/admin/revenue" element={<AdminRevenue />} />

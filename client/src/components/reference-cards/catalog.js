@@ -1,4 +1,13 @@
-export const PROGRAM_OPTIONS = ['EMT', 'Paramedic'];
+﻿export const PROGRAM_OPTIONS = ['EMT', 'Paramedic'];
+
+export const CARD_CATEGORIES = [
+  'Airway',
+  'Trauma',
+  'Cardiology',
+  'Medical Emergencies',
+  'Pediatrics',
+  'Operations',
+];
 
 export const MODULES_BY_PROGRAM = {
   EMT: [

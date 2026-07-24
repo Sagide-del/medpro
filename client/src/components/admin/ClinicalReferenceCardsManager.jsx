@@ -1,11 +1,5 @@
-import ClinicalReferenceCardsManager from '../reference-cards/ClinicalReferenceCardsManager';
+﻿import ClinicalReferenceCardsBrowser from '../reference-cards/ClinicalReferenceCardsBrowser';
 
 export default function InstitutionClinicalReferenceCardsManager() {
-  return (
-    <ClinicalReferenceCardsManager
-      title="Clinical Reference Cards Manager"
-      subtitle="Create and manage institution clinical reference cards."
-      allowPublish={true}
-    />
-  );
+  return <ClinicalReferenceCardsBrowser mode="admin" />;
 }

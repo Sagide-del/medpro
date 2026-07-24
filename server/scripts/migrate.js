@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// One-time database setup — runs schema.sql, then the three migrations, in
+// One-time database setup â€” runs schema.sql, then the three migrations, in
 // the required order (see README "Deploying to production" for why the
 // order matters). Exists so `railway run npm run migrate` (or the local
 // equivalent) works without needing psql installed, which is especially
@@ -7,7 +7,7 @@
 //
 // Usage:
 //   npm run migrate            # schema + migrations only
-//   npm run migrate -- --seed  # also load database/seed.sql (demo data — do
+//   npm run migrate -- --seed  # also load database/seed.sql (demo data â€” do
 //                               # NOT use this against a real production DB)
 import 'dotenv/config';
 import fs from 'fs';
@@ -39,6 +39,7 @@ const files = [
   'migration_013_case_progress_responses.sql',
   'migration_014_case_content_manager.sql',
   'migration_015_case_content_uploader_compatibility.sql',
+  'migration_016_clinical_reference_cards_upload.sql',
 ];
 
 if (!process.env.DATABASE_URL) {
@@ -82,3 +83,4 @@ run().catch((err) => {
   console.error(err);
   process.exitCode = 1;
 });
+

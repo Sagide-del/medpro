@@ -250,14 +250,14 @@ function CaseSession() {
   if (result) {
     return (
       <>
-        <div className="page-head">
-          <div>
-            <h1>{formatCaseTitle(caseStudy.title)}</h1>
-            <div className="sub">Submitted worksheet result.</div>
-          </div>
+      <div className="page-head">
+        <div>
+          <h1>Kenya EMS Cases</h1>
+          <div className="sub">Submitted EMT worksheet</div>
         </div>
+      </div>
 
-        <section className="case-document-shell">
+        <section className="case-document-single">
           <div className="case-result-sheet">
             <div className="case-result-top">
               <div>
@@ -280,9 +280,7 @@ function CaseSession() {
             </div>
 
             <div className="case-result-actions">
-              <button type="button" className="ghost" onClick={() => navigate('/student/kenya-ems-cases')}>
-                Back to Case Library
-              </button>
+              <button type="button" className="ghost" onClick={() => navigate('/student/kenya-ems-cases')}>Back to Case Library</button>
               {!result.attempt.passed && (
                 <button
                   type="button"
@@ -331,21 +329,15 @@ function CaseSession() {
       <div className="page-head">
         <div>
           <h1>Kenya EMS Cases</h1>
-          <div className="sub">Clinical worksheet mode</div>
+          <div className="sub">Interactive EMT practical worksheet</div>
         </div>
       </div>
 
-      <section className="case-document-shell">
+      <section className="case-document-single">
         <article className="case-document">
           <header className="case-document-header">
-            <div className="case-study-order">Case Study {caseStudy.order_number}</div>
-            <h1>{formatCaseTitle(caseStudy.title)}</h1>
+            <h1>{`CASE STUDY ${caseStudy.order_number}: ${formatCaseTitle(caseStudy.title)}`}</h1>
             <div className="case-document-location">{caseStudy.location}, {caseStudy.incident_date}</div>
-            <div className="case-document-meta">
-              <span>Case pass mark: {caseStudy.passing_percentage}%</span>
-              <span>Total scored activities: {scoredActivities.length}</span>
-              <span>Answered: {answeredCount}</span>
-            </div>
           </header>
 
           {phases.map((phase, phaseIndex) => (
@@ -371,35 +363,12 @@ function CaseSession() {
             </section>
           ))}
         </article>
-
-        <aside className="case-document-sidebar">
-          <div className="case-sidebar-block">
-            <div className="case-section-kicker">Worksheet Progress</div>
-            <div className="case-sidebar-line"><span>Status</span><strong>{labelForStatus(caseStudy.status)}</strong></div>
-            <div className="case-sidebar-line"><span>Pass mark</span><strong>{caseStudy.passing_percentage}%</strong></div>
-            <div className="case-sidebar-line"><span>Answered</span><strong>{answeredCount} / {scoredActivities.length}</strong></div>
-            <div className="case-sidebar-line"><span>Draft</span><strong>{saveState === 'saved' ? 'Saved' : saveState === 'error' ? 'Error' : 'Unsaved'}</strong></div>
-          </div>
-
-          <div className="case-sidebar-block">
-            <div className="case-section-kicker">Worksheet Sections</div>
-            <div className="case-toc-list">
-              {phases.map((phase, index) => (
-                <a key={`${phase.phase}-${index}`} href={`#phase-${index + 1}`} className="case-toc-link">
-                  {phase.phase}
-                </a>
-              ))}
-            </div>
-          </div>
-        </aside>
       </section>
 
       <div className="case-sticky-actions">
-        <button type="button" className="ghost" onClick={() => navigate('/student/kenya-ems-cases')}>
-          Back
-        </button>
+        <button type="button" className="ghost" onClick={() => navigate('/student/kenya-ems-cases')}>Back</button>
         <button type="button" className="ghost" onClick={saveDraft}>
-          Save Progress
+          {saveState === 'saved' ? 'Progress Saved' : 'Save Progress'}
         </button>
         <button type="button" className="primary" onClick={submit} disabled={busy}>
           {busy ? 'Submitting...' : 'Submit Case'}

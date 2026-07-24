@@ -8,9 +8,24 @@ function renderPrompt(text) {
     ));
 }
 
+function splitPromptAndResponseArea(prompt) {
+  const marker = 'Your Response: (fill in)';
+  const text = String(prompt || '');
+  const index = text.indexOf(marker);
+  if (index === -1) {
+    return { promptText: text.trim(), responseLead: '' };
+  }
+
+  return {
+    promptText: text.slice(0, index).trimEnd(),
+    responseLead: marker,
+  };
+}
+
 export default function CaseTableActivity({ activity, value = { rows: {} }, onChange }) {
   const rows = activity?.table?.rows || [];
   const columns = activity?.table?.columns || [];
+  const { promptText, responseLead } = splitPromptAndResponseArea(activity.prompt);
 
   function updateCell(rowId, field, cellValue) {
     const nextRows = {
@@ -27,8 +42,10 @@ export default function CaseTableActivity({ activity, value = { rows: {} }, onCh
     <section className="case-block case-block-triage">
       <h3 className="case-question-heading">{activity.title}</h3>
       <div className="case-body-text">
-        {renderPrompt(activity.prompt)}
+        {renderPrompt(promptText)}
       </div>
+
+      {responseLead && <div className="case-response-lead">{responseLead}</div>}
 
       <div className="case-data-table-scroll">
         <table className="case-data-table case-entry-table">

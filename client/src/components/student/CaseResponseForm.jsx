@@ -8,15 +8,32 @@ function renderPrompt(text) {
     ));
 }
 
+function splitPromptAndResponseArea(prompt) {
+  const marker = 'Your Response: (fill in)';
+  const text = String(prompt || '');
+  const index = text.indexOf(marker);
+  if (index === -1) {
+    return { promptText: text.trim(), responseLead: '' };
+  }
+
+  return {
+    promptText: text.slice(0, index).trimEnd(),
+    responseLead: marker,
+  };
+}
+
 export default function CaseResponseForm({ activity, value = {}, onChange }) {
   const fields = activity?.fields || [];
+  const { promptText, responseLead } = splitPromptAndResponseArea(activity.prompt);
 
   return (
     <section className="case-block case-block-form">
       <h3 className="case-question-heading">{activity.title}</h3>
       <div className="case-body-text">
-        {renderPrompt(activity.prompt)}
+        {renderPrompt(promptText)}
       </div>
+
+      {responseLead && <div className="case-response-lead">{responseLead}</div>}
 
       <div className="case-response-form">
         {fields.map((field) => (

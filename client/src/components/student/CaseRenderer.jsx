@@ -44,9 +44,9 @@ export default function CaseRenderer({ blocks = [], responses = {}, onChange }) 
         if (block.type === 'table') return <StatisticsTableRenderer key={block.id} headers={block.headers} rows={block.rows} />;
         if (block.type === 'patient_table') return <PatientTableRenderer key={block.id} headers={block.headers} rows={block.rows} />;
         if (block.type === 'information_box') return <InformationBox key={block.id} block={block} />;
-        if (block.type === 'dispatch') return <DispatchRenderer key={block.id} text={block.text} />;
+        if (block.type === 'dispatch' || block.type === 'dispatch_box') return <DispatchRenderer key={block.id} text={block.text} />;
         if (block.type === 'question_block' || block.type === 'question') return <QuestionBlock key={block.id} block={block} />;
-        if (block.type === 'instruction_block') return <InstructionBlock key={block.id} block={block} />;
+        if (block.type === 'instruction_block' || block.type === 'instruction') return <InstructionBlock key={block.id} block={block} />;
         if (block.type === 'reflection_block' || block.type === 'reflection') {
           return <ReflectionRenderer key={block.id} block={block} value={responses[block.activityId]} onChange={onChange} />;
         }

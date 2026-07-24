@@ -14,13 +14,20 @@ function validateCaseItem(caseItem, index) {
   const contentJson = caseItem?.content_json && typeof caseItem.content_json === 'object'
     ? caseItem.content_json
     : {};
+  const caseNumber = Number(caseItem?.case_number ?? caseItem?.order_number);
+  const passingScore = Number(caseItem?.passing_score ?? caseItem?.passing_percentage);
 
+  if (!Number.isFinite(caseNumber)) issues.push('case_number is required');
   if (!String(caseItem?.title || '').trim()) issues.push('title is required');
   if (!String(caseItem?.category || '').trim()) issues.push('category is required');
   if (!String(caseItem?.difficulty || '').trim()) issues.push('difficulty is required');
+  if (!Number.isFinite(passingScore)) issues.push('passing_score is required');
   if (!contentJson || typeof contentJson !== 'object') issues.push('content_json must be an object');
+  if (String(contentJson.type || '').toLowerCase() !== 'worksheet') issues.push('content_json.type must be "worksheet"');
+  if (!Array.isArray(contentJson.sections) || contentJson.sections.length === 0) issues.push('content_json.sections must contain at least one block');
   if (
     !Array.isArray(contentJson.blocks)
+    && !Array.isArray(contentJson.sections)
     && !String(contentJson.source_text || '').trim()
     && !Array.isArray(contentJson.activities)
     && !contentJson.incident
@@ -117,7 +124,9 @@ export default function KenyaEmsCasesManager() {
         cases: uploadedCases.map((caseItem, index) => ({
           ...caseItem,
           is_active: activateAll ? true : Boolean(caseItem.is_active),
-          order_number: Number(caseItem.order_number || index + 1),
+          case_number: Number(caseItem.case_number || caseItem.order_number || index + 1),
+          order_number: Number(caseItem.order_number || caseItem.case_number || index + 1),
+          passing_score: Number(caseItem.passing_score || caseItem.passing_percentage || 80),
         })),
       };
 
@@ -146,8 +155,10 @@ export default function KenyaEmsCasesManager() {
         body: {
           ...studyCase,
           is_active: !studyCase.is_active,
-          order_number: studyCase.order_number || 1,
-          passing_percentage: studyCase.passing_percentage || 80,
+          case_number: studyCase.case_number || studyCase.order_number || 1,
+          order_number: studyCase.order_number || studyCase.case_number || 1,
+          passing_score: studyCase.passing_score || studyCase.passing_percentage || 80,
+          passing_percentage: studyCase.passing_percentage || studyCase.passing_score || 80,
         },
       });
       loadCases();
@@ -164,6 +175,7 @@ export default function KenyaEmsCasesManager() {
         method: 'PUT',
         body: {
           ...studyCase,
+          case_number: Number(nextOrder),
           order_number: Number(nextOrder),
         },
       });
@@ -252,7 +264,7 @@ export default function KenyaEmsCasesManager() {
               </div>
               <div className="field">
                 <label>Passing score</label>
-                <input readOnly value={selectedCase.passing_percentage ?? 80} />
+                <input readOnly value={selectedCase.passing_score ?? selectedCase.passing_percentage ?? 80} />
               </div>
             </div>
             <pre className="case-renderer-document" style={{ whiteSpace: 'pre-wrap', fontFamily: 'inherit', marginTop: 16 }}>
@@ -279,7 +291,7 @@ export default function KenyaEmsCasesManager() {
                 </div>
                 <div className="case-library-side">
                   <span className={`badge ${caseItem.is_active ? 'published' : 'draft'}`}>{caseItem.is_active ? 'Published' : 'Draft'}</span>
-                  <span>Pass mark: {caseItem.passing_percentage || 80}%</span>
+                  <span>Pass mark: {caseItem.passing_score || caseItem.passing_percentage || 80}%</span>
                 </div>
               </button>
             ))}
@@ -308,10 +320,10 @@ export default function KenyaEmsCasesManager() {
                   <input
                     type="number"
                     min="1"
-                    defaultValue={studyCase.order_number || ''}
+                    defaultValue={studyCase.case_number || studyCase.order_number || ''}
                     onBlur={(event) => {
                       const nextOrder = event.target.value;
-                      if (String(nextOrder || '').trim() && String(nextOrder) !== String(studyCase.order_number || '')) {
+                      if (String(nextOrder || '').trim() && String(nextOrder) !== String(studyCase.case_number || studyCase.order_number || '')) {
                         reorderCase(studyCase, nextOrder);
                       }
                     }}
@@ -320,7 +332,7 @@ export default function KenyaEmsCasesManager() {
                 </td>
                 <td>{studyCase.title}</td>
                 <td>{studyCase.location || '—'}</td>
-                <td>{studyCase.passing_percentage || 80}%</td>
+                <td>{studyCase.passing_score || studyCase.passing_percentage || 80}%</td>
                 <td><span className={`badge ${studyCase.is_active ? 'published' : 'draft'}`}>{studyCase.is_active ? 'Published' : 'Draft'}</span></td>
                 <td>{formatDate(studyCase.created_at)}</td>
                 <td style={{ whiteSpace: 'nowrap' }}>

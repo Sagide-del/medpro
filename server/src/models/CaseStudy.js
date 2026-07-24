@@ -259,6 +259,28 @@ function buildWorksheetBlocks(contentJson = {}) {
     }));
   }
 
+  if (Array.isArray(contentJson.sections) && contentJson.sections.length > 0) {
+    return contentJson.sections.map((section, index) => ({
+      id: section.id || `section-${index + 1}`,
+      type: section.type || 'paragraph',
+      level: section.level,
+      text: section.text || section.content || section.prompt || '',
+      headers: Array.isArray(section.headers) ? section.headers : Array.isArray(section.columns) ? section.columns : [],
+      rows: Array.isArray(section.rows) ? section.rows : [],
+      options: Array.isArray(section.options) ? section.options : [],
+      fields: Array.isArray(section.fields) ? section.fields : [],
+      input_type: section.input_type || section.response_type || 'text',
+      title: section.title || '',
+      template: section.template || '',
+      grading: section.grading || section.evaluation || {
+        points: Number(section.points || 0),
+        criteria: section.criteria || section.evaluation_criteria || '',
+        keywords: section.correct_answer?.keywords || [],
+      },
+      activityId: section.activityId || section.id || `section-${index + 1}`,
+    }));
+  }
+
   const sourceText = extractSourceText(contentJson);
   const activities = sortedActivities(contentJson).filter((activity) => Number(activity.points || 0) > 0);
   const blocks = [];
@@ -655,7 +677,9 @@ export const CaseStudy = {
            scp.case_id,
            scp.status,
            scp.score,
-           scp.completed_at
+           scp.completed_at,
+           scp.responses,
+           scp.completed
          FROM student_case_progress scp
          WHERE scp.student_id = $1
        ),

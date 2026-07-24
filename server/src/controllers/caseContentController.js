@@ -12,6 +12,8 @@ const ALLOWED_BLOCK_TYPES = new Set([
   'reflection_block',
   'instruction_block',
   'dispatch',
+  'dispatch_box',
+  'instruction',
   'table',
   'question',
   'response_field',
@@ -52,6 +54,8 @@ function normalizeBlocks(blocks = []) {
 function hasStructuredWorksheetContent(contentJson = {}) {
   return Boolean(
     Array.isArray(contentJson.blocks) && contentJson.blocks.length > 0
+    || Array.isArray(contentJson.sections) && contentJson.sections.length > 0
+    || contentJson.type === 'worksheet'
     || typeof contentJson.source_text === 'string' && contentJson.source_text.trim()
     || Array.isArray(contentJson.activities) && contentJson.activities.length > 0
     || contentJson.incident
@@ -70,22 +74,36 @@ function validateCasePayload(payload) {
     return ['A JSON object is required.'];
   }
 
+  const caseNumber = Number(payload.case_number ?? payload.order_number);
+  const passingScore = Number(payload.passing_score ?? payload.passing_percentage ?? payload.grading_json?.passing_percentage ?? payload.content_json?.evaluation?.passing_percentage);
+
+  if (!Number.isFinite(caseNumber)) errors.push('case_number is required');
   if (!String(payload.title || '').trim()) errors.push('title is required');
   if (!String(payload.category || '').trim()) errors.push('category is required');
   if (!String(payload.difficulty || '').trim()) errors.push('difficulty is required');
+  if (!Number.isFinite(passingScore)) errors.push('passing_score is required');
 
   const contentJson = payload.content_json && typeof payload.content_json === 'object'
     ? payload.content_json
     : payload;
-  const blocks = Array.isArray(contentJson.blocks) ? contentJson.blocks : [];
-  if (blocks.length === 0 && !hasStructuredWorksheetContent(contentJson)) {
-    errors.push('content_json must contain blocks or structured worksheet content');
+  const blocks = Array.isArray(contentJson.sections)
+    ? contentJson.sections
+    : Array.isArray(contentJson.blocks)
+      ? contentJson.blocks
+      : [];
+  if (!hasStructuredWorksheetContent(contentJson)) {
+    errors.push('content_json must contain worksheet sections');
+  }
+  if (String(contentJson.type || '').toLowerCase() !== 'worksheet') {
+    errors.push('content_json.type must be "worksheet"');
+  }
+  if (!Array.isArray(contentJson.sections) || contentJson.sections.length === 0) {
+    errors.push('content_json.sections must contain at least one block');
   }
 
   const gradingJson = payload.grading_json && typeof payload.grading_json === 'object'
     ? payload.grading_json
     : {};
-  const gradingMap = gradingJson.blocks || {};
 
   blocks.forEach((block, index) => {
     if (!String(block.type || '').trim()) {
@@ -98,14 +116,6 @@ function validateCasePayload(payload) {
     if (!String(block.id || '').trim()) {
       errors.push(`blocks[${index}].id is required`);
     }
-
-    const isInteractive = ['question_block', 'response_table', 'reflection_block', 'question', 'response_field', 'reflection'].includes(String(block.type));
-    if (isInteractive) {
-      const grading = block.grading || gradingMap[block.id] || {};
-      if (!Number(grading.points || 0)) {
-        errors.push(`blocks[${index}] (${block.id || block.type}) is missing grading points`);
-      }
-    }
   });
 
   return errors;
@@ -117,9 +127,11 @@ function normalizeCaseEntry(rawCase, userId) {
 
   return {
     ...payload,
+    case_number: Number.isFinite(Number(payload.case_number)) ? Number(payload.case_number) : Number(payload.order_number) || null,
     content_json: contentJson,
     grading_json: payload.grading_json || {},
-    order_number: Number.isFinite(Number(payload.order_number)) ? Number(payload.order_number) : null,
+    order_number: Number.isFinite(Number(payload.order_number)) ? Number(payload.order_number) : Number(payload.case_number) || null,
+    passing_score: Number.isFinite(Number(payload.passing_score)) ? Number(payload.passing_score) : Number(payload.passing_percentage) || null,
   };
 }
 
@@ -171,9 +183,15 @@ function normalizePayload(rawPayload, userId) {
       blocks: normalizeBlocks(contentJson.blocks || []),
     },
     grading_json: gradingJson,
-    passing_percentage: Number(payload.passing_percentage || gradingJson.passing_percentage || 80),
-    is_active: Boolean(payload.is_active),
-    order_number: Number.isFinite(Number(payload.order_number)) ? Number(payload.order_number) : null,
+    case_number: Number.isFinite(Number(payload.case_number ?? payload.order_number)) ? Number(payload.case_number ?? payload.order_number) : null,
+    passing_score: Number.isFinite(Number(payload.passing_score ?? payload.passing_percentage ?? gradingJson.passing_percentage)) ? Number(payload.passing_score ?? payload.passing_percentage ?? gradingJson.passing_percentage) : null,
+    passing_percentage: Number(payload.passing_percentage || payload.passing_score || gradingJson.passing_percentage || 80),
+    is_active: Object.prototype.hasOwnProperty.call(payload, 'is_active')
+      ? Boolean(payload.is_active)
+      : Object.prototype.hasOwnProperty.call(payload, 'active')
+        ? Boolean(payload.active)
+        : false,
+    order_number: Number.isFinite(Number(payload.order_number ?? payload.case_number)) ? Number(payload.order_number ?? payload.case_number) : null,
     created_by: userId,
   };
 }
@@ -191,10 +209,12 @@ function caseRow(row) {
     content_json: row.content_json || {},
     grading_json: row.grading_json || {},
     passing_percentage: row.passing_percentage,
+    passing_score: row.passing_score ?? row.passing_percentage,
     is_active: row.is_active,
     created_by: row.created_by,
     created_by_name: row.created_by_name || null,
     order_number: row.order_number,
+    case_number: row.case_number ?? row.order_number,
     created_at: row.created_at,
     updated_at: row.updated_at || null,
   };

@@ -229,3 +229,7 @@ ON CONFLICT (id) DO UPDATE SET
 DELETE FROM case_questions WHERE case_id IN ('9c466d42-5c1b-5bf0-9714-1de6a7d7bb2d', '73d0fb30-71b2-58b7-924c-6b81bcd8ac2e', '63b4d62d-a515-52a3-bfd1-42956861d589', '6833a9c4-9d43-5ea1-a9d5-295e84dec990', '4d95f3a6-2251-55d5-bd64-3be2fa165f9c', '2768b6ca-5910-5712-90e7-f3573931163c', '2d6a3607-0dd3-5d62-a980-b68665875e94', '3465510c-791b-5773-8af4-fce06aa8a522', '45bbf657-8318-581d-b6c6-56563aaf2577', 'fc126ade-6ed7-5ce8-b811-3b203ba0fd1b', '6e8120d8-9060-547c-ab6a-8b9590e0bc39', '0e2c8910-5219-5227-bd8d-7793a5be76c9', '2bb52454-3819-5702-9a46-4f88e393397a', 'ecc8a9f8-9f8f-56aa-ad17-4ecb44d0d107', 'd0644624-1417-5046-ad93-53eae32d833b');
 
 COMMIT;
+UPDATE case_studies
+SET content_html = '<pre class="medpro-case-source">' || medpro_escape_case_html(COALESCE(content->>'source_text', description, title)) || '</pre>'
+WHERE content_html IS NULL
+   OR btrim(content_html) = '';

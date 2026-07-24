@@ -18,6 +18,10 @@ function resolveContentJson(row) {
   return row?.content || {};
 }
 
+function resolveContentHtml(row) {
+  return String(row?.content_html || '').trim();
+}
+
 function extractCompetencies(contentJson) {
   if (Array.isArray(contentJson?.learning_objectives?.competencies)) {
     return contentJson.learning_objectives.competencies;
@@ -236,6 +240,7 @@ export const CaseStudy = {
          cs.difficulty,
          cs.description,
          cs.content,
+         cs.content_html,
          cs.order_number,
          cs.passing_percentage,
          COALESCE(progress.status, CASE WHEN cs.order_number = 1 THEN 'available' ELSE 'locked' END) AS status,
@@ -256,6 +261,7 @@ export const CaseStudy = {
       return {
         ...row,
         content: contentJson,
+        content_html: resolveContentHtml(row),
         total_points: extractTotalPoints(contentJson),
         competencies: extractCompetencies(contentJson),
       };
@@ -273,6 +279,7 @@ export const CaseStudy = {
          cs.difficulty,
          cs.description,
          cs.content,
+         cs.content_html,
          cs.order_number,
          cs.passing_percentage,
          COALESCE(progress.status, CASE WHEN cs.order_number = 1 THEN 'available' ELSE 'locked' END) AS status,
@@ -292,6 +299,7 @@ export const CaseStudy = {
     return {
       ...rows[0],
       content: contentJson,
+      content_html: resolveContentHtml(rows[0]),
       total_points: extractTotalPoints(contentJson),
       competencies: extractCompetencies(contentJson),
     };
@@ -464,7 +472,8 @@ export const CaseStudy = {
          cs.title,
          cs.order_number,
          cs.passing_percentage,
-         cs.content
+         cs.content,
+         cs.content_html
        FROM student_case_attempts sca
        INNER JOIN case_studies cs ON cs.id = sca.case_id
        WHERE sca.id = $1
@@ -477,6 +486,8 @@ export const CaseStudy = {
     return {
       ...rows[0],
       content: resolveContentJson(rows[0]),
+      content_html: resolveContentHtml(rows[0]),
     };
   },
 };
+

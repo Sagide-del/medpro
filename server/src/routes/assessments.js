@@ -2,11 +2,17 @@ import { Router } from 'express';
 import {
   listAssessments, getAssessment, createAssessment, publishAssessment, deleteAssessment,
   startAttempt, submitAttempt, myAttempts, attemptsForAssessment, gradeManual,
+  listMcqModules, getMcqModuleQuestions, submitMcqModule, getMcqAttemptReview,
 } from '../controllers/assessmentController.js';
 import { authenticate, optionalAuth } from '../middleware/auth.js';
 import { requireRole } from '../middleware/roleCheck.js';
 
 const router = Router();
+
+router.get('/modules', authenticate, requireRole('student'), listMcqModules);
+router.get('/modules/:moduleId/questions', authenticate, requireRole('student'), getMcqModuleQuestions);
+router.post('/modules/:moduleId/submit', authenticate, requireRole('student'), submitMcqModule);
+router.get('/modules/attempts/:attemptId', authenticate, requireRole('student'), getMcqAttemptReview);
 
 router.get('/', optionalAuth, listAssessments);
 router.get('/my-attempts', authenticate, requireRole('student'), myAttempts);

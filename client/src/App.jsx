@@ -274,10 +274,15 @@ function AppRoutes() {
           <Route path="/student/exam-center" element={<StudentExamPreparation />} />
           <Route path="/student/clinical-library" element={<StudentClinicalReferenceCards />} />
           <Route path="/student/mcq-questions" element={<StudentAssessments />} />
+          <Route path="/student/mcq-questions/:id" element={<StudentAssessments />} />
           <Route path="/student/mock-prep-tests" element={<StudentAssessments />} />
+          <Route path="/student/mock-prep-tests/:id" element={<StudentAssessments />} />
           <Route path="/student/question-bank" element={<StudentAssessments />} />
+          <Route path="/student/question-bank/:id" element={<StudentAssessments />} />
           <Route path="/student/mock-exams" element={<StudentAssessments />} />
+          <Route path="/student/mock-exams/:id" element={<StudentAssessments />} />
           <Route path="/student/cats" element={<StudentAssessments />} />
+          <Route path="/student/cats/:id" element={<StudentAssessments />} />
           <Route path="/student/assessments" element={<StudentAssessments />} />
           <Route path="/student/assessments/:id" element={<StudentAssessments />} />
           <Route path="/student/assignments" element={<StudentAssignments />} />

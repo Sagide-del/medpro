@@ -14,7 +14,7 @@ async function hasAssessmentAccess(user) {
 export const listAssessments = asyncHandler(async (req, res) => {
   const { type, status, groupId } = req.query;
   const filters = { type, groupId };
-  if (req.user.role === 'student' || req.user.role === 'teacher') filters.status = 'published';
+  if (['student', 'teacher'].includes(req.user?.role)) filters.status = 'published';
   else if (status) filters.status = status;
   else filters.status = undefined;
   const rows = await Assessment.list(filters);
@@ -26,9 +26,8 @@ export const getAssessment = asyncHandler(async (req, res) => {
   if (!assessment) return res.status(404).json({ error: 'Assessment not found.' });
   const unlocked = await hasAssessmentAccess(req.user);
   const questions = unlocked ? await Assessment.questions(assessment.assessment_id) : [];
-  // Hide correct answers from students taking the assessment
   const safeQuestions = req.user?.role === 'student'
-    ? questions.map(({ correct_answer, ...q }) => q)
+    ? questions.map(({ correct_answer, ...question }) => question)
     : questions;
   res.json({ assessment, questions: safeQuestions, unlocked });
 });
@@ -59,6 +58,7 @@ export const startAttempt = asyncHandler(async (req, res) => {
       subscription,
     });
   }
+
   const attempt = await Assessment.startAttempt(req.params.id, req.user.sub);
   res.status(201).json({ attempt });
 });
@@ -67,16 +67,22 @@ export const submitAttempt = asyncHandler(async (req, res) => {
   const { attemptId } = req.params;
   const { answers = [] } = req.body;
   const attempt = await Assessment.findAttempt(attemptId);
-  if (!attempt || attempt.student_id !== req.user.sub) return res.status(404).json({ error: 'Attempt not found.' });
+  if (!attempt || attempt.student_id !== req.user.sub) {
+    return res.status(404).json({ error: 'Attempt not found.' });
+  }
 
   const questions = await Assessment.questions(attempt.assessment_id);
   const result = gradeAnswers(questions, answers);
 
-  for (const a of result.graded) {
-    await Assessment.recordAnswer(attemptId, a);
+  for (const answer of result.graded) {
+    await Assessment.recordAnswer(attemptId, answer);
   }
+
   await Assessment.submitAttempt(attemptId);
-  const graded = await Assessment.gradeAttempt(attemptId, { scorePct: result.scorePct, pointsAwarded: result.pointsAwarded });
+  const graded = await Assessment.gradeAttempt(attemptId, {
+    scorePct: result.scorePct,
+    pointsAwarded: result.pointsAwarded,
+  });
 
   await Notification.create({
     userId: req.user.sub,
@@ -103,11 +109,74 @@ export const gradeManual = asyncHandler(async (req, res) => {
   const { scorePct, pointsAwarded, feedback } = req.body;
   const attempt = await Assessment.gradeAttempt(attemptId, { scorePct, pointsAwarded });
   const fresh = await Assessment.findAttempt(attemptId);
+
   await Notification.create({
     userId: fresh.student_id,
     type: 'grade',
     title: 'Assessment graded',
     message: feedback || `Your assessment has been graded: ${scorePct}%`,
   });
+
   res.json({ attempt });
+});
+
+export const listMcqModules = asyncHandler(async (req, res) => {
+  const modules = await Assessment.listMcqModules(req.user.sub);
+  const subscription = await resolveStudentSubscriptionAccess(req.user);
+  res.json({ modules, subscription });
+});
+
+export const getMcqModuleQuestions = asyncHandler(async (req, res) => {
+  if (!(await hasAssessmentAccess(req.user))) {
+    const subscription = await resolveStudentSubscriptionAccess(req.user);
+    return res.status(402).json({
+      error: 'An active subscription is required to start this assessment.',
+      code: 'SUBSCRIPTION_REQUIRED',
+      subscription,
+    });
+  }
+
+  const payload = await Assessment.randomizedMcqQuestions(req.user.sub, req.params.moduleId);
+  if (!payload) return res.status(404).json({ error: 'Module not found.' });
+  if (payload.module.status === 'locked') return res.status(403).json({ error: 'This module is currently locked.' });
+
+  res.json(payload);
+});
+
+export const submitMcqModule = asyncHandler(async (req, res) => {
+  if (!(await hasAssessmentAccess(req.user))) {
+    const subscription = await resolveStudentSubscriptionAccess(req.user);
+    return res.status(402).json({
+      error: 'An active subscription is required to submit this assessment.',
+      code: 'SUBSCRIPTION_REQUIRED',
+      subscription,
+    });
+  }
+
+  const { question_ids = [], selected_answers = [] } = req.body;
+  const result = await Assessment.submitMcqAttempt({
+    studentId: req.user.sub,
+    moduleId: req.params.moduleId,
+    questionIds: question_ids,
+    selectedAnswers: selected_answers,
+  });
+
+  await Notification.create({
+    userId: req.user.sub,
+    type: 'grade',
+    title: 'EMT-B module submitted',
+    message: `You scored ${result.attempt.percentage}% in ${result.progress.title}.`,
+  });
+
+  res.json(result);
+});
+
+export const getMcqAttemptReview = asyncHandler(async (req, res) => {
+  const attempt = await Assessment.findMcqAttemptReview(req.user.sub, req.params.attemptId);
+  if (!attempt) return res.status(404).json({ error: 'Attempt not found.' });
+
+  res.json({
+    attempt,
+    review: attempt.review_payload || [],
+  });
 });

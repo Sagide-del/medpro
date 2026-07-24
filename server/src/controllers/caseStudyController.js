@@ -35,6 +35,23 @@ export const getCaseStudy = asyncHandler(async (req, res) => {
   res.json(payload);
 });
 
+export const saveCaseStudyProgress = asyncHandler(async (req, res) => {
+  const subscription = await assertSubscription(req, res);
+  if (!subscription) return;
+
+  const progress = await CaseStudy.saveProgress({
+    studentId: req.user.sub,
+    caseId: req.params.caseId,
+    responses: req.body.responses || {},
+  });
+  if (!progress) return res.status(404).json({ error: 'Kenya EMS case not found.' });
+
+  res.json({
+    progress,
+    saved: true,
+  });
+});
+
 export const submitCaseStudy = asyncHandler(async (req, res) => {
   const subscription = await assertSubscription(req, res);
   if (!subscription) return;

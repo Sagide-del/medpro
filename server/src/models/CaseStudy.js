@@ -18,10 +18,6 @@ function resolveContentJson(row) {
   return row?.content || {};
 }
 
-function resolveContentHtml(row) {
-  return String(row?.content_html || '').trim();
-}
-
 function extractCompetencies(contentJson) {
   if (Array.isArray(contentJson?.learning_objectives?.competencies)) {
     return contentJson.learning_objectives.competencies;
@@ -40,34 +36,22 @@ function extractTotalPoints(contentJson) {
   return activities.reduce((sum, activity) => sum + Number(activity.points || 0), 0);
 }
 
-function buildContentSections(contentJson = {}) {
-  const orderedKeys = [
-    ['incident', 'Incident'],
-    ['dispatch_information', 'Dispatch Information'],
-    ['scene_assessment', 'Scene Assessment'],
-    ['patient_information', 'Patient Information'],
-    ['ems_response', 'EMS Response'],
-    ['challenges', 'Challenges'],
-    ['student_tasks', 'Student Tasks'],
-    ['evaluation', 'Evaluation'],
-    ['learning_objectives', 'Learning Objectives'],
-  ];
-
-  return orderedKeys
-    .filter(([key]) => contentJson[key] != null)
-    .map(([key, label]) => ({
-      key,
-      label,
-      value: contentJson[key],
-    }));
-}
-
 function phaseSortValue(label) {
   const match = String(label || '').match(/(\d+)/);
   if (match) return Number(match[1]);
   if (String(label || '').toLowerCase().includes('reflection')) return 99;
   if (String(label || '').toLowerCase().includes('analysis')) return 50;
   return 75;
+}
+
+function sortedActivities(contentJson) {
+  const activities = Array.isArray(contentJson?.activities) ? [...contentJson.activities] : [];
+  return activities.sort((left, right) => {
+    const leftPhase = phaseSortValue(left.phase);
+    const rightPhase = phaseSortValue(right.phase);
+    if (leftPhase !== rightPhase) return leftPhase - rightPhase;
+    return String(left.id).localeCompare(String(right.id));
+  });
 }
 
 function gradeKeywords(answerText, keywords) {
@@ -110,21 +94,352 @@ function flattenResponseValue(value) {
   return String(value);
 }
 
-function groupActivitiesByPhase(activities) {
-  const phaseMap = new Map();
-
-  for (const activity of activities) {
-    const phase = activity.phase || 'Case Activity';
-    if (!phaseMap.has(phase)) {
-      phaseMap.set(phase, {
-        phase,
-        activities: [],
-      });
-    }
-    phaseMap.get(phase).activities.push(activity);
+function splitPrompt(prompt) {
+  const promptText = String(prompt || '');
+  const marker = 'Your Response:';
+  const markerIndex = promptText.indexOf(marker);
+  if (markerIndex < 0) {
+    return {
+      question: promptText.trim(),
+      responseTemplate: '',
+    };
   }
 
-  return [...phaseMap.values()].sort((left, right) => phaseSortValue(left.phase) - phaseSortValue(right.phase));
+  return {
+    question: promptText.slice(0, markerIndex).trim(),
+    responseTemplate: promptText.slice(markerIndex + marker.length).trim(),
+  };
+}
+
+function normalizeFieldId(value, fallback) {
+  const normalized = String(value || '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+  return normalized || fallback;
+}
+
+function extractFieldsFromTemplate(templateText) {
+  const lines = String(templateText || '')
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .filter((line) => line.toLowerCase() !== 'text');
+
+  const fields = [];
+
+  lines.forEach((line, index) => {
+    if (/^_+$/.test(line)) return;
+    const labeledBlank = line.match(/^(.+?):\s*_+$/);
+    if (labeledBlank) {
+      const label = labeledBlank[1].trim();
+      fields.push({
+        id: normalizeFieldId(label, `field-${index + 1}`),
+        label,
+        type: 'textarea',
+      });
+      return;
+    }
+
+    if (/^\d+\.\s/.test(line)) {
+      fields.push({
+        id: `reflection-${index + 1}`,
+        label: line,
+        type: 'textarea',
+      });
+      return;
+    }
+
+    if (line.endsWith('?')) {
+      fields.push({
+        id: `answer-${index + 1}`,
+        label: line,
+        type: 'textarea',
+      });
+    }
+  });
+
+  return fields;
+}
+
+function normalizeActivityFields(activity) {
+  if (Array.isArray(activity?.fields) && activity.fields.length > 0) {
+    return activity.fields.map((field, index) => ({
+      id: field.id || `field-${index + 1}`,
+      label: field.label || `Response ${index + 1}`,
+      type: field.type || 'textarea',
+      placeholder: field.placeholder || 'Enter your response',
+    }));
+  }
+
+  const { responseTemplate } = splitPrompt(activity?.prompt || '');
+  return extractFieldsFromTemplate(responseTemplate).map((field) => ({
+    ...field,
+    placeholder: 'Enter your response',
+  }));
+}
+
+function responseBlockType(activity) {
+  if (activity?.type === 'reflection') return 'reflection_block';
+  return 'response_table';
+}
+
+function extractSourceText(contentJson) {
+  if (typeof contentJson?.source_text === 'string' && contentJson.source_text.trim()) {
+    return contentJson.source_text;
+  }
+  return '';
+}
+
+function isCaseTitle(line) {
+  return /^CASE STUDY\s+\d+/i.test(line);
+}
+
+function isSectionHeading(line) {
+  return /^(Incident Background|Incident Statistics:?|Patients observed:?|Patient observations:?|Evaluation Scoring|School Fire Context \(Kenya\)|FINAL REFLECTION|FINAL CERTIFICATION CHECK)$/i.test(line);
+}
+
+function isPartHeading(line) {
+  return /^Part\s+\d+:/i.test(line);
+}
+
+function isActionHeading(line) {
+  return line.includes('STUDENT ACTION REQUIRED');
+}
+
+function isTableLine(line) {
+  return line.includes('\t');
+}
+
+function isQuestionLine(line) {
+  return /^\d+\.\s/.test(line);
+}
+
+function isBoundaryLine(line) {
+  return isCaseTitle(line)
+    || isSectionHeading(line)
+    || isPartHeading(line)
+    || isActionHeading(line)
+    || /^Passing Score:/i.test(line)
+    || /^TOTAL\b/i.test(line)
+    || /^📊/u.test(line)
+    || /^📋/u.test(line);
+}
+
+function parseStatisticRows(lines) {
+  return lines.map((line) => {
+    const parts = String(line).split(/:\s+/);
+    if (parts.length > 1) {
+      return [parts.shift(), parts.join(': ')];
+    }
+    return [String(line)];
+  });
+}
+
+function buildWorksheetBlocks(contentJson = {}) {
+  const sourceText = extractSourceText(contentJson);
+  const activities = sortedActivities(contentJson).filter((activity) => Number(activity.points || 0) > 0);
+  const blocks = [];
+  const lines = String(sourceText || '').split(/\r?\n/);
+
+  let index = 0;
+  let interactiveIndex = 0;
+  let titleSeen = false;
+
+  while (index < lines.length) {
+    const rawLine = lines[index] || '';
+    const line = rawLine.trimEnd();
+    const trimmed = line.trim();
+
+    if (!trimmed) {
+      index += 1;
+      continue;
+    }
+
+    if (isCaseTitle(trimmed)) {
+      blocks.push({
+        id: `block-title-${index}`,
+        type: 'heading',
+        level: 1,
+        text: trimmed,
+      });
+      titleSeen = true;
+      index += 1;
+      continue;
+    }
+
+    if (titleSeen && !isBoundaryLine(trimmed) && !isTableLine(trimmed)) {
+      blocks.push({
+        id: `block-subtitle-${index}`,
+        type: 'paragraph',
+        variant: 'subtitle',
+        text: trimmed,
+      });
+      titleSeen = false;
+      index += 1;
+      continue;
+    }
+
+    if (isActionHeading(trimmed)) {
+      blocks.push({
+        id: `block-instruction-${index}`,
+        type: 'instruction_block',
+        text: trimmed.replace(/^ð[^A-Z]*/i, '').trim(),
+      });
+      index += 1;
+      continue;
+    }
+
+    if (isPartHeading(trimmed) || isSectionHeading(trimmed)) {
+      const level = isPartHeading(trimmed) ? 2 : 3;
+      blocks.push({
+        id: `block-heading-${index}`,
+        type: 'heading',
+        level,
+        text: trimmed,
+      });
+      index += 1;
+
+      if (/^Incident Statistics:?$/i.test(trimmed)) {
+        const statisticLines = [];
+        while (index < lines.length) {
+          const statisticLine = String(lines[index] || '').trim();
+          if (!statisticLine) {
+            index += 1;
+            break;
+          }
+          if (isBoundaryLine(statisticLine) || isTableLine(statisticLine)) break;
+          statisticLines.push(statisticLine);
+          index += 1;
+        }
+
+        if (statisticLines.length > 0) {
+          blocks.push({
+            id: `block-statistics-${index}`,
+            type: 'statistics_table',
+            headers: ['Metric', 'Detail'],
+            rows: parseStatisticRows(statisticLines),
+          });
+        }
+      }
+      continue;
+    }
+
+    if (/dispatch message/i.test(trimmed)) {
+      blocks.push({
+        id: `block-paragraph-${index}`,
+        type: 'paragraph',
+        text: trimmed,
+      });
+      index += 1;
+
+      const infoLines = [];
+      while (index < lines.length) {
+        const nextLine = String(lines[index] || '').trim();
+        if (!nextLine) {
+          index += 1;
+          if (infoLines.length > 0) break;
+          continue;
+        }
+        if (isBoundaryLine(nextLine) || isTableLine(nextLine) || isQuestionLine(nextLine)) break;
+        infoLines.push(nextLine);
+        index += 1;
+      }
+
+      if (infoLines.length > 0) {
+        blocks.push({
+          id: `block-info-${index}`,
+          type: 'information_box',
+          text: infoLines.join('\n\n'),
+        });
+      }
+      continue;
+    }
+
+    if (isTableLine(trimmed)) {
+      const tableLines = [];
+      while (index < lines.length && isTableLine(String(lines[index] || '').trim())) {
+        tableLines.push(String(lines[index] || '').trim());
+        index += 1;
+      }
+      const rows = tableLines.map((entry) => entry.split('\t').map((cell) => cell.trim()));
+      const [headers, ...body] = rows;
+      const type = headers[0] === 'Patient' ? 'patient_table' : 'statistics_table';
+      blocks.push({
+        id: `block-table-${index}`,
+        type,
+        headers,
+        rows: body,
+      });
+      continue;
+    }
+
+    if (/^Your Response:/i.test(trimmed)) {
+      const activity = activities[interactiveIndex] || null;
+      if (activity) interactiveIndex += 1;
+
+      const fields = normalizeActivityFields(activity);
+      const { responseTemplate } = splitPrompt(activity?.prompt || '');
+      blocks.push({
+        id: `block-response-${activity?.id || index}`,
+        type: responseBlockType(activity),
+        activityId: activity?.id || `activity-${index}`,
+        title: activity?.title || '',
+        fields,
+        options: Array.isArray(activity?.options) ? activity.options : [],
+        input_type: activity?.type === 'multiple_choice' ? 'multiple_choice' : 'text',
+        template: responseTemplate,
+        grading: {
+          points: Number(activity?.points || 0),
+          criteria: activity?.evaluation_criteria || activity?.criteria || activity?.explanation || '',
+        },
+      });
+
+      index += 1;
+      if (String(lines[index] || '').trim().toLowerCase() === 'text') index += 1;
+      while (index < lines.length) {
+        const nextTrimmed = String(lines[index] || '').trim();
+        if (!nextTrimmed) {
+          index += 1;
+          continue;
+        }
+        if (isBoundaryLine(nextTrimmed) || isTableLine(nextTrimmed) || isQuestionLine(nextTrimmed)) break;
+        index += 1;
+      }
+      continue;
+    }
+
+    if (isQuestionLine(trimmed)) {
+      const questionLines = [trimmed];
+      index += 1;
+      while (index < lines.length) {
+        const nextTrimmed = String(lines[index] || '').trim();
+        if (!nextTrimmed) {
+          index += 1;
+          break;
+        }
+        if (isBoundaryLine(nextTrimmed) || isTableLine(nextTrimmed) || /^Your Response:/i.test(nextTrimmed)) break;
+        questionLines.push(nextTrimmed);
+        index += 1;
+      }
+
+      blocks.push({
+        id: `block-question-${index}`,
+        type: 'question_block',
+        text: questionLines.join('\n\n'),
+      });
+      continue;
+    }
+
+    blocks.push({
+      id: `block-paragraph-${index}`,
+      type: 'paragraph',
+      text: trimmed,
+    });
+    index += 1;
+  }
+
+  return blocks;
 }
 
 function gradeActivity(activity, response) {
@@ -240,7 +555,6 @@ export const CaseStudy = {
          cs.difficulty,
          cs.description,
          cs.content,
-         cs.content_html,
          cs.order_number,
          cs.passing_percentage,
          COALESCE(progress.status, CASE WHEN cs.order_number = 1 THEN 'available' ELSE 'locked' END) AS status,
@@ -261,7 +575,6 @@ export const CaseStudy = {
       return {
         ...row,
         content: contentJson,
-        content_html: resolveContentHtml(row),
         total_points: extractTotalPoints(contentJson),
         competencies: extractCompetencies(contentJson),
       };
@@ -279,11 +592,12 @@ export const CaseStudy = {
          cs.difficulty,
          cs.description,
          cs.content,
-         cs.content_html,
          cs.order_number,
          cs.passing_percentage,
          COALESCE(progress.status, CASE WHEN cs.order_number = 1 THEN 'available' ELSE 'locked' END) AS status,
-         COALESCE(progress.score, 0) AS score
+         COALESCE(progress.score, 0) AS score,
+         COALESCE(progress.responses, '{}'::jsonb) AS responses,
+         progress.completed_at
        FROM case_studies cs
        LEFT JOIN student_case_progress progress
          ON progress.case_id = cs.id
@@ -299,7 +613,6 @@ export const CaseStudy = {
     return {
       ...rows[0],
       content: contentJson,
-      content_html: resolveContentHtml(rows[0]),
       total_points: extractTotalPoints(contentJson),
       competencies: extractCompetencies(contentJson),
     };
@@ -309,21 +622,56 @@ export const CaseStudy = {
     const studyCase = await this.findForStudent(studentId, caseId);
     if (!studyCase) return null;
 
-    const activities = Array.isArray(studyCase.content?.activities)
-      ? [...studyCase.content.activities].sort((left, right) => {
-          const leftPhase = phaseSortValue(left.phase);
-          const rightPhase = phaseSortValue(right.phase);
-          if (leftPhase !== rightPhase) return leftPhase - rightPhase;
-          return String(left.id).localeCompare(String(right.id));
-        })
-      : [];
-
     return {
       caseStudy: studyCase,
-      sections: buildContentSections(studyCase.content),
-      activities,
-      phases: groupActivitiesByPhase(activities),
+      blocks: buildWorksheetBlocks(studyCase.content),
+      responses: studyCase.responses || {},
     };
+  },
+
+  async saveProgress({ studentId, caseId, responses = {} }) {
+    return withTransaction(async (db) => {
+      const { rows: caseRows } = await db.query(
+        `SELECT id, order_number, is_active
+         FROM case_studies
+         WHERE id = $1
+         LIMIT 1`,
+        [caseId]
+      );
+      const studyCase = caseRows[0];
+      if (!studyCase || !studyCase.is_active) return null;
+
+      const { rows: progressRows } = await db.query(
+        `SELECT *
+         FROM student_case_progress
+         WHERE student_id = $1
+           AND case_id = $2
+         LIMIT 1`,
+        [studentId, caseId]
+      );
+      const progress = progressRows[0];
+      const status = progress?.status || (studyCase.order_number === 1 ? 'available' : 'locked');
+      if (status === 'locked') {
+        const error = new Error('This case is currently locked.');
+        error.status = 403;
+        throw error;
+      }
+
+      const now = new Date().toISOString();
+      const { rows } = await db.query(
+        `INSERT INTO student_case_progress (student_id, case_id, status, score, completed_at, responses)
+         VALUES ($1, $2, $3, $4, $5, $6::jsonb)
+         ON CONFLICT (student_id, case_id)
+         DO UPDATE SET
+           status = student_case_progress.status,
+           score = student_case_progress.score,
+           completed_at = student_case_progress.completed_at,
+           responses = EXCLUDED.responses
+         RETURNING student_id, case_id, status, score, completed_at, responses`,
+        [studentId, caseId, status, progress?.score || null, progress?.completed_at || null, JSON.stringify(responses || {})]
+      );
+      return rows[0];
+    });
   },
 
   async submitAttempt({ studentId, caseId, answers = {} }) {
@@ -356,9 +704,7 @@ export const CaseStudy = {
       }
 
       const contentJson = resolveContentJson(studyCase);
-      const activities = Array.isArray(contentJson.activities)
-        ? contentJson.activities.filter((activity) => Number(activity.points || 0) > 0)
-        : [];
+      const activities = sortedActivities(contentJson).filter((activity) => Number(activity.points || 0) > 0);
 
       const totalPoints = extractTotalPoints(contentJson);
       const gradedReview = activities.map((activity) => gradeActivity(activity, answers[activity.id]));
@@ -394,14 +740,15 @@ export const CaseStudy = {
       const attempt = insertedAttemptRows[0];
 
       await db.query(
-        `INSERT INTO student_case_progress (student_id, case_id, status, score, completed_at)
-         VALUES ($1, $2, $3, $4, $5)
+        `INSERT INTO student_case_progress (student_id, case_id, status, score, completed_at, responses)
+         VALUES ($1, $2, $3, $4, $5, $6::jsonb)
          ON CONFLICT (student_id, case_id)
          DO UPDATE SET
            status = EXCLUDED.status,
            score = EXCLUDED.score,
-           completed_at = EXCLUDED.completed_at`,
-        [studentId, caseId, passed ? 'completed' : 'available', percentage, passed ? now : null]
+           completed_at = EXCLUDED.completed_at,
+           responses = EXCLUDED.responses`,
+        [studentId, caseId, passed ? 'completed' : 'available', percentage, passed ? now : null, JSON.stringify(answers || {})]
       );
 
       const competencies = extractCompetencies(contentJson);
@@ -426,8 +773,8 @@ export const CaseStudy = {
         const nextCase = nextCaseRows[0];
         if (nextCase) {
           await db.query(
-            `INSERT INTO student_case_progress (student_id, case_id, status)
-             VALUES ($1, $2, 'available')
+            `INSERT INTO student_case_progress (student_id, case_id, status, responses)
+             VALUES ($1, $2, 'available', '{}'::jsonb)
              ON CONFLICT (student_id, case_id)
              DO UPDATE SET status = CASE
                WHEN student_case_progress.status = 'completed' THEN student_case_progress.status
@@ -451,7 +798,6 @@ export const CaseStudy = {
           order_number: studyCase.order_number,
           passing_percentage: Number(studyCase.passing_percentage || 80),
           competencies,
-          sections: buildContentSections(contentJson),
         },
         attempt: {
           ...attempt,
@@ -472,8 +818,7 @@ export const CaseStudy = {
          cs.title,
          cs.order_number,
          cs.passing_percentage,
-         cs.content,
-         cs.content_html
+         cs.content
        FROM student_case_attempts sca
        INNER JOIN case_studies cs ON cs.id = sca.case_id
        WHERE sca.id = $1
@@ -486,8 +831,6 @@ export const CaseStudy = {
     return {
       ...rows[0],
       content: resolveContentJson(rows[0]),
-      content_html: resolveContentHtml(rows[0]),
     };
   },
 };
-

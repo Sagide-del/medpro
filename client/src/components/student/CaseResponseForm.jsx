@@ -1,21 +1,26 @@
+function renderPrompt(text) {
+  return String(text || '')
+    .split('\n')
+    .map((line, index) => (
+      <div key={index} className={line.trim() ? 'case-document-line' : 'case-document-line blank'}>
+        {line || '\u00A0'}
+      </div>
+    ));
+}
+
 export default function CaseResponseForm({ activity, value = {}, onChange }) {
   const fields = activity?.fields || [];
 
   return (
-    <div className="card case-activity-card">
-      <div className="mcq-review-head">
-        <div>
-          <div className="case-section-kicker">{activity.phase}</div>
-          <h2>{activity.title}</h2>
-        </div>
-        <span className="badge draft">{activity.points} pts</span>
+    <section className="case-block case-block-form">
+      <h3 className="case-question-heading">{activity.title}</h3>
+      <div className="case-body-text">
+        {renderPrompt(activity.prompt)}
       </div>
 
-      <pre className="case-phase-body">{activity.prompt}</pre>
-
-      <div className="case-form-grid">
+      <div className="case-response-form">
         {fields.map((field) => (
-          <label key={field.id} className="field case-field">
+          <label key={field.id} className="case-response-field">
             <span>{field.label}</span>
             <textarea
               rows={4}
@@ -26,6 +31,6 @@ export default function CaseResponseForm({ activity, value = {}, onChange }) {
           </label>
         ))}
       </div>
-    </div>
+    </section>
   );
 }

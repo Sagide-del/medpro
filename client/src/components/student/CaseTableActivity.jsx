@@ -1,3 +1,13 @@
+function renderPrompt(text) {
+  return String(text || '')
+    .split('\n')
+    .map((line, index) => (
+      <div key={index} className={line.trim() ? 'case-document-line' : 'case-document-line blank'}>
+        {line || '\u00A0'}
+      </div>
+    ));
+}
+
 export default function CaseTableActivity({ activity, value = { rows: {} }, onChange }) {
   const rows = activity?.table?.rows || [];
   const columns = activity?.table?.columns || [];
@@ -14,16 +24,11 @@ export default function CaseTableActivity({ activity, value = { rows: {} }, onCh
   }
 
   return (
-    <div className="card case-activity-card">
-      <div className="mcq-review-head">
-        <div>
-          <div className="case-section-kicker">{activity.phase}</div>
-          <h2>{activity.title}</h2>
-        </div>
-        <span className="badge draft">{activity.points} pts</span>
+    <section className="case-block case-block-triage">
+      <h3 className="case-question-heading">{activity.title}</h3>
+      <div className="case-body-text">
+        {renderPrompt(activity.prompt)}
       </div>
-
-      <pre className="case-phase-body">{activity.prompt}</pre>
 
       <div className="case-data-table-scroll">
         <table className="case-data-table case-entry-table">
@@ -53,6 +58,6 @@ export default function CaseTableActivity({ activity, value = { rows: {} }, onCh
           </tbody>
         </table>
       </div>
-    </div>
+    </section>
   );
 }

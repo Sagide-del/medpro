@@ -1,22 +1,34 @@
+function renderPrompt(text) {
+  return String(text || '')
+    .split('\n')
+    .map((line, index) => (
+      <div key={index} className={line.trim() ? 'case-document-line' : 'case-document-line blank'}>
+        {line || '\u00A0'}
+      </div>
+    ));
+}
+
+function parseReflectionQuestions(prompt) {
+  const matches = [...String(prompt || '').matchAll(/^\d+\.\s+(.+)$/gm)];
+  return matches.map((match) => match[1].trim());
+}
+
 export default function CaseQuestionBlock({ activity, value = '', onChange }) {
   const options = activity?.options || [];
+  const reflectionQuestions = activity.type === 'reflection' ? parseReflectionQuestions(activity.prompt) : [];
+  const reflectionValues = typeof value === 'object' && value !== null ? value : {};
 
   return (
-    <div className="card case-activity-card">
-      <div className="mcq-review-head">
-        <div>
-          <div className="case-section-kicker">{activity.phase}</div>
-          <h2>{activity.title}</h2>
-        </div>
-        <span className="badge draft">{activity.points} pts</span>
+    <section className="case-block case-block-question">
+      <h3 className="case-question-heading">{activity.title}</h3>
+      <div className="case-body-text">
+        {renderPrompt(activity.prompt)}
       </div>
 
-      <pre className="case-phase-body">{activity.prompt}</pre>
-
       {activity.type === 'multiple_choice' ? (
-        <div className="mcq-option-list">
+        <div className="case-option-list">
           {options.map((option) => (
-            <label key={`${activity.id}-${option.key}`} className={`mcq-option ${value === option.key ? 'selected' : ''}`}>
+            <label key={`${activity.id}-${option.key}`} className="case-option">
               <input
                 type="radio"
                 name={activity.id}
@@ -28,17 +40,34 @@ export default function CaseQuestionBlock({ activity, value = '', onChange }) {
             </label>
           ))}
         </div>
+      ) : reflectionQuestions.length > 0 ? (
+        <div className="case-response-form">
+          {reflectionQuestions.map((question, index) => (
+            <label key={`${activity.id}-reflection-${index}`} className="case-response-field">
+              <span>{index + 1}. {question}</span>
+              <textarea
+                rows={5}
+                value={reflectionValues[index] || ''}
+                placeholder="Enter your response"
+                onChange={(event) => onChange({
+                  ...reflectionValues,
+                  [index]: event.target.value,
+                })}
+              />
+            </label>
+          ))}
+        </div>
       ) : (
-        <label className="field case-field">
-          <span>Your reflection</span>
+        <label className="case-response-field">
+          <span>Response</span>
           <textarea
             rows={6}
-            value={value}
-            placeholder="Enter your reflection"
+            value={typeof value === 'string' ? value : ''}
+            placeholder="Enter your response"
             onChange={(event) => onChange(event.target.value)}
           />
         </label>
       )}
-    </div>
+    </section>
   );
 }

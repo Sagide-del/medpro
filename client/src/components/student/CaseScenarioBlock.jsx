@@ -1,29 +1,11 @@
-function renderValue(value) {
-  if (value == null) return null;
-  if (typeof value === 'string') return <pre className="case-phase-body">{value}</pre>;
-  if (Array.isArray(value)) {
-    return (
-      <div className="case-section-stack">
-        {value.map((item, index) => (
-          <div key={index}>{renderValue(item)}</div>
-        ))}
+function renderPlainLines(text) {
+  return String(text || '')
+    .split('\n')
+    .map((line, index) => (
+      <div key={index} className={line.trim() ? 'case-document-line' : 'case-document-line blank'}>
+        {line || '\u00A0'}
       </div>
-    );
-  }
-  if (typeof value === 'object') {
-    return (
-      <div className="case-section-stack">
-        {Object.entries(value).map(([key, item]) => (
-          <div key={key} className="case-section-item">
-            <div className="case-section-label">{key.replace(/_/g, ' ')}</div>
-            {renderValue(item)}
-          </div>
-        ))}
-      </div>
-    );
-  }
-
-  return <div className="case-phase-body">{String(value)}</div>;
+    ));
 }
 
 function CaseDataTable({ table }) {
@@ -56,20 +38,18 @@ function CaseDataTable({ table }) {
   );
 }
 
-export default function CaseScenarioBlock({ activity, patientTables = [] }) {
+export default function CaseScenarioBlock({ activity, patientTables = [], kind = 'scenario_block' }) {
   const tables = [...(activity?.tables || []), ...patientTables];
+  const lines = String(activity.content || '').split('\n');
+  const normalizedTitle = String(activity.title || '').trim().toLowerCase();
+  const normalizedFirstLine = String(lines[0] || '').trim().toLowerCase();
+  const content = normalizedFirstLine === normalizedTitle ? lines.slice(1).join('\n').trimStart() : activity.content;
 
   return (
-    <div className="card case-activity-card">
-      <div className="mcq-review-head">
-        <div>
-          <div className="case-section-kicker">{activity.phase}</div>
-          <h2>{activity.title}</h2>
-        </div>
-        <span className="badge draft">Briefing</span>
+    <section className={`case-block case-block-${kind}`}>
+      <div className="case-body-text">
+        {renderPlainLines(content)}
       </div>
-
-      {activity.content && <pre className="case-phase-body">{activity.content}</pre>}
 
       {tables.length > 0 && (
         <div className="case-table-stack">
@@ -78,8 +58,6 @@ export default function CaseScenarioBlock({ activity, patientTables = [] }) {
           ))}
         </div>
       )}
-    </div>
+    </section>
   );
 }
-
-export { renderValue };

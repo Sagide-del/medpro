@@ -16,7 +16,7 @@ import { requirePremiumAccess } from '../middleware/subscriptionAccess.js';
 import { createUploader } from '../services/storage.js';
 
 const ALLOWED_MIME_TYPES = new Set([
-  'image/png',
+  'application/pdf',
 ]);
 
 const router = Router();
@@ -29,11 +29,11 @@ router.get('/:id', requireRole('student', 'teacher', 'institution_admin', 'super
 router.post('/', requireRole('super_admin'), createClinicalReferenceCard);
 router.post('/bulk-upload', requireRole('super_admin'), upload.array('files', 50), (req, res, next) => {
   if (!Array.isArray(req.files) || req.files.length === 0) {
-    return res.status(400).json({ error: 'Select one or more PNG files to upload.' });
+    return res.status(400).json({ error: 'Select one or more PDF files to upload.' });
   }
   for (const file of req.files) {
     if (!ALLOWED_MIME_TYPES.has(file.mimetype)) {
-      return res.status(400).json({ error: 'Only PNG files are supported.' });
+      return res.status(400).json({ error: 'Only PDF files are supported.' });
     }
   }
   req.body = {
@@ -52,15 +52,14 @@ router.post(
   requireRole('super_admin'),
   upload.single('file'),
   (req, res, next) => {
-    if (!req.file) return res.status(400).json({ error: 'Upload a PNG card file.' });
+    if (!req.file) return res.status(400).json({ error: 'Upload a PDF card file.' });
     if (!ALLOWED_MIME_TYPES.has(req.file.mimetype)) {
-      return res.status(400).json({ error: 'Only PNG clinical reference cards are supported.' });
+      return res.status(400).json({ error: 'Only PDF clinical reference cards are supported.' });
     }
 
     req.body = {
       fileUrl: urlFor(req.file),
-      fileKind: 'image',
-      thumbnailUrl: urlFor(req.file),
+      fileType: 'pdf',
     };
     next();
   },

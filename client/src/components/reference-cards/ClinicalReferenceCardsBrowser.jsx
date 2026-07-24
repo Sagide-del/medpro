@@ -1,4 +1,4 @@
-﻿import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { api } from '../../services/api';
 import Loading from '../shared/Loading';
@@ -7,15 +7,15 @@ import SubscriptionPrompt from '../student/SubscriptionPrompt';
 const MODE_META = {
   student: {
     title: 'Clinical Reference Cards',
-    subtitle: 'Browse PNG reference cards by category and open the original image.',
+    subtitle: 'Browse PDF reference cards by category and open the document in your browser.',
   },
   teacher: {
     title: 'Clinical Reference Cards',
-    subtitle: 'View published cards assigned to your program scope.',
+    subtitle: 'View published PDF reference cards for your program scope.',
   },
   admin: {
     title: 'Clinical Reference Cards',
-    subtitle: 'View institution cards by category.',
+    subtitle: 'Manage institution PDF reference cards by category.',
   },
 };
 
@@ -32,137 +32,75 @@ function formatDate(value) {
   }
 }
 
-function ReferenceCardImage({ src, alt, className, wrapClassName, onClick, size = 'cover' }) {
-  const [loading, setLoading] = useState(true);
-  const [broken, setBroken] = useState(false);
-
-  useEffect(() => {
-    setLoading(true);
-    setBroken(false);
-  }, [src]);
-
-  if (!src) {
-    return (
-      <div className={`${wrapClassName || ''} ref-card-image-fallback`} role="img" aria-label={`${alt} unavailable`}>
-        <span>{alt}</span>
-      </div>
-    );
-  }
-
-  return (
-    <div className={wrapClassName}>
-      {loading && !broken && <div className="ref-card-image-loading" aria-hidden="true">Loading image...</div>}
-      {!broken ? (
-        <img
-          src={src}
-          alt={alt}
-          className={className}
-          loading="lazy"
-          onLoad={() => setLoading(false)}
-          onError={(event) => {
-            console.error('Clinical reference card image failed to load', { src, alt, event });
-            setLoading(false);
-            setBroken(true);
-          }}
-          onClick={onClick}
-          role={onClick ? 'button' : undefined}
-          tabIndex={onClick ? 0 : undefined}
-          onKeyDown={(event) => {
-            if (!onClick) return;
-            if (event.key === 'Enter' || event.key === ' ') {
-              event.preventDefault();
-              onClick();
-            }
-          }}
-          style={{ objectFit: size }}
-        />
-      ) : (
-        <div className="ref-card-image-fallback" role="img" aria-label={`${alt} failed to load`}>
-          <span>Image unavailable</span>
-        </div>
-      )}
-    </div>
-  );
+function openDocument(url) {
+  if (!url) return;
+  window.open(url, '_blank', 'noopener,noreferrer');
 }
 
-function ImageViewer({ cards, index, onClose, onChange }) {
-  const card = cards[index];
-  const touchStart = useRef(null);
-
+function PdfModal({ card, onClose }) {
   if (!card) return null;
-
-  function move(direction) {
-    const nextIndex = (index + direction + cards.length) % cards.length;
-    onChange(nextIndex);
-  }
 
   return (
     <div className="ref-card-modal" role="dialog" aria-modal="true" aria-label={card.title} onClick={onClose}>
-      <div
-        className="ref-card-modal-panel"
-        onClick={(event) => event.stopPropagation()}
-        onTouchStart={(event) => {
-          touchStart.current = event.touches[0].clientX;
-        }}
-        onTouchEnd={(event) => {
-          const start = touchStart.current;
-          if (start == null) return;
-          const end = event.changedTouches[0].clientX;
-          const delta = end - start;
-          if (Math.abs(delta) > 42) move(delta < 0 ? 1 : -1);
-          touchStart.current = null;
-        }}
-      >
+      <div className="ref-card-modal-panel ref-card-pdf-panel" onClick={(event) => event.stopPropagation()}>
         <div className="ref-card-modal-head">
           <div>
             <div className="ref-card-kicker">{normalizeCategory(card)}</div>
             <h2>{card.title}</h2>
             <div className="ref-card-modal-meta">
               <span>{card.difficulty || 'intermediate'}</span>
-              <span>{index + 1} of {cards.length}</span>
+              {card.file_type ? <span>{card.file_type.toUpperCase()}</span> : null}
               {card.created_at ? <span>{formatDate(card.created_at)}</span> : null}
             </div>
           </div>
           <div className="ref-card-modal-actions">
-            <button className="ghost" onClick={() => move(-1)} disabled={cards.length <= 1}>Prev</button>
-            <button className="ghost" onClick={() => move(1)} disabled={cards.length <= 1}>Next</button>
+            <button className="ghost" onClick={() => openDocument(card.file_url)} disabled={!card.file_url}>
+              Open in new tab
+            </button>
             <button className="primary" onClick={onClose}>Close</button>
           </div>
         </div>
-        <div className="ref-card-modal-image-wrap">
-          <ReferenceCardImage
-            src={card.image_url}
-            alt={card.title}
-            className="ref-card-modal-image"
-            wrapClassName="ref-card-modal-image-wrap-inner"
-            size="contain"
-          />
+        <div className="ref-card-pdf-frame-wrap">
+          {card.file_url ? (
+            <iframe
+              title={card.title}
+              src={card.file_url}
+              className="ref-card-pdf-frame"
+            />
+          ) : (
+            <div className="ref-card-image-fallback">
+              <span>PDF unavailable</span>
+            </div>
+          )}
         </div>
       </div>
     </div>
   );
 }
 
-function GalleryCard({ card, onOpen }) {
+function CardRow({ card, onOpen }) {
   return (
-    <button className="ref-card-gallery-card" onClick={onOpen}>
-      <div className="ref-card-gallery-image-wrap">
-        <ReferenceCardImage
-          src={card.image_url}
-          alt={card.title}
-          className="ref-card-gallery-image"
-          wrapClassName="ref-card-gallery-image-shell"
-        />
-      </div>
-      <div className="ref-card-gallery-body">
+    <div className="ref-card-document-row">
+      <div className="ref-card-document-main">
         <div className="ref-card-kicker">{normalizeCategory(card)}</div>
         <h3>{card.title}</h3>
-        <div className="ref-card-gallery-meta">
+        <div className="ref-card-document-meta">
           <span>{card.difficulty || 'intermediate'}</span>
-          <span>{formatDate(card.created_at)}</span>
+          {card.file_type ? <span>{card.file_type.toUpperCase()}</span> : null}
+          {card.created_at ? <span>{formatDate(card.created_at)}</span> : null}
         </div>
       </div>
-    </button>
+      <div className="ref-card-document-actions">
+        <button className="primary" onClick={onOpen} disabled={!card.file_url}>
+          Open Reference Card
+        </button>
+        {card.file_url && (
+          <button className="ghost" onClick={() => openDocument(card.file_url)}>
+            Open in new tab
+          </button>
+        )}
+      </div>
+    </div>
   );
 }
 
@@ -174,14 +112,13 @@ function CardBrowser({ mode }) {
   const [cards, setCards] = useState(null);
   const [subscription, setSubscription] = useState(null);
   const [error, setError] = useState('');
-  const [viewerIndex, setViewerIndex] = useState(null);
+  const [viewerCard, setViewerCard] = useState(null);
   const [selectedCategory, setSelectedCategory] = useState(searchParams.get('category') || '');
 
   useEffect(() => {
     const params = new URLSearchParams();
-    if (mode === 'admin') {
-      params.set('status', 'published');
-    }
+    if (mode === 'admin') params.set('status', 'published');
+
     api(`/clinical-reference-cards${params.toString() ? `?${params.toString()}` : ''}`)
       .then((data) => setCards(data.cards || []))
       .catch((err) => {
@@ -214,10 +151,8 @@ function CardBrowser({ mode }) {
   useEffect(() => {
     const queryCategory = searchParams.get('category') || '';
     if (queryCategory && queryCategory !== selectedCategory) setSelectedCategory(queryCategory);
-    if (!queryCategory && selectedCategory) {
-      setSelectedCategory('');
-    }
-  }, [searchParams]);
+    if (!queryCategory && selectedCategory) setSelectedCategory('');
+  }, [searchParams, selectedCategory]);
 
   useEffect(() => {
     if (!cards || !id) return;
@@ -226,11 +161,9 @@ function CardBrowser({ mode }) {
       const category = normalizeCategory(found);
       setSelectedCategory(category);
       setSearchParams({ category });
-      const list = categories.find((entry) => entry.category === category)?.items || [];
-      const nextIndex = list.findIndex((item) => String(item.clinical_card_id || item.id) === String(found.clinical_card_id || found.id));
-      setViewerIndex(nextIndex >= 0 ? nextIndex : 0);
+      setViewerCard(found);
     }
-  }, [cards, id]);
+  }, [cards, id, setSearchParams]);
 
   if (error) return <div className="alert">{error}</div>;
   if (subscription && mode === 'student') return <SubscriptionPrompt subscription={subscription} title="Subscription required for Clinical Reference Cards" />;
@@ -259,33 +192,22 @@ function CardBrowser({ mode }) {
 
       {!selectedCategory ? (
         <div className="ref-card-category-grid">
-          {categories.map((entry) => {
-            const preview = entry.items[0];
-            return (
-              <button
-                key={entry.category}
-                className="ref-card-category-card"
-                onClick={() => {
-                  setSelectedCategory(entry.category);
-                  setSearchParams({ category: entry.category });
-                }}
-              >
-                <div className="ref-card-category-preview">
-                  <ReferenceCardImage
-                    src={preview?.image_url}
-                    alt={entry.category}
-                    className="ref-card-category-preview-image"
-                    wrapClassName="ref-card-category-preview-shell"
-                  />
-                </div>
-                <div className="ref-card-category-body">
-                  <div className="ref-card-kicker">Category</div>
-                  <h2>{entry.category}</h2>
-                  <p>{entry.items.length} card{entry.items.length === 1 ? '' : 's'}</p>
-                </div>
-              </button>
-            );
-          })}
+          {categories.map((entry) => (
+            <button
+              key={entry.category}
+              className="ref-card-category-card ref-card-category-card--doc"
+              onClick={() => {
+                setSelectedCategory(entry.category);
+                setSearchParams({ category: entry.category });
+              }}
+            >
+              <div className="ref-card-category-body">
+                <div className="ref-card-kicker">Category</div>
+                <h2>{entry.category}</h2>
+                <p>{entry.items.length} card{entry.items.length === 1 ? '' : 's'}</p>
+              </div>
+            </button>
+          ))}
           {categories.length === 0 && <div className="card"><p style={{ marginBottom: 0 }}>No clinical reference cards have been uploaded yet.</p></div>}
         </div>
       ) : (
@@ -297,25 +219,20 @@ function CardBrowser({ mode }) {
             </div>
             <div className="ref-card-section-meta">{activeCards.length} card{activeCards.length === 1 ? '' : 's'}</div>
           </div>
-          <div className="ref-card-gallery-grid">
-            {activeCards.map((card, index) => (
-              <GalleryCard
-                key={card.clinical_card_id || card.id || `${card.title}-${index}`}
+          <div className="ref-card-document-list">
+            {activeCards.map((card) => (
+              <CardRow
+                key={card.clinical_card_id || card.id}
                 card={card}
-                onOpen={() => setViewerIndex(index)}
+                onOpen={() => setViewerCard(card)}
               />
             ))}
           </div>
         </>
       )}
 
-      {viewerIndex != null && activeCards[viewerIndex] && (
-        <ImageViewer
-          cards={activeCards}
-          index={viewerIndex}
-          onClose={() => setViewerIndex(null)}
-          onChange={setViewerIndex}
-        />
+      {viewerCard && (
+        <PdfModal card={viewerCard} onClose={() => setViewerCard(null)} />
       )}
     </>
   );

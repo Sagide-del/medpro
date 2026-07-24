@@ -1,0 +1,3 @@
+ALTER TABLE IF EXISTS clinical_reference_cards
+  ADD COLUMN IF NOT EXISTS file_url TEXT,
+  ADD COLUMN IF NOT EXISTS file_type VARCHAR(16) DEFAULT 'pdf';

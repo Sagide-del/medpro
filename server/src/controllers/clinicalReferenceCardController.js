@@ -37,7 +37,7 @@ function assertAllowedCategory(category) {
 }
 
 function uploadedUrl(req, file) {
-  if (req.body?.imageUrl) return req.body.imageUrl;
+  if (req.body?.fileUrl) return req.body.fileUrl;
   if (file?.location) return file.location;
   if (file?.key && process.env.AWS_S3_BUCKET && process.env.AWS_REGION) {
     return `https://${process.env.AWS_S3_BUCKET}.s3.${process.env.AWS_REGION}.amazonaws.com/${file.key}`;
@@ -88,25 +88,26 @@ export const getClinicalReferenceCard = asyncHandler(async (req, res) => {
   }
 
   res.json({
-    card: unlocked ? card : { ...card, image_url: null },
+    card: unlocked ? card : { ...card, file_url: null },
     unlocked,
   });
 });
 
 export const createClinicalReferenceCard = asyncHandler(async (req, res) => {
-  const { title, category, difficulty, imageUrl, isActive } = req.body;
+  const { title, category, difficulty, fileUrl, fileType, isActive } = req.body;
   if (!title) return res.status(400).json({ error: 'Title is required.' });
   const resolvedCategory = normalizeCategory(category);
   if (!resolvedCategory) return res.status(400).json({ error: 'Category is required.' });
   assertAllowedCategory(resolvedCategory);
-  if (!imageUrl) return res.status(400).json({ error: 'Image URL is required.' });
+  if (!fileUrl) return res.status(400).json({ error: 'PDF URL is required.' });
   const institutionId = resolveInstitutionId(req);
 
   const card = await ClinicalReferenceCard.create({
     title,
     category: resolvedCategory,
     difficulty: difficulty || 'intermediate',
-    imageUrl,
+    fileUrl,
+    fileType: fileType || 'pdf',
     graphicId: req.body.graphicId || req.body.graphic_id || null,
     institutionId,
     isActive: Object.prototype.hasOwnProperty.call(req.body, 'isActive') ? Boolean(isActive) : true,
@@ -118,7 +119,7 @@ export const createClinicalReferenceCard = asyncHandler(async (req, res) => {
 export const bulkUploadClinicalReferenceCards = asyncHandler(async (req, res) => {
   const files = Array.isArray(req.files) ? req.files : [];
   if (!files.length) {
-    return res.status(400).json({ error: 'Select one or more PNG files to upload.' });
+    return res.status(400).json({ error: 'Select one or more PDF files to upload.' });
   }
 
   const category = normalizeCategory(req.body.category);
@@ -132,8 +133,8 @@ export const bulkUploadClinicalReferenceCards = asyncHandler(async (req, res) =>
 
   const cards = [];
   for (const file of files) {
-    if (!file?.mimetype || file.mimetype !== 'image/png') {
-      return res.status(400).json({ error: 'Only PNG files are supported for Clinical Reference Cards.' });
+    if (!file?.mimetype || file.mimetype !== 'application/pdf') {
+      return res.status(400).json({ error: 'Only PDF files are supported for Clinical Reference Cards.' });
     }
     const institutionId = resolveInstitutionId(req);
 
@@ -146,7 +147,8 @@ export const bulkUploadClinicalReferenceCards = asyncHandler(async (req, res) =>
         .replace(/\b\w/g, (letter) => letter.toUpperCase()) || 'Clinical Reference Card',
       category,
       difficulty,
-      imageUrl: uploadedUrl(req, file),
+      fileUrl: uploadedUrl(req, file),
+      fileType: 'pdf',
       graphicId: req.body.graphicId || req.body.graphic_id || null,
       institutionId,
       isActive,
@@ -169,7 +171,8 @@ export const updateClinicalReferenceCard = asyncHandler(async (req, res) => {
     title: req.body.title,
     category,
     difficulty: req.body.difficulty,
-    image_url: req.body.image_url,
+    file_url: req.body.file_url || req.body.fileUrl,
+    file_type: req.body.file_type || req.body.fileType,
     graphic_id: req.body.graphic_id,
     institution_id: req.body.institution_id,
     is_active: req.body.is_active,
@@ -191,7 +194,7 @@ export const publishClinicalReferenceCard = asyncHandler(async (req, res) => {
   const current = await ClinicalReferenceCard.findById(req.params.id);
   const access = canReadCard(req.user, current);
   if (!access.ok) return res.status(access.status).json({ error: access.error });
-  if (!current.image_url) return res.status(400).json({ error: 'Upload a PNG image before publishing this card.' });
+  if (!current.file_url) return res.status(400).json({ error: 'Upload a PDF before publishing this card.' });
 
   const card = await ClinicalReferenceCard.update(req.params.id, { is_active: true });
   res.json({ card });

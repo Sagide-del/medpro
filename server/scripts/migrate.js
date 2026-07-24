@@ -42,6 +42,7 @@ const files = [
   'migration_014_case_content_manager.sql',
   'migration_015_case_content_uploader_compatibility.sql',
   'migration_016_clinical_reference_cards_upload.sql',
+  'migration_017_clinical_reference_cards_pdf_documents.sql',
 ];
 
 if (!process.env.DATABASE_URL) {

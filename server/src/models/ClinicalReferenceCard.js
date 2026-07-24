@@ -1,4 +1,4 @@
-import { query, withTransaction } from '../config/database.js';
+import { query } from '../config/database.js';
 
 function rowToCard(row) {
   if (!row) return null;
@@ -7,7 +7,8 @@ function rowToCard(row) {
     title: row.title,
     category: row.category,
     difficulty: row.difficulty,
-    image_url: row.image_url,
+    file_url: row.file_url,
+    file_type: row.file_type,
     graphic_id: row.graphic_id,
     institution_id: row.institution_id,
     is_active: row.is_active !== false,
@@ -65,7 +66,8 @@ export const ClinicalReferenceCard = {
          crc.title,
          crc.category,
          crc.difficulty,
-         crc.image_url,
+         crc.file_url,
+         crc.file_type,
          crc.graphic_id,
          crc.institution_id,
          crc.is_active,
@@ -87,7 +89,8 @@ export const ClinicalReferenceCard = {
          crc.title,
          crc.category,
          crc.difficulty,
-         crc.image_url,
+         crc.file_url,
+         crc.file_type,
          crc.graphic_id,
          crc.institution_id,
          crc.is_active,
@@ -100,13 +103,13 @@ export const ClinicalReferenceCard = {
     return rowToCard(rows[0] || null);
   },
 
-  async create({ title, category, difficulty = 'intermediate', imageUrl, graphicId = null, institutionId = null, isActive = true }) {
+  async create({ title, category, difficulty = 'intermediate', fileUrl, fileType = 'pdf', graphicId = null, institutionId = null, isActive = true }) {
     const { rows } = await query(
       `INSERT INTO clinical_reference_cards
-       (title, category, difficulty, image_url, graphic_id, institution_id, is_active)
-       VALUES ($1, $2, $3, $4, $5, $6::uuid, $7)
-       RETURNING id, title, category, difficulty, image_url, graphic_id, institution_id, is_active, created_at, updated_at`,
-      [title, category, difficulty || null, imageUrl, graphicId, institutionId || null, isActive]
+       (title, category, difficulty, file_url, file_type, graphic_id, institution_id, is_active)
+       VALUES ($1, $2, $3, $4, $5, $6, $7::uuid, $8)
+       RETURNING id, title, category, difficulty, file_url, file_type, graphic_id, institution_id, is_active, created_at, updated_at`,
+      [title, category, difficulty || null, fileUrl, fileType || 'pdf', graphicId, institutionId || null, isActive]
     );
     return rowToCard(rows[0]);
   },
@@ -115,7 +118,7 @@ export const ClinicalReferenceCard = {
     const current = await this.findById(cardId);
     if (!current) return null;
 
-    const allowedFields = ['title', 'category', 'difficulty', 'image_url', 'graphic_id', 'institution_id', 'is_active'];
+    const allowedFields = ['title', 'category', 'difficulty', 'file_url', 'file_type', 'graphic_id', 'institution_id', 'is_active'];
     const sets = [];
     const params = [];
     let i = 1;
@@ -135,14 +138,14 @@ export const ClinicalReferenceCard = {
        SET ${sets.join(', ')},
            updated_at = now()
        WHERE id = $${i}
-       RETURNING id, title, category, difficulty, image_url, graphic_id, institution_id, is_active, created_at, updated_at`,
+       RETURNING id, title, category, difficulty, file_url, file_type, graphic_id, institution_id, is_active, created_at, updated_at`,
       params
     );
     return rowToCard(rows[0] || null);
   },
 
   async setFile(cardId, { fileUrl }) {
-    return this.update(cardId, { image_url: fileUrl });
+    return this.update(cardId, { file_url: fileUrl, file_type: 'pdf' });
   },
 
   async delete(cardId) {

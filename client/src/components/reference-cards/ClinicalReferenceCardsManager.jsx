@@ -16,8 +16,13 @@ function titleFromFilename(filename) {
     .replace(/\b\w/g, (letter) => letter.toUpperCase()) || 'Clinical Reference Card';
 }
 
-function cardImage(card) {
-  return card.image_url || card.file_url || '';
+function cardDocumentUrl(card) {
+  return card.file_url || '';
+}
+
+function openDocument(url) {
+  if (!url) return;
+  window.open(url, '_blank', 'noopener,noreferrer');
 }
 
 export default function ClinicalReferenceCardsManager({ title, subtitle }) {
@@ -43,16 +48,11 @@ export default function ClinicalReferenceCardsManager({ title, subtitle }) {
   const previewFiles = useMemo(() => files.map((file) => ({
     file,
     title: titleFromFilename(file.name),
-    preview: URL.createObjectURL(file),
   })), [files]);
-
-  useEffect(() => () => {
-    previewFiles.forEach(({ preview }) => URL.revokeObjectURL(preview));
-  }, [previewFiles]);
 
   async function save(publishNow = false) {
     if (!files.length) {
-      setStatus({ kind: 'err', text: 'Select one or more PNG files to upload.' });
+      setStatus({ kind: 'err', text: 'Select one or more PDF files to upload.' });
       return;
     }
     setBusy(true);
@@ -95,7 +95,7 @@ export default function ClinicalReferenceCardsManager({ title, subtitle }) {
       </div>
 
       <div className="card">
-        <h2>Bulk PNG upload</h2>
+        <h2>Bulk PDF upload</h2>
         <div className="form-grid">
           <div className="field">
             <label>Category</label>
@@ -110,16 +110,16 @@ export default function ClinicalReferenceCardsManager({ title, subtitle }) {
             </select>
           </div>
           <div className="field">
-            <label>Select PNG files</label>
-            <input type="file" accept="image/png" multiple onChange={(event) => setFiles([...event.target.files || []])} />
+            <label>Select PDF files</label>
+            <input type="file" accept=".pdf,application/pdf" multiple onChange={(event) => setFiles([...event.target.files || []])} />
           </div>
         </div>
 
         {previewFiles.length > 0 && (
           <div className="ref-card-upload-preview-grid">
-            {previewFiles.map(({ file, title: generatedTitle, preview }) => (
+            {previewFiles.map(({ file, title: generatedTitle }) => (
               <div className="ref-card-upload-preview" key={`${file.name}-${file.size}`}>
-                <img src={preview} alt={generatedTitle} />
+                <div className="ref-card-upload-preview-file">PDF</div>
                 <div>
                   <div className="ref-card-kicker">{form.category}</div>
                   <strong>{generatedTitle}</strong>
@@ -164,16 +164,19 @@ export default function ClinicalReferenceCardsManager({ title, subtitle }) {
         <div className="ref-card-admin-grid">
           {cards.map((card) => (
             <div className="ref-card-admin-item" key={card.clinical_card_id || card.id}>
-              <img src={cardImage(card)} alt={card.title} />
               <div className="ref-card-admin-item-body">
                 <div className="ref-card-kicker">{card.category || card.module || 'Uncategorised'}</div>
                 <h3>{card.title}</h3>
                 <div className="ref-card-admin-meta">
                   <span>{card.difficulty || 'intermediate'}</span>
+                  <span>{card.file_type || 'pdf'}</span>
                   <span>{card.is_active ? 'Active' : 'Draft'}</span>
                 </div>
               </div>
               <div className="ref-card-admin-actions">
+                {cardDocumentUrl(card) && (
+                  <button className="ghost" onClick={() => openDocument(cardDocumentUrl(card))}>Open PDF</button>
+                )}
                 <button className="ghost" onClick={() => toggleActive(card)}>{card.is_active ? 'Unpublish' : 'Publish'}</button>
                 <button className="ghost danger" onClick={() => remove(card.clinical_card_id || card.id)}>Delete</button>
               </div>

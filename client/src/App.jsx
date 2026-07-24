@@ -52,6 +52,7 @@ import AdminInstitutions from './components/admin/Institutions';
 import AdminUsers from './components/admin/Users';
 import AdminRevenue from './components/admin/Revenue';
 import AdminClinicalRotations from './components/admin/ClinicalRotations';
+import AdminKenyaEmsCasesManager from './components/admin/KenyaEmsCasesManager';
 
 import SuperAdminDashboard from './components/superadmin/Dashboard';
 import SuperAdminInstitutions from './components/superadmin/Institutions';
@@ -135,6 +136,7 @@ const TEACHER_LINKS = [
 const ADMIN_LINKS = [
   { to: '/admin/dashboard', label: 'Dashboard', end: true },
   { to: '/admin/reference-cards', label: 'Clinical Reference Cards' },
+  { to: '/admin/kenya-ems-cases', label: 'Kenya EMS Cases' },
   { to: '/admin/institution', label: 'Institution' },
   { to: '/admin/users', label: 'Users' },
   { to: '/admin/revenue', label: 'Revenue' },
@@ -209,12 +211,18 @@ const SUPERADMIN_LINKS = [
 ];
 
 
-function RequireRole({ role, children }) {
+function RequireRole({ role, roles, children }) {
   const { user } = useAuth();
 
   if (!user) return <Navigate to="/login" replace />;
 
-  if (user.role !== role) {
+  const allowedRoles = Array.isArray(roles) && roles.length > 0
+    ? roles
+    : role
+      ? [role]
+      : [];
+
+  if (allowedRoles.length > 0 && !allowedRoles.includes(user.role)) {
     return <Navigate to={homeForRole(user.role)} replace />;
   }
 
@@ -342,10 +350,11 @@ function AppRoutes() {
         </Route>
 
 
-        <Route element={<RequireRole role="institution_admin"><Layout links={ADMIN_LINKS} roleLabel="Institution admin" /></RequireRole>}>
+        <Route element={<RequireRole roles={['institution_admin', 'super_admin']}><Layout links={ADMIN_LINKS} roleLabel="Institution admin" /></RequireRole>}>
           <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
           <Route path="/admin/dashboard" element={<AdminDashboard />} />
           <Route path="/admin/reference-cards" element={<AdminClinicalReferenceCardsManager />} />
+          <Route path="/admin/kenya-ems-cases" element={<AdminKenyaEmsCasesManager />} />
           <Route path="/admin/institution" element={<AdminInstitutions />} />
           <Route path="/admin/users" element={<AdminUsers />} />
           <Route path="/admin/revenue" element={<AdminRevenue />} />

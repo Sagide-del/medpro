@@ -38,7 +38,7 @@ function CaseLibrary() {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    api('/case-studies')
+    api('/cases')
       .then((data) => {
         setCases(Array.isArray(data?.cases) ? data.cases : []);
         setSubscription(data?.subscription || null);
@@ -107,7 +107,7 @@ function CaseSession() {
   useEffect(() => {
     setBusy(true);
     hydratedRef.current = false;
-    api(`/case-studies/${id}`)
+    api(`/cases/${id}`)
       .then((data) => {
         setPayload(data);
         setResult(null);
@@ -131,7 +131,7 @@ function CaseSession() {
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
     saveTimerRef.current = setTimeout(async () => {
       try {
-        await api(`/case-studies/${id}/progress`, {
+        await api(`/cases/${id}/progress`, {
           method: 'POST',
           body: { responses },
         });
@@ -157,7 +157,7 @@ function CaseSession() {
   async function saveNow() {
     setSaveState('saving');
     try {
-      await api(`/case-studies/${id}/progress`, {
+      await api(`/cases/${id}/progress`, {
         method: 'POST',
         body: { responses },
       });
@@ -171,7 +171,7 @@ function CaseSession() {
     setBusy(true);
     setError('');
     try {
-      const response = await api(`/case-studies/${id}/submit`, {
+      const response = await api(`/cases/${id}/submit`, {
         method: 'POST',
         body: { answers: responses },
       });

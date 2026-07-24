@@ -55,6 +55,10 @@ function InstructionBlock({ block }) {
   return <div className="case-renderer-instruction">{block.text}</div>;
 }
 
+function DispatchBlock({ block }) {
+  return <div className="case-renderer-info">{block.text}</div>;
+}
+
 function ResponseTableBlock({ block, value, onChange }) {
   if (block.input_type === 'multiple_choice' && Array.isArray(block.options) && block.options.length > 0) {
     return (
@@ -154,9 +158,11 @@ export default function CaseRenderer({ blocks = [], responses = {}, onChange }) 
         if (block.type === 'heading') return <HeadingBlock key={block.id} block={block} />;
         if (block.type === 'paragraph') return <ParagraphBlock key={block.id} block={block} />;
         if (block.type === 'statistics_table') return <StatisticsTableBlock key={block.id} block={block} />;
+        if (block.type === 'table') return <StatisticsTableBlock key={block.id} block={block} />;
         if (block.type === 'patient_table') return <StatisticsTableBlock key={block.id} block={block} />;
         if (block.type === 'information_box') return <InformationBox key={block.id} block={block} />;
-        if (block.type === 'question_block') return <QuestionBlock key={block.id} block={block} />;
+        if (block.type === 'dispatch') return <DispatchBlock key={block.id} block={block} />;
+        if (block.type === 'question_block' || block.type === 'question') return <QuestionBlock key={block.id} block={block} />;
         if (block.type === 'instruction_block') return <InstructionBlock key={block.id} block={block} />;
         if (block.type === 'reflection_block') {
           return (
@@ -168,7 +174,7 @@ export default function CaseRenderer({ blocks = [], responses = {}, onChange }) 
             />
           );
         }
-        if (block.type === 'response_table') {
+        if (block.type === 'response_table' || block.type === 'response_field') {
           return (
             <ResponseTableBlock
               key={block.id}

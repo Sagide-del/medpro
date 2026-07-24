@@ -36,6 +36,8 @@ const files = [
   'migration_010_mcq_module_assessments.sql',
   'migration_011_kenya_case_studies.sql',
   'migration_012_case_progress_jsonb.sql',
+  'migration_013_case_progress_responses.sql',
+  'migration_014_case_content_manager.sql',
 ];
 
 if (!process.env.DATABASE_URL) {

@@ -137,6 +137,7 @@ app.use('/api/clinical-rotations', clinicalRotationRoutes);
 app.use('/api/communications', communicationRoutes);
 app.use('/api/proctored-exams', proctoredExamRoutes);
 app.use('/api/case-studies', caseStudyRoutes);
+app.use('/api/cases', caseStudyRoutes);
 app.use('/api/kenya-ems-cases', caseStudyRoutes);
 
 app.use((req, res) => {

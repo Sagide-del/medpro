@@ -15,7 +15,11 @@ function requiredKeywordMatches(keywords) {
 }
 
 function resolveContentJson(row) {
-  return row?.content || {};
+  return row?.content_json || row?.content || {};
+}
+
+function resolveGradingJson(row) {
+  return row?.grading_json || row?.content_json?.grading_json || row?.content?.grading_json || {};
 }
 
 function extractCompetencies(contentJson) {
@@ -237,6 +241,24 @@ function parseStatisticRows(lines) {
 }
 
 function buildWorksheetBlocks(contentJson = {}) {
+  if (Array.isArray(contentJson.blocks) && contentJson.blocks.length > 0) {
+    return contentJson.blocks.map((block, index) => ({
+      id: block.id || `block-${index + 1}`,
+      type: block.type || 'paragraph',
+      level: block.level,
+      text: block.text || block.content || '',
+      headers: Array.isArray(block.headers) ? block.headers : [],
+      rows: Array.isArray(block.rows) ? block.rows : [],
+      options: Array.isArray(block.options) ? block.options : [],
+      fields: Array.isArray(block.fields) ? block.fields : [],
+      input_type: block.input_type || block.response_type || 'text',
+      title: block.title || '',
+      template: block.template || '',
+      grading: block.grading || {},
+      activityId: block.activityId || block.id || `block-${index + 1}`,
+    }));
+  }
+
   const sourceText = extractSourceText(contentJson);
   const activities = sortedActivities(contentJson).filter((activity) => Number(activity.points || 0) > 0);
   const blocks = [];
@@ -517,6 +539,107 @@ function gradeActivity(activity, response) {
   };
 }
 
+function blockRules(block, gradingJson) {
+  return (
+    gradingJson?.blocks?.[block.activityId]
+    || gradingJson?.blocks?.[block.id]
+    || gradingJson?.[block.activityId]
+    || gradingJson?.[block.id]
+    || block.grading
+    || {}
+  );
+}
+
+function gradeWorksheetBlock(block, response, gradingJson) {
+  const rules = blockRules(block, gradingJson);
+  const points = Number(rules.points || block.grading?.points || 0);
+  const baseReview = {
+    activityId: block.activityId,
+    title: block.title || block.text || block.activityId,
+    phase: block.phase,
+    activityType: block.type,
+    points,
+  };
+
+  if (block.type === 'multiple_choice') {
+    const selected = String(response || '').trim().toUpperCase();
+    const correct = String(rules.correct_option || rules.correctAnswer || rules.correct_answer || '').trim().toUpperCase();
+    const options = Array.isArray(block.options) ? block.options : [];
+    const optionMap = options.reduce((acc, option) => {
+      acc[String(option.key || option.id || '').toUpperCase()] = option.label || option.text || '';
+      return acc;
+    }, {});
+    const isCorrect = selected && selected === correct;
+    return {
+      ...baseReview,
+      isCorrect,
+      earnedPoints: isCorrect ? points : 0,
+      selectedAnswerText: optionMap[selected] || 'No answer selected',
+      expectedAnswerText: optionMap[correct] || correct,
+      explanation: rules.explanation || rules.criteria || '',
+      responseSnapshot: response || null,
+    };
+  }
+
+  if (block.type === 'table' || block.type === 'patient_table' || block.type === 'statistics_table' || rules.rows) {
+    const responseRows = response?.rows || {};
+    const expectedRows = Array.isArray(rules.rows) ? rules.rows : [];
+    if (expectedRows.length > 0) {
+      const graded = gradeTableRows(responseRows, expectedRows);
+      return {
+        ...baseReview,
+        isCorrect: graded.isCorrect,
+        earnedPoints: graded.isCorrect ? points : 0,
+        selectedAnswerText: `${graded.matchedChecks}/${graded.totalChecks} table decisions matched`,
+        expectedAnswerText: graded.totalChecks > 0 ? `${graded.totalChecks} scored table decisions expected` : '',
+        explanation: rules.explanation || rules.criteria || '',
+        responseSnapshot: response || { rows: {} },
+      };
+    }
+    const keywordReview = gradeKeywords(flattenResponseValue(responseRows), rules.keywords || []);
+    return {
+      ...baseReview,
+      isCorrect: keywordReview.isCorrect,
+      earnedPoints: keywordReview.isCorrect ? points : 0,
+      selectedAnswerText: flattenResponseValue(responseRows) || 'No table response provided',
+      expectedAnswerText: (rules.keywords || []).join(', '),
+      explanation: rules.explanation || rules.criteria || '',
+      matchedKeywords: keywordReview.matchedKeywords,
+      responseSnapshot: response || { rows: {} },
+    };
+  }
+
+  const answerText = flattenResponseValue(response || {});
+  const keywords = Array.isArray(rules.keywords) ? rules.keywords : [];
+  if (keywords.length > 0) {
+    const graded = gradeKeywords(answerText, keywords);
+    return {
+      ...baseReview,
+      isCorrect: graded.isCorrect,
+      earnedPoints: graded.isCorrect ? points : 0,
+      selectedAnswerText: answerText || 'No answer provided',
+      expectedAnswerText: keywords.join(', '),
+      explanation: rules.explanation || rules.criteria || '',
+      matchedKeywords: graded.matchedKeywords,
+      responseSnapshot: response || null,
+    };
+  }
+
+  const expectedText = String(rules.expected_text || rules.expectedText || rules.answer || '').trim();
+  const normalizedAnswer = normalizeText(answerText);
+  const normalizedExpected = normalizeText(expectedText);
+  const isCorrect = expectedText ? normalizedAnswer === normalizedExpected : Boolean(answerText.trim());
+  return {
+    ...baseReview,
+    isCorrect,
+    earnedPoints: isCorrect ? points : 0,
+    selectedAnswerText: answerText || 'No answer provided',
+    expectedAnswerText: expectedText,
+    explanation: rules.explanation || rules.criteria || '',
+    responseSnapshot: response || null,
+  };
+}
+
 function summarizeCompetencyPerformance(competencies, percentage) {
   return competencies.map((name) => ({
     name,
@@ -554,14 +677,20 @@ export const CaseStudy = {
          cs.category,
          cs.difficulty,
          cs.description,
+         cs.content_json,
          cs.content,
+         cs.grading_json,
          cs.order_number,
+         cs.created_by,
          cs.passing_percentage,
          COALESCE(progress.status, CASE WHEN cs.order_number = 1 THEN 'available' ELSE 'locked' END) AS status,
          COALESCE(progress.score, attempts.best_percentage, 0) AS score,
          COALESCE(attempts.attempt_count, 0) AS attempt_count,
          attempts.best_percentage,
-         attempts.last_attempt_at
+         attempts.last_attempt_at,
+         COALESCE(progress.responses, '{}'::jsonb) AS responses,
+         progress.completed,
+         progress.completed_at
        FROM case_studies cs
        LEFT JOIN progress ON progress.case_id = cs.id
        LEFT JOIN attempts ON attempts.case_id = cs.id
@@ -575,6 +704,7 @@ export const CaseStudy = {
       return {
         ...row,
         content: contentJson,
+        grading_json: resolveGradingJson(row),
         total_points: extractTotalPoints(contentJson),
         competencies: extractCompetencies(contentJson),
       };
@@ -591,8 +721,11 @@ export const CaseStudy = {
          cs.category,
          cs.difficulty,
          cs.description,
+         cs.content_json,
          cs.content,
+         cs.grading_json,
          cs.order_number,
+         cs.created_by,
          cs.passing_percentage,
          COALESCE(progress.status, CASE WHEN cs.order_number = 1 THEN 'available' ELSE 'locked' END) AS status,
          COALESCE(progress.score, 0) AS score,
@@ -613,6 +746,7 @@ export const CaseStudy = {
     return {
       ...rows[0],
       content: contentJson,
+      grading_json: resolveGradingJson(rows[0]),
       total_points: extractTotalPoints(contentJson),
       competencies: extractCompetencies(contentJson),
     };
@@ -625,6 +759,7 @@ export const CaseStudy = {
     return {
       caseStudy: studyCase,
       blocks: buildWorksheetBlocks(studyCase.content),
+      grading: studyCase.grading_json || {},
       responses: studyCase.responses || {},
     };
   },
@@ -632,7 +767,7 @@ export const CaseStudy = {
   async saveProgress({ studentId, caseId, responses = {} }) {
     return withTransaction(async (db) => {
       const { rows: caseRows } = await db.query(
-        `SELECT id, order_number, is_active
+        `SELECT id, order_number, is_active, content_json, grading_json
          FROM case_studies
          WHERE id = $1
          LIMIT 1`,
@@ -677,7 +812,7 @@ export const CaseStudy = {
   async submitAttempt({ studentId, caseId, answers = {} }) {
     return withTransaction(async (db) => {
       const { rows: caseRows } = await db.query(
-        `SELECT id, title, order_number, passing_percentage, content
+        `SELECT id, title, order_number, passing_percentage, content_json, grading_json, content
          FROM case_studies
          WHERE id = $1
            AND is_active = true
@@ -704,10 +839,11 @@ export const CaseStudy = {
       }
 
       const contentJson = resolveContentJson(studyCase);
-      const activities = sortedActivities(contentJson).filter((activity) => Number(activity.points || 0) > 0);
+      const gradingJson = resolveGradingJson(studyCase);
+      const blocks = buildWorksheetBlocks(contentJson).filter((block) => block.activityId);
 
-      const totalPoints = extractTotalPoints(contentJson);
-      const gradedReview = activities.map((activity) => gradeActivity(activity, answers[activity.id]));
+      const totalPoints = Number(gradingJson.total_points || extractTotalPoints(contentJson));
+      const gradedReview = blocks.map((block) => gradeWorksheetBlock(block, answers[block.activityId], gradingJson));
       const score = gradedReview.reduce((sum, item) => sum + Number(item.earnedPoints || 0), 0);
       const percentage = totalPoints > 0 ? Math.round((score / totalPoints) * 100) : 0;
       const passed = percentage >= Number(studyCase.passing_percentage || 80);
@@ -818,7 +954,10 @@ export const CaseStudy = {
          cs.title,
          cs.order_number,
          cs.passing_percentage,
+         cs.content_json,
          cs.content
+         ,
+         cs.grading_json
        FROM student_case_attempts sca
        INNER JOIN case_studies cs ON cs.id = sca.case_id
        WHERE sca.id = $1
@@ -831,6 +970,7 @@ export const CaseStudy = {
     return {
       ...rows[0],
       content: resolveContentJson(rows[0]),
+      grading_json: resolveGradingJson(rows[0]),
     };
   },
 };

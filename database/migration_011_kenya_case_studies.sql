@@ -2,13 +2,15 @@ CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
 CREATE TABLE IF NOT EXISTS case_studies (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  title VARCHAR(180) NOT NULL,
+  title VARCHAR(220) NOT NULL,
   location VARCHAR(180) NOT NULL,
-  "date" VARCHAR(120) NOT NULL,
-  category VARCHAR(120) NOT NULL,
-  description TEXT NOT NULL,
+  incident_date VARCHAR(120) NOT NULL,
+  category VARCHAR(160) NOT NULL,
   difficulty VARCHAR(40) NOT NULL DEFAULT 'intermediate',
+  description TEXT NOT NULL,
+  content JSONB NOT NULL DEFAULT '{}'::jsonb,
   order_number INTEGER NOT NULL UNIQUE,
+  passing_percentage INTEGER NOT NULL DEFAULT 70,
   is_active BOOLEAN NOT NULL DEFAULT true,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
@@ -16,6 +18,7 @@ CREATE TABLE IF NOT EXISTS case_studies (
 CREATE TABLE IF NOT EXISTS case_questions (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   case_id UUID NOT NULL REFERENCES case_studies(id) ON DELETE CASCADE,
+  phase VARCHAR(40) NOT NULL DEFAULT 'Phase 1',
   question TEXT NOT NULL,
   question_type VARCHAR(30) NOT NULL CHECK (question_type IN ('multiple_choice', 'short_answer')),
   options JSONB NOT NULL DEFAULT '[]'::jsonb,
@@ -32,7 +35,7 @@ CREATE TABLE IF NOT EXISTS student_case_attempts (
   score INTEGER NOT NULL DEFAULT 0,
   percentage INTEGER NOT NULL DEFAULT 0,
   passed BOOLEAN NOT NULL DEFAULT false,
-  completed_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  submitted_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   submitted_answers JSONB NOT NULL DEFAULT '{}'::jsonb,
   review_payload JSONB NOT NULL DEFAULT '[]'::jsonb
 );
@@ -47,89 +50,58 @@ CREATE TABLE IF NOT EXISTS student_case_progress (
   UNIQUE (student_id, case_id)
 );
 
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1
+    FROM information_schema.columns
+    WHERE table_name = 'case_studies'
+      AND column_name = 'date'
+  ) AND NOT EXISTS (
+    SELECT 1
+    FROM information_schema.columns
+    WHERE table_name = 'case_studies'
+      AND column_name = 'incident_date'
+  ) THEN
+    ALTER TABLE case_studies ADD COLUMN incident_date VARCHAR(120);
+    EXECUTE 'UPDATE case_studies SET incident_date = "date" WHERE incident_date IS NULL';
+  END IF;
+END $$;
+
+ALTER TABLE case_studies
+  ADD COLUMN IF NOT EXISTS content JSONB NOT NULL DEFAULT '{}'::jsonb,
+  ADD COLUMN IF NOT EXISTS passing_percentage INTEGER NOT NULL DEFAULT 70,
+  ADD COLUMN IF NOT EXISTS incident_date VARCHAR(120),
+  ADD COLUMN IF NOT EXISTS is_active BOOLEAN NOT NULL DEFAULT true;
+
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1
+    FROM information_schema.columns
+    WHERE table_name = 'student_case_attempts'
+      AND column_name = 'completed_at'
+  ) AND NOT EXISTS (
+    SELECT 1
+    FROM information_schema.columns
+    WHERE table_name = 'student_case_attempts'
+      AND column_name = 'submitted_at'
+  ) THEN
+    ALTER TABLE student_case_attempts ADD COLUMN submitted_at TIMESTAMPTZ;
+    UPDATE student_case_attempts
+    SET submitted_at = completed_at
+    WHERE submitted_at IS NULL;
+  END IF;
+END $$;
+
+ALTER TABLE student_case_attempts
+  ADD COLUMN IF NOT EXISTS submitted_answers JSONB NOT NULL DEFAULT '{}'::jsonb,
+  ADD COLUMN IF NOT EXISTS review_payload JSONB NOT NULL DEFAULT '[]'::jsonb,
+  ADD COLUMN IF NOT EXISTS submitted_at TIMESTAMPTZ;
+
+ALTER TABLE case_questions
+  ADD COLUMN IF NOT EXISTS phase VARCHAR(40) NOT NULL DEFAULT 'Phase 1';
+
 CREATE INDEX IF NOT EXISTS idx_case_questions_case ON case_questions(case_id);
-CREATE INDEX IF NOT EXISTS idx_student_case_attempts_student ON student_case_attempts(student_id, completed_at DESC);
+CREATE INDEX IF NOT EXISTS idx_student_case_attempts_student ON student_case_attempts(student_id, submitted_at DESC);
 CREATE INDEX IF NOT EXISTS idx_student_case_progress_student ON student_case_progress(student_id, status);
-
-INSERT INTO case_studies (id, title, location, "date", category, description, difficulty, order_number)
-VALUES
-  ('7cb53727-b53f-4dbd-b7b7-000000000001', 'DusitD2 Terror Attack', 'Nairobi', 'January 2019', 'Mass Casualty / Terror Incident', 'A coordinated terror attack overwhelms access routes, creates multiple casualty zones, and demands rapid triage, command coordination, and safe evacuation planning.', 'advanced', 1),
-  ('7cb53727-b53f-4dbd-b7b7-000000000002', 'Utumishi Girls Academy Fire', 'Nairobi', 'September 2017', 'Fire / School Incident', 'A school dormitory fire leaves multiple learners injured with smoke exposure, burns, and panic-related movement challenges.', 'intermediate', 2),
-  ('7cb53727-b53f-4dbd-b7b7-000000000003', 'Kakamega Primary School Stampede', 'Kakamega', 'February 2020', 'Mass Casualty / Stampede', 'A school stampede produces mixed trauma, airway compromise, and high-scene anxiety requiring structured triage and crowd control.', 'intermediate', 3),
-  ('7cb53727-b53f-4dbd-b7b7-000000000004', 'Nairobi Bus Mass Casualty Incident', 'Nairobi', '2024', 'Road Traffic Collision', 'A commuter bus incident generates multiple trauma patients with limited ambulance loading space and competing transport priorities.', 'intermediate', 4),
-  ('7cb53727-b53f-4dbd-b7b7-000000000005', 'Kisumu Building Collapse', 'Kisumu', '2024', 'Structural Collapse', 'A partial building collapse creates crush injuries, entrapment risk, and unstable scene hazards that require rescue coordination before treatment.', 'advanced', 5),
-  ('7cb53727-b53f-4dbd-b7b7-000000000006', 'Kakamega Funeral Bus Crash', 'Kakamega County', '2023', 'Road Traffic Collision', 'A bus crash carrying mourners creates a difficult mix of pediatric and adult trauma patients on a congested rural roadway.', 'advanced', 6),
-  ('7cb53727-b53f-4dbd-b7b7-000000000007', 'Karen Building Collapse', 'Karen, Nairobi', '2023', 'Structural Collapse', 'A high-profile urban building collapse tests command communication, hazard zoning, and coordinated casualty extraction.', 'advanced', 7),
-  ('7cb53727-b53f-4dbd-b7b7-000000000008', 'JKIA Emergency Incidents', 'JKIA, Nairobi', 'Ongoing', 'Airport EMS', 'Airport emergencies demand multi-agency command, rapid access control, and careful patient routing under security restrictions.', 'advanced', 8),
-  ('7cb53727-b53f-4dbd-b7b7-000000000009', 'Michael Wafula System Failure', 'Kenya Referral Pathways', 'Case Review', 'System Failure Review', 'A delayed emergency response reveals communication failure, referral delay, and escalation gaps across the emergency care chain.', 'intermediate', 9),
-  ('7cb53727-b53f-4dbd-b7b7-00000000000a', 'Westlands Building Collapse', 'Westlands, Nairobi', '2016', 'Structural Collapse', 'A building collapse in a dense commercial area complicates access, traffic control, and prioritization of unstable casualties.', 'advanced', 10),
-  ('7cb53727-b53f-4dbd-b7b7-00000000000b', 'Nairobi Protests', 'Nairobi CBD', 'July 2024', 'Mass Casualty / Civil Unrest', 'Crowd movement, police activity, and multiple injured patients require scene safety discipline before treatment and transport.', 'advanced', 11),
-  ('7cb53727-b53f-4dbd-b7b7-00000000000c', 'Raila Odinga Body Reception Medical Coverage', 'Nairobi', 'Operational Planning', 'Mass Gathering Medical Cover', 'A major public event requires structured standby coverage, surge planning, and incident escalation readiness.', 'intermediate', 12),
-  ('7cb53727-b53f-4dbd-b7b7-00000000000d', 'St Gabriel Isongo School Invasion', 'Kakamega County', 'Security Incident', 'School Security / Trauma', 'A school invasion produces panic, blunt trauma, and safeguarding concerns while responders work inside an uncertain security environment.', 'advanced', 13),
-  ('7cb53727-b53f-4dbd-b7b7-00000000000e', 'National EMS System Gaps', 'Kenya', 'System Review', 'EMS Systems Analysis', 'A systems-focused case explores dispatch, equipment, staffing, and referral weaknesses affecting frontline patient outcomes.', 'intermediate', 14),
-  ('7cb53727-b53f-4dbd-b7b7-00000000000f', 'State of Emergency Care System Failures', 'Kenya', 'System Review', 'Emergency Care Governance', 'A national emergency care review asks students to identify safety, infrastructure, leadership, and continuity gaps in the care pathway.', 'advanced', 15)
-ON CONFLICT (id) DO NOTHING;
-
-INSERT INTO case_questions (id, case_id, question, question_type, options, correct_answer, explanation, points)
-VALUES
-  ('1e200001-0000-4000-8000-000000000001', '7cb53727-b53f-4dbd-b7b7-000000000001', 'What is the first priority on arrival at the DusitD2 scene?', 'multiple_choice', '["Begin treatment immediately", "Ensure scene safety and coordinate with security agencies", "Transport the closest patient", "Collect family contact details"]'::jsonb, '{"option":"B"}'::jsonb, 'Terror scenes require responder safety, active threat awareness, and coordinated access before patient contact.', 15),
-  ('1e200001-0000-4000-8000-000000000002', '7cb53727-b53f-4dbd-b7b7-000000000001', 'Which triage approach best fits a multi-zone terror incident?', 'multiple_choice', '["Treat the loudest patient first", "Use structured mass-casualty triage and evacuation priorities", "Wait for a full patient count before acting", "Move everyone to one ambulance"]'::jsonb, '{"option":"B"}'::jsonb, 'Mass-casualty triage keeps limited resources focused on patients most likely to benefit from rapid intervention.', 10),
-  ('1e200001-0000-4000-8000-000000000003', '7cb53727-b53f-4dbd-b7b7-000000000001', 'Name two critical safety or command measures before ambulance loading begins.', 'short_answer', '[]'::jsonb, '{"keywords":["scene","safety","command","security","hot zone","staging"]}'::jsonb, 'Good answers reference scene safety, hot-zone control, staging, and command coordination before movement.', 15),
-  ('1e200001-0000-4000-8000-000000000004', '7cb53727-b53f-4dbd-b7b7-000000000001', 'Which patient should receive immediate transport priority once the scene is secured?', 'multiple_choice', '["A walking patient with minor abrasions", "A pulseless victim in the hot zone", "A patient with airway compromise and severe bleeding", "A patient asking for water"]'::jsonb, '{"option":"C"}'::jsonb, 'Patients with life threats that are potentially survivable after rapid intervention and transport take priority.', 10),
-  ('1e200001-0000-4000-8000-000000000005', '7cb53727-b53f-4dbd-b7b7-000000000002', 'What should the responding EMT prioritize first at a dormitory fire?', 'multiple_choice', '["Student belongings", "Scene safety, evacuation flow, and airway threats", "Attendance records", "Hospital billing details"]'::jsonb, '{"option":"B"}'::jsonb, 'Fire scenes demand attention to ongoing danger, evacuation routes, and inhalation injury risk.', 15),
-  ('1e200001-0000-4000-8000-000000000006', '7cb53727-b53f-4dbd-b7b7-000000000002', 'Which patient feature suggests a high priority after smoke exposure?', 'multiple_choice', '["Mild headache only", "Singed nasal hair and hoarse voice", "Minor ankle pain", "Stable walking with no complaints"]'::jsonb, '{"option":"B"}'::jsonb, 'Hoarseness and singed nasal hair suggest airway burn or inhalation injury that can worsen rapidly.', 10),
-  ('1e200001-0000-4000-8000-000000000007', '7cb53727-b53f-4dbd-b7b7-000000000002', 'List two immediate actions that improve safety and patient flow outside the dormitory.', 'short_answer', '[]'::jsonb, '{"keywords":["triage","staging","evacuation","accountability","airway","oxygen"]}'::jsonb, 'Strong answers mention triage, staging, oxygen support, evacuation corridors, or accountability checks.', 15),
-  ('1e200001-0000-4000-8000-000000000008', '7cb53727-b53f-4dbd-b7b7-000000000002', 'Which transport decision is most appropriate?', 'multiple_choice', '["Load the first four patients seen", "Transport the most critical airway and burn patients first", "Delay transport until all students are counted", "Send all patients to the nearest clinic regardless of severity"]'::jsonb, '{"option":"B"}'::jsonb, 'Transport priorities should follow severity, especially airway compromise and significant burns.', 10),
-  ('1e200001-0000-4000-8000-000000000009', '7cb53727-b53f-4dbd-b7b7-000000000003', 'What is the best first action at a school stampede scene?', 'multiple_choice', '["Allow everyone to crowd around the patients", "Create safe access and start structured triage", "Question each student individually first", "Send all patients home"]'::jsonb, '{"option":"B"}'::jsonb, 'Stampede scenes require crowd control and a structured entry corridor before patient care expands.', 15),
-  ('1e200001-0000-4000-8000-00000000000a', '7cb53727-b53f-4dbd-b7b7-000000000003', 'Which injury pattern deserves the highest urgency after a crush event?', 'multiple_choice', '["Minor bruises", "Normal gait with anxiety", "Airway compromise or altered consciousness", "A missing school bag"]'::jsonb, '{"option":"C"}'::jsonb, 'Airway compromise and altered mental status signal serious life threats that need immediate attention.', 10),
-  ('1e200001-0000-4000-8000-00000000000b', '7cb53727-b53f-4dbd-b7b7-000000000003', 'What two measures help prevent secondary harm while triage continues?', 'short_answer', '[]'::jsonb, '{"keywords":["crowd","control","triage","zones","spinal","airway"]}'::jsonb, 'Expected themes include crowd control, triage zones, airway support, and spinal precautions where indicated.', 15),
-  ('1e200001-0000-4000-8000-00000000000c', '7cb53727-b53f-4dbd-b7b7-000000000003', 'Which patient should be moved first for definitive care?', 'multiple_choice', '["A stable student with scrapes", "A crying but alert student", "A patient with labored breathing and decreasing responsiveness", "A teacher requesting directions"]'::jsonb, '{"option":"C"}'::jsonb, 'Patients with breathing difficulty and declining responsiveness should be prioritized.', 10),
-  ('1e200001-0000-4000-8000-00000000000d', '7cb53727-b53f-4dbd-b7b7-000000000004', 'At a bus mass-casualty incident, what should the first crew establish?', 'multiple_choice', '["Patient transport receipts", "Command, scene safety, and triage areas", "Passenger luggage control", "A media briefing"]'::jsonb, '{"option":"B"}'::jsonb, 'Mass-casualty road scenes need command, safety, and organized treatment zones.', 15),
-  ('1e200001-0000-4000-8000-00000000000e', '7cb53727-b53f-4dbd-b7b7-000000000004', 'Which patient finding indicates immediate life threat?', 'multiple_choice', '["Mild forearm pain", "Controlled nose bleed", "Absent radial pulse with major external bleeding", "Small superficial cut"]'::jsonb, '{"option":"C"}'::jsonb, 'Poor perfusion with major bleeding indicates a critical trauma patient.', 10),
-  ('1e200001-0000-4000-8000-00000000000f', '7cb53727-b53f-4dbd-b7b7-000000000004', 'Name two scene-management steps that improve transport efficiency.', 'short_answer', '[]'::jsonb, '{"keywords":["triage","loading","staging","traffic","communication","destination"]}'::jsonb, 'Expected answers include staging, destination coordination, loading order, traffic control, or radio communication.', 15),
-  ('1e200001-0000-4000-8000-000000000010', '7cb53727-b53f-4dbd-b7b7-000000000004', 'What is the best transport strategy when ambulance capacity is limited?', 'multiple_choice', '["Move minor injuries first to clear the road", "Transport the most salvageable critical patients first", "Wait for a complete manifest", "Split one unstable patient across vehicles"]'::jsonb, '{"option":"B"}'::jsonb, 'Priority transport should focus on critical patients who can benefit from rapid definitive care.', 10),
-  ('1e200001-0000-4000-8000-000000000011', '7cb53727-b53f-4dbd-b7b7-000000000005', 'What is the safest first approach to a building collapse scene?', 'multiple_choice', '["Run directly into the debris", "Confirm structural hazards and coordinate with rescue teams", "Treat only visible patients and ignore hazards", "Move debris alone"]'::jsonb, '{"option":"B"}'::jsonb, 'Structural collapse scenes must be stabilized and coordinated with rescue before entry.', 15),
-  ('1e200001-0000-4000-8000-000000000012', '7cb53727-b53f-4dbd-b7b7-000000000005', 'Which patient problem is especially concerning after entrapment?', 'multiple_choice', '["Dry skin", "Crush injury with compromised circulation", "Simple headache", "Mild hunger"]'::jsonb, '{"option":"B"}'::jsonb, 'Entrapment raises concern for crush injury, ischemia, and rapid deterioration after release.', 10),
-  ('1e200001-0000-4000-8000-000000000013', '7cb53727-b53f-4dbd-b7b7-000000000005', 'State two priorities before moving trapped casualties.', 'short_answer', '[]'::jsonb, '{"keywords":["rescue","stabilization","airway","command","hazard","extrication"]}'::jsonb, 'Good answers mention hazard stabilization, coordinated extrication, airway readiness, and rescue command.', 15),
-  ('1e200001-0000-4000-8000-000000000014', '7cb53727-b53f-4dbd-b7b7-000000000005', 'Who should be prioritized once extrication begins?', 'multiple_choice', '["The loudest bystander", "A stable ambulatory patient", "A patient with airway compromise and entrapment-related shock", "The patient nearest the camera crew"]'::jsonb, '{"option":"C"}'::jsonb, 'Airway compromise and shock indicate highest transport urgency after safe extrication.', 10),
-  ('1e200001-0000-4000-8000-000000000015', '7cb53727-b53f-4dbd-b7b7-000000000006', 'What is the main priority at a rural bus crash with many casualties?', 'multiple_choice', '["Passenger property recovery", "Structured triage and road-scene safety", "Completing reports before treatment", "Waiting for relatives"]'::jsonb, '{"option":"B"}'::jsonb, 'Road-scene safety and structured triage are essential when casualties exceed available crews.', 15),
-  ('1e200001-0000-4000-8000-000000000016', '7cb53727-b53f-4dbd-b7b7-000000000006', 'Which patient should trigger immediate intervention?', 'multiple_choice', '["Minor isolated shoulder pain", "Walking wounded requesting transport first", "An unresponsive patient with compromised breathing", "A patient speaking normally"]'::jsonb, '{"option":"C"}'::jsonb, 'An unresponsive patient with breathing compromise is an immediate priority.', 10),
-  ('1e200001-0000-4000-8000-000000000017', '7cb53727-b53f-4dbd-b7b7-000000000006', 'List two operational actions needed on a congested rural highway.', 'short_answer', '[]'::jsonb, '{"keywords":["traffic","triage","staging","communication","destination","scene safety"]}'::jsonb, 'Expected answers include traffic control, staging, radio updates, and destination coordination.', 15),
-  ('1e200001-0000-4000-8000-000000000018', '7cb53727-b53f-4dbd-b7b7-000000000006', 'What transport sequence is most appropriate?', 'multiple_choice', '["First come, first served", "Critical but salvageable patients first", "Children last regardless of condition", "Only patients with visible bleeding"]'::jsonb, '{"option":"B"}'::jsonb, 'Transport priority should be based on acuity and benefit from timely care.', 10),
-  ('1e200001-0000-4000-8000-000000000019', '7cb53727-b53f-4dbd-b7b7-000000000007', 'What must happen before entering the Karen collapse zone?', 'multiple_choice', '["Nothing, enter immediately", "Hazard assessment and rescue coordination", "Complete media interviews", "Move vehicles closer to debris without planning"]'::jsonb, '{"option":"B"}'::jsonb, 'No entry should occur before hazard assessment and rescue coordination.', 15),
-  ('1e200001-0000-4000-8000-00000000001a', '7cb53727-b53f-4dbd-b7b7-000000000007', 'Which clinical picture indicates highest concern?', 'multiple_choice', '["Mild anxiety only", "Stable ankle sprain", "Difficulty breathing with trapped chest injury", "Small hand abrasion"]'::jsonb, '{"option":"C"}'::jsonb, 'Potential chest trauma with respiratory compromise is critical.', 10),
-  ('1e200001-0000-4000-8000-00000000001b', '7cb53727-b53f-4dbd-b7b7-000000000007', 'Name two command or safety actions that should be maintained throughout the response.', 'short_answer', '[]'::jsonb, '{"keywords":["command","zones","accountability","rescue","staging","communication"]}'::jsonb, 'Strong answers mention incident command, zone control, accountability, rescue liaison, and communication.', 15),
-  ('1e200001-0000-4000-8000-00000000001c', '7cb53727-b53f-4dbd-b7b7-000000000007', 'Which patient should be prepared first for evacuation?', 'multiple_choice', '["A patient with minor bruising", "A trapped patient with shallow breathing and poor perfusion", "An alert bystander", "A stable patient waiting calmly"]'::jsonb, '{"option":"B"}'::jsonb, 'The combination of respiratory compromise and poor perfusion suggests urgent evacuation priority.', 10),
-  ('1e200001-0000-4000-8000-00000000001d', '7cb53727-b53f-4dbd-b7b7-000000000008', 'At an airport incident, what is the first operational priority?', 'multiple_choice', '["Approach the aircraft from any side", "Coordinate access, safety, and command with airport agencies", "Board the aircraft immediately", "Send all patients to one facility"]'::jsonb, '{"option":"B"}'::jsonb, 'Airport responses require agency coordination and safe controlled access.', 15),
-  ('1e200001-0000-4000-8000-00000000001e', '7cb53727-b53f-4dbd-b7b7-000000000008', 'Which patient finding should receive immediate focus?', 'multiple_choice', '["Minor travel anxiety", "Walking patient with intact airway", "Smoke inhalation with respiratory distress", "Lost luggage complaint"]'::jsonb, '{"option":"C"}'::jsonb, 'Respiratory distress after aviation-related exposure can deteriorate quickly.', 10),
-  ('1e200001-0000-4000-8000-00000000001f', '7cb53727-b53f-4dbd-b7b7-000000000008', 'List two factors that must be coordinated before ambulance movement inside JKIA.', 'short_answer', '[]'::jsonb, '{"keywords":["security","command","access","staging","clearance","communication"]}'::jsonb, 'Good answers include security clearance, command approval, controlled access routes, and communication.', 15),
-  ('1e200001-0000-4000-8000-000000000020', '7cb53727-b53f-4dbd-b7b7-000000000008', 'What is the best patient-distribution strategy?', 'multiple_choice', '["Transport everyone to the nearest hospital", "Coordinate destinations based on severity and hospital capacity", "Delay all transport for a press briefing", "Keep patients airside until families arrive"]'::jsonb, '{"option":"B"}'::jsonb, 'Destination decisions should consider acuity and receiving-facility capacity.', 10),
-  ('1e200001-0000-4000-8000-000000000021', '7cb53727-b53f-4dbd-b7b7-000000000009', 'What is the key lesson from a delayed referral system failure?', 'multiple_choice', '["Documentation matters more than escalation", "Rapid recognition and escalation of deterioration are essential", "Delay is acceptable if transport is expensive", "Only doctors own referral responsibility"]'::jsonb, '{"option":"B"}'::jsonb, 'Delayed escalation can cost critical intervention time across the referral chain.', 15),
-  ('1e200001-0000-4000-8000-000000000022', '7cb53727-b53f-4dbd-b7b7-000000000009', 'Which systems issue most directly worsens patient outcome?', 'multiple_choice', '["Well-documented handovers", "Reliable communication channels", "Communication and transport delay during deterioration", "Early dispatch activation"]'::jsonb, '{"option":"C"}'::jsonb, 'Communication and transport delays directly worsen time-sensitive emergencies.', 10),
-  ('1e200001-0000-4000-8000-000000000023', '7cb53727-b53f-4dbd-b7b7-000000000009', 'Name two improvements that would reduce future referral failure.', 'short_answer', '[]'::jsonb, '{"keywords":["communication","dispatch","escalation","protocol","transport","referral"]}'::jsonb, 'Expected answers include clearer escalation protocols, better dispatch, transport readiness, and communication pathways.', 15),
-  ('1e200001-0000-4000-8000-000000000024', '7cb53727-b53f-4dbd-b7b7-000000000009', 'What should an EMT do when a patient deteriorates during a delayed transfer?', 'multiple_choice', '["Wait quietly for routine handover", "Escalate immediately and update the receiving pathway", "Ignore the change until arrival", "Cancel transport automatically"]'::jsonb, '{"option":"B"}'::jsonb, 'Deterioration requires immediate escalation and updated coordination.', 10),
-  ('1e200001-0000-4000-8000-000000000025', '7cb53727-b53f-4dbd-b7b7-00000000000a', 'What is the safest first step at the Westlands collapse?', 'multiple_choice', '["Enter the debris pile alone", "Assess hazards and establish safe rescue zones", "Move all bystanders into the building", "Start transport without triage"]'::jsonb, '{"option":"B"}'::jsonb, 'Structural collapse incidents need controlled zones and hazard assessment first.', 15),
-  ('1e200001-0000-4000-8000-000000000026', '7cb53727-b53f-4dbd-b7b7-00000000000a', 'Which casualty pattern is highest priority?', 'multiple_choice', '["Minor scratches and full orientation", "Complaint of hunger only", "Respiratory distress with suspected chest or crush injury", "Stable standing patient"]'::jsonb, '{"option":"C"}'::jsonb, 'Respiratory distress and suspected major trauma indicate high urgency.', 10),
-  ('1e200001-0000-4000-8000-000000000027', '7cb53727-b53f-4dbd-b7b7-00000000000a', 'List two scene-control measures for a crowded commercial district collapse.', 'short_answer', '[]'::jsonb, '{"keywords":["crowd","traffic","zones","command","staging","communication"]}'::jsonb, 'Expected measures include crowd control, traffic management, zone separation, staging, and communication.', 15),
-  ('1e200001-0000-4000-8000-000000000028', '7cb53727-b53f-4dbd-b7b7-00000000000a', 'Which transport plan is best?', 'multiple_choice', '["Move all walking wounded first", "Evacuate critical salvageable patients in coordinated order", "Wait until the site is empty", "Send everyone to the same clinic"]'::jsonb, '{"option":"B"}'::jsonb, 'Critical salvageable patients should move first through coordinated transport.', 10),
-  ('1e200001-0000-4000-8000-000000000029', '7cb53727-b53f-4dbd-b7b7-00000000000b', 'What is the first priority when approaching the Nairobi protest scene?', 'multiple_choice', '["Begin treatment immediately", "Ensure scene safety and coordinate with authorities", "Transport the closest patient", "Collect patient history"]'::jsonb, '{"option":"B"}'::jsonb, 'Crowd movement and law-enforcement operations make scene safety the first priority.', 15),
-  ('1e200001-0000-4000-8000-00000000002a', '7cb53727-b53f-4dbd-b7b7-00000000000b', 'Which patient should receive the earliest medical intervention after safety is established?', 'multiple_choice', '["A patient walking and speaking normally", "A patient with severe bleeding and reduced responsiveness", "A patient asking to call home", "A patient with a minor abrasion"]'::jsonb, '{"option":"B"}'::jsonb, 'Severe bleeding and reduced responsiveness indicate an immediate life threat.', 10),
-  ('1e200001-0000-4000-8000-00000000002b', '7cb53727-b53f-4dbd-b7b7-00000000000b', 'What safety measures should be implemented before ambulance movement?', 'short_answer', '[]'::jsonb, '{"keywords":["scene","safety","police","route","staging","communication"]}'::jsonb, 'Strong answers mention police coordination, secured routes, staging, communication, and scene safety checks.', 15),
-  ('1e200001-0000-4000-8000-00000000002c', '7cb53727-b53f-4dbd-b7b7-00000000000b', 'Which transport strategy is best in ongoing civil unrest?', 'multiple_choice', '["Move patients individually without coordination", "Use a secured evacuation route with coordinated destinations", "Wait until the protest ends before moving anyone", "Transport only patients who can walk"]'::jsonb, '{"option":"B"}'::jsonb, 'A secured route and destination coordination reduce risk during civil unrest evacuations.', 10),
-  ('1e200001-0000-4000-8000-00000000002d', '7cb53727-b53f-4dbd-b7b7-00000000000c', 'For planned mass-gathering medical cover, what should be established before the event starts?', 'multiple_choice', '["Only one ambulance at the main gate", "Medical posts, escalation pathways, and communication plans", "Transport paperwork only", "A social media team"]'::jsonb, '{"option":"B"}'::jsonb, 'Mass-gathering readiness depends on planned posts, escalation routes, and communications.', 15),
-  ('1e200001-0000-4000-8000-00000000002e', '7cb53727-b53f-4dbd-b7b7-00000000000c', 'Which scenario most requires immediate escalation during standby coverage?', 'multiple_choice', '["A patient asking for shade", "Heat exhaustion progressing to altered mental status", "A stable spectator requesting water", "Routine minor headache"]'::jsonb, '{"option":"B"}'::jsonb, 'Worsening mental status signals a time-sensitive deterioration needing escalation.', 10),
-  ('1e200001-0000-4000-8000-00000000002f', '7cb53727-b53f-4dbd-b7b7-00000000000c', 'Name two planning components that reduce overload during a major public event.', 'short_answer', '[]'::jsonb, '{"keywords":["medical posts","communication","triage","surge","staffing","transport"]}'::jsonb, 'Expected answers include surge planning, staffing, triage posts, transport plans, and communication structures.', 15),
-  ('1e200001-0000-4000-8000-000000000030', '7cb53727-b53f-4dbd-b7b7-00000000000c', 'What transport principle fits planned mass-event coverage?', 'multiple_choice', '["Send every patient to the nearest facility regardless of need", "Match destination choice to severity and system capacity", "Avoid referrals to preserve ambulances", "Delay transfer until the event ends"]'::jsonb, '{"option":"B"}'::jsonb, 'Destination management should balance acuity with receiving-system capacity.', 10),
-  ('1e200001-0000-4000-8000-000000000031', '7cb53727-b53f-4dbd-b7b7-00000000000d', 'What is the first EMT priority during a school invasion response?', 'multiple_choice', '["Interview bystanders first", "Ensure scene safety and coordinate with security responders", "Move all students immediately", "Ignore safeguarding concerns"]'::jsonb, '{"option":"B"}'::jsonb, 'Security uncertainty means scene safety and coordination must come first.', 15),
-  ('1e200001-0000-4000-8000-000000000032', '7cb53727-b53f-4dbd-b7b7-00000000000d', 'Which student presentation deserves highest urgency?', 'multiple_choice', '["Mild anxiety with normal breathing", "Blunt trauma with reduced consciousness", "A request to call a parent", "Minor knee abrasion"]'::jsonb, '{"option":"B"}'::jsonb, 'Reduced consciousness after trauma requires urgent assessment and transport planning.', 10),
-  ('1e200001-0000-4000-8000-000000000033', '7cb53727-b53f-4dbd-b7b7-00000000000d', 'List two safety or safeguarding steps that should guide patient movement.', 'short_answer', '[]'::jsonb, '{"keywords":["security","scene safety","triage","safeguarding","accountability","communication"]}'::jsonb, 'Good answers mention security coordination, accountability, safeguarding, triage, and communication.', 15),
-  ('1e200001-0000-4000-8000-000000000034', '7cb53727-b53f-4dbd-b7b7-00000000000d', 'What is the best transport approach?', 'multiple_choice', '["Move students without tracking", "Transport by severity with clear accountability", "Let families self-distribute critical patients", "Wait until the scene is empty"]'::jsonb, '{"option":"B"}'::jsonb, 'Severity-based transport with accountability prevents loss of oversight in chaotic scenes.', 10),
-  ('1e200001-0000-4000-8000-000000000035', '7cb53727-b53f-4dbd-b7b7-00000000000e', 'What systems gap most directly weakens national EMS performance?', 'multiple_choice', '["Extra stationery shortages", "Poor dispatch, equipment, and referral coordination", "Too many protocols", "Routine patient education"]'::jsonb, '{"option":"B"}'::jsonb, 'Dispatch, equipment, staffing, and referral coordination are core EMS system foundations.', 15),
-  ('1e200001-0000-4000-8000-000000000036', '7cb53727-b53f-4dbd-b7b7-00000000000e', 'Which improvement would most strengthen frontline response?', 'multiple_choice', '["Reducing radio use", "Standardized dispatch and escalation pathways", "Eliminating triage training", "Removing documentation"]'::jsonb, '{"option":"B"}'::jsonb, 'Standardized dispatch and escalation improve consistent emergency response.', 10),
-  ('1e200001-0000-4000-8000-000000000037', '7cb53727-b53f-4dbd-b7b7-00000000000e', 'Name two national system investments that would improve patient outcomes.', 'short_answer', '[]'::jsonb, '{"keywords":["dispatch","training","equipment","staffing","referral","communication"]}'::jsonb, 'Expected answers include dispatch, equipment, training, staffing, referral, or communication investment.', 15),
-  ('1e200001-0000-4000-8000-000000000038', '7cb53727-b53f-4dbd-b7b7-00000000000e', 'What should an EMT do when a known system gap is affecting a live patient response?', 'multiple_choice', '["Ignore the issue", "Escalate early and work through the safest available pathway", "Wait for routine review", "Stop patient care"]'::jsonb, '{"option":"B"}'::jsonb, 'Frontline responders should escalate early and use the safest available pathway when systems fail.', 10),
-  ('1e200001-0000-4000-8000-000000000039', '7cb53727-b53f-4dbd-b7b7-00000000000f', 'Which theme best defines emergency care system failure?', 'multiple_choice', '["Only ambulance age", "Breakdown across access, coordination, and continuity of care", "Too many students on placement", "Lack of public posters"]'::jsonb, '{"option":"B"}'::jsonb, 'Emergency care failure usually reflects multiple linked gaps across access, coordination, and continuity.', 15),
-  ('1e200001-0000-4000-8000-00000000003a', '7cb53727-b53f-4dbd-b7b7-00000000000f', 'Which reform would most improve patient safety across the pathway?', 'multiple_choice', '["Reducing communication", "Clear governance, referral standards, and emergency readiness", "Removing audits", "Limiting interfacility coordination"]'::jsonb, '{"option":"B"}'::jsonb, 'Governance, referral standards, and readiness are essential for safer emergency care systems.', 10),
-  ('1e200001-0000-4000-8000-00000000003b', '7cb53727-b53f-4dbd-b7b7-00000000000f', 'Name two leadership or system actions that would reduce emergency care failure.', 'short_answer', '[]'::jsonb, '{"keywords":["governance","protocol","referral","readiness","training","oversight"]}'::jsonb, 'Expected answers mention governance, protocols, referral standards, readiness, training, or oversight.', 15),
-  ('1e200001-0000-4000-8000-00000000003c', '7cb53727-b53f-4dbd-b7b7-00000000000f', 'What is the best EMT response when system weakness threatens care continuity?', 'multiple_choice', '["Delay escalation", "Escalate, document, and coordinate the safest transfer pathway", "Stop care after first handover", "Avoid communication with receiving teams"]'::jsonb, '{"option":"B"}'::jsonb, 'Escalation, documentation, and coordinated transfer reduce harm when system weaknesses appear.', 10)
-ON CONFLICT (id) DO NOTHING;

@@ -28,7 +28,7 @@ import StudentProgressAnalytics from './components/student/ProgressAnalytics';
 import StudentResearch from './components/student/Research';
 import StudentSimulations from './components/student/Simulations';
 import StudentProctoredExams from './components/student/ProctoredExams';
-import StudentKenyaCaseStudies from './components/student/KenyaCaseStudies';
+import StudentKenyaEmsCases from './components/student/KenyaCaseStudies';
 
 import TeacherDashboard from './components/teacher/Dashboard';
 import TeacherAssignments from './components/teacher/Assignments';
@@ -78,7 +78,7 @@ const STUDENT_LINKS = [
       { to: '/student/exam-center', label: 'Exam Center' },
       { to: '/student/assignments', label: 'Assignments' },
       { to: '/student/simulations', label: 'Skill Simulations' },
-      { to: '/student/kenya-case-studies', label: "Kenya's Case Studies" },
+      { to: '/student/kenya-ems-cases', label: 'Kenya EMS Cases' },
     ],
   },
   {
@@ -107,7 +107,8 @@ const STUDENT_LINKS = [
     items: [
       { to: '/student/mcq-questions', label: 'MCQ Questions' },
       { to: '/student/mock-prep-tests', label: 'Mock Prep Tests' },
-      { to: '/student/case-studies', label: "Kenya's Case Studies" },
+      { to: '/student/kenya-case-studies', label: 'Kenya EMS Cases' },
+      { to: '/student/case-studies', label: 'Kenya EMS Cases' },
       { to: '/student/research', label: 'Research' },
     ],
   },
@@ -276,10 +277,12 @@ function AppRoutes() {
           <Route path="/student/exam-preparation" element={<StudentExamPreparation />} />
           <Route path="/student/exam-center" element={<StudentExamPreparation />} />
           <Route path="/student/clinical-library" element={<StudentClinicalReferenceCards />} />
-          <Route path="/student/kenya-case-studies" element={<StudentKenyaCaseStudies />} />
-          <Route path="/student/kenya-case-studies/:id" element={<StudentKenyaCaseStudies />} />
-          <Route path="/student/case-studies" element={<StudentKenyaCaseStudies />} />
-          <Route path="/student/case-studies/:id" element={<StudentKenyaCaseStudies />} />
+          <Route path="/student/kenya-ems-cases" element={<StudentKenyaEmsCases />} />
+          <Route path="/student/kenya-ems-cases/:id" element={<StudentKenyaEmsCases />} />
+          <Route path="/student/kenya-case-studies" element={<StudentKenyaEmsCases />} />
+          <Route path="/student/kenya-case-studies/:id" element={<StudentKenyaEmsCases />} />
+          <Route path="/student/case-studies" element={<StudentKenyaEmsCases />} />
+          <Route path="/student/case-studies/:id" element={<StudentKenyaEmsCases />} />
           <Route path="/student/mcq-questions" element={<StudentAssessments />} />
           <Route path="/student/mcq-questions/:id" element={<StudentAssessments />} />
           <Route path="/student/mock-prep-tests" element={<StudentAssessments />} />

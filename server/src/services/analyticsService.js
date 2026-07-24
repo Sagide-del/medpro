@@ -104,7 +104,7 @@ export const analyticsService = {
   },
 
   async studentReadiness(studentId) {
-    const [{ rows: progress }, { rows: simulations }, { rows: assignments }, { rows: clinical }] = await Promise.all([
+    const [{ rows: progress }, { rows: simulations }, { rows: assignments }, { rows: clinical }, { rows: caseCompetency }] = await Promise.all([
       query(
         `SELECT COALESCE(AVG(score_pct),0)::numeric(5,2) AS exam_readiness
          FROM student_performance
@@ -131,6 +131,13 @@ export const analyticsService = {
          WHERE student_id = $1`,
         [studentId]
       ).catch(() => ({ rows: [{ approved_skills: 0, completed_hours: 0 }] })),
+      query(
+        `SELECT COALESCE(AVG(score_pct),0)::numeric(5,2) AS case_competency
+         FROM student_performance
+         WHERE student_id = $1
+           AND item_type = 'case_study'`,
+        [studentId]
+      ).catch(() => ({ rows: [{ case_competency: 0 }] })),
     ]);
 
     return {
@@ -138,6 +145,7 @@ export const analyticsService = {
       simulationScore: simulations[0]?.simulation_score || 0,
       assignmentPerformance: assignments[0] || { graded_assignments: 0, assignment_score: 0 },
       clinicalCompetency: clinical[0] || { approved_skills: 0, completed_hours: 0 },
+      caseCompetency: caseCompetency[0]?.case_competency || 0,
     };
   },
 

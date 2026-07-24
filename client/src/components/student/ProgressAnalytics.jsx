@@ -30,12 +30,12 @@ export default function ProgressAnalytics() {
       <div className="stats-grid">
         <div className="stat-card"><strong>{data.readiness.examReadiness}</strong><span>Exam readiness</span></div>
         <div className="stat-card"><strong>{data.readiness.simulationScore}</strong><span>Simulation score</span></div>
-        <div className="stat-card"><strong>{data.readiness.assignmentPerformance.assignment_score}</strong><span>Assignment performance</span></div>
+        <div className="stat-card"><strong>{data.readiness.caseCompetency}</strong><span>Kenya EMS cases</span></div>
         <div className="stat-card"><strong>{data.readiness.clinicalCompetency.completed_hours}</strong><span>Clinical hours</span></div>
       </div>
 
       <div className="card">
-        <h2>Weak topics and domain progress</h2>
+        <h2>Weak topics and competency progress</h2>
         <table>
           <thead><tr><th>Domain</th><th>Average score</th><th>Attempts</th></tr></thead>
           <tbody>

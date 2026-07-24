@@ -137,6 +137,7 @@ app.use('/api/clinical-rotations', clinicalRotationRoutes);
 app.use('/api/communications', communicationRoutes);
 app.use('/api/proctored-exams', proctoredExamRoutes);
 app.use('/api/case-studies', caseStudyRoutes);
+app.use('/api/kenya-ems-cases', caseStudyRoutes);
 
 app.use((req, res) => {
   res.status(404).json({ error: `No route for ${req.method} ${req.originalUrl}` });

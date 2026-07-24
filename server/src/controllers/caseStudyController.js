@@ -7,7 +7,7 @@ async function assertSubscription(req, res) {
   const subscription = await resolveStudentSubscriptionAccess(req.user);
   if (!subscription.allowed) {
     res.status(402).json({
-      error: 'An active subscription is required to continue with Kenya case studies.',
+      error: 'An active subscription is required to continue with Kenya EMS Cases.',
       code: 'SUBSCRIPTION_REQUIRED',
       subscription,
     });
@@ -27,9 +27,9 @@ export const getCaseStudy = asyncHandler(async (req, res) => {
   if (!subscription) return;
 
   const payload = await CaseStudy.startPayload(req.user.sub, req.params.caseId);
-  if (!payload) return res.status(404).json({ error: 'Case study not found.' });
+  if (!payload) return res.status(404).json({ error: 'Kenya EMS case not found.' });
   if (payload.caseStudy.status === 'locked') {
-    return res.status(403).json({ error: 'This case study is currently locked.' });
+    return res.status(403).json({ error: 'This Kenya EMS case is currently locked.' });
   }
 
   res.json(payload);
@@ -44,12 +44,12 @@ export const submitCaseStudy = asyncHandler(async (req, res) => {
     caseId: req.params.caseId,
     answers: req.body.answers || {},
   });
-  if (!result) return res.status(404).json({ error: 'Case study not found.' });
+  if (!result) return res.status(404).json({ error: 'Kenya EMS case not found.' });
 
   await Notification.create({
     userId: req.user.sub,
     type: 'grade',
-    title: 'Kenya case study submitted',
+    title: 'Kenya EMS case submitted',
     message: `You scored ${result.attempt.percentage}% in ${result.caseStudy.title}.`,
   });
 

@@ -9,7 +9,9 @@ function normalizeText(value) {
 }
 
 function requiredKeywordMatches(keywords) {
-  return Math.max(2, Math.ceil((keywords?.length || 0) * 0.4));
+  const count = keywords?.length || 0;
+  if (count <= 2) return count;
+  return Math.max(2, Math.ceil(count * 0.4));
 }
 
 function gradeQuestion(question, response) {
@@ -22,6 +24,7 @@ function gradeQuestion(question, response) {
       correctAnswer: correct,
       selectedAnswerText: question.option_map?.[selected] || 'No answer selected',
       correctAnswerText: question.option_map?.[correct] || '',
+      matchedKeywords: [],
     };
   }
 
@@ -38,7 +41,23 @@ function gradeQuestion(question, response) {
     correctAnswer: keywords.join(', '),
     selectedAnswerText: answerText || 'No answer provided',
     correctAnswerText: keywords.join(', '),
+    matchedKeywords,
   };
+}
+
+function phaseSortValue(label) {
+  const match = String(label || '').match(/(\d+)/);
+  if (match) return Number(match[1]);
+  if (String(label || '').toLowerCase().includes('reflection')) return 99;
+  if (String(label || '').toLowerCase().includes('analysis')) return 50;
+  return 75;
+}
+
+function summarizeCompetencyPerformance(competencies, percentage) {
+  return competencies.map((name) => ({
+    name,
+    score_pct: percentage,
+  }));
 }
 
 export const CaseStudy = {
@@ -58,7 +77,7 @@ export const CaseStudy = {
            sca.case_id,
            COUNT(*)::int AS attempt_count,
            MAX(sca.percentage)::int AS best_percentage,
-           MAX(sca.completed_at) AS last_attempt_at
+           MAX(sca.submitted_at) AS last_attempt_at
          FROM student_case_attempts sca
          WHERE sca.student_id = $1
          GROUP BY sca.case_id
@@ -67,11 +86,13 @@ export const CaseStudy = {
          cs.id,
          cs.title,
          cs.location,
-         cs."date",
+         cs.incident_date,
          cs.category,
-         cs.description,
          cs.difficulty,
+         cs.description,
+         cs.content,
          cs.order_number,
+         cs.passing_percentage,
          COALESCE(progress.status, CASE WHEN cs.order_number = 1 THEN 'available' ELSE 'locked' END) AS status,
          COALESCE(progress.score, attempts.best_percentage, 0) AS score,
          COALESCE(attempts.attempt_count, 0) AS attempt_count,
@@ -90,7 +111,11 @@ export const CaseStudy = {
        ORDER BY cs.order_number ASC`,
       [studentId]
     );
-    return rows;
+
+    return rows.map((row) => ({
+      ...row,
+      competencies: Array.isArray(row.content?.competencies) ? row.content.competencies : [],
+    }));
   },
 
   async findForStudent(studentId, caseId) {
@@ -99,11 +124,13 @@ export const CaseStudy = {
          cs.id,
          cs.title,
          cs.location,
-         cs."date",
+         cs.incident_date,
          cs.category,
-         cs.description,
          cs.difficulty,
+         cs.description,
+         cs.content,
          cs.order_number,
+         cs.passing_percentage,
          COALESCE(progress.status, CASE WHEN cs.order_number = 1 THEN 'available' ELSE 'locked' END) AS status,
          COALESCE(progress.score, 0) AS score,
          COALESCE(question_totals.total_points, 0) AS total_points
@@ -121,7 +148,12 @@ export const CaseStudy = {
        LIMIT 1`,
       [studentId, caseId]
     );
-    return rows[0] || null;
+
+    if (!rows[0]) return null;
+    return {
+      ...rows[0],
+      competencies: Array.isArray(rows[0].content?.competencies) ? rows[0].content.competencies : [],
+    };
   },
 
   async questionSet(caseId) {
@@ -129,6 +161,7 @@ export const CaseStudy = {
       `SELECT
          id,
          case_id,
+         phase,
          question,
          question_type,
          options,
@@ -137,20 +170,29 @@ export const CaseStudy = {
          points
        FROM case_questions
        WHERE case_id = $1
-       ORDER BY created_at ASC, id ASC`,
+       ORDER BY phase ASC, created_at ASC, id ASC`,
       [caseId]
     );
 
-    return rows.map((row) => {
-      const options = Array.isArray(row.options) ? row.options : [];
-      const optionMap = {
-        A: options[0] || '',
-        B: options[1] || '',
-        C: options[2] || '',
-        D: options[3] || '',
-      };
-      return { ...row, option_map: optionMap };
-    });
+    return rows
+      .map((row) => {
+        const options = Array.isArray(row.options) ? row.options : [];
+        return {
+          ...row,
+          option_map: {
+            A: options[0] || '',
+            B: options[1] || '',
+            C: options[2] || '',
+            D: options[3] || '',
+          },
+        };
+      })
+      .sort((left, right) => {
+        const leftPhase = phaseSortValue(left.phase);
+        const rightPhase = phaseSortValue(right.phase);
+        if (leftPhase !== rightPhase) return leftPhase - rightPhase;
+        return left.id.localeCompare(right.id);
+      });
   },
 
   async startPayload(studentId, caseId) {
@@ -158,10 +200,43 @@ export const CaseStudy = {
     if (!studyCase) return null;
 
     const questions = await this.questionSet(caseId);
+    const phaseBodies = Array.isArray(studyCase.content?.phases) ? studyCase.content.phases : [];
+
+    const phases = [];
+    const grouped = new Map();
+    for (const question of questions) {
+      if (!grouped.has(question.phase)) grouped.set(question.phase, []);
+      grouped.get(question.phase).push({
+        id: question.id,
+        question: question.question,
+        question_type: question.question_type,
+        options: Array.isArray(question.options)
+          ? question.options.map((label, index) => ({
+              key: String.fromCharCode(65 + index),
+              label,
+            }))
+          : [],
+        points: question.points,
+      });
+    }
+
+    for (const [phase, phaseQuestions] of grouped.entries()) {
+      const phaseContent = phaseBodies.find((item) => item.phase === phase);
+      phases.push({
+        phase,
+        content: phaseContent?.body || '',
+        questions: phaseQuestions,
+      });
+    }
+
+    phases.sort((left, right) => phaseSortValue(left.phase) - phaseSortValue(right.phase));
+
     return {
       caseStudy: studyCase,
+      phases,
       questions: questions.map((question) => ({
         id: question.id,
+        phase: question.phase,
         question: question.question,
         question_type: question.question_type,
         options: Array.isArray(question.options)
@@ -178,7 +253,7 @@ export const CaseStudy = {
   async submitAttempt({ studentId, caseId, answers = {} }) {
     return withTransaction(async (db) => {
       const { rows: caseRows } = await db.query(
-        `SELECT id, title, order_number
+        `SELECT id, title, order_number, passing_percentage, content
          FROM case_studies
          WHERE id = $1
            AND is_active = true
@@ -205,10 +280,10 @@ export const CaseStudy = {
       }
 
       const { rows: questionRows } = await db.query(
-        `SELECT id, question, question_type, options, correct_answer, explanation, points
+        `SELECT id, phase, question, question_type, options, correct_answer, explanation, points
          FROM case_questions
          WHERE case_id = $1
-         ORDER BY created_at ASC, id ASC`,
+         ORDER BY phase ASC, created_at ASC, id ASC`,
         [caseId]
       );
 
@@ -225,6 +300,13 @@ export const CaseStudy = {
         };
       });
 
+      questions.sort((left, right) => {
+        const leftPhase = phaseSortValue(left.phase);
+        const rightPhase = phaseSortValue(right.phase);
+        if (leftPhase !== rightPhase) return leftPhase - rightPhase;
+        return left.id.localeCompare(right.id);
+      });
+
       const totalPoints = questions.reduce((sum, question) => sum + Number(question.points || 0), 0);
       const gradedReview = questions.map((question, index) => {
         const response = answers[question.id];
@@ -232,6 +314,7 @@ export const CaseStudy = {
         const earnedPoints = grade.isCorrect ? Number(question.points || 0) : 0;
         return {
           questionId: question.id,
+          phase: question.phase,
           questionNumber: index + 1,
           questionText: question.question,
           questionType: question.question_type,
@@ -242,13 +325,14 @@ export const CaseStudy = {
           correctAnswer: grade.correctAnswer,
           correctAnswerText: grade.correctAnswerText,
           explanation: question.explanation,
+          matchedKeywords: grade.matchedKeywords,
           isCorrect: grade.isCorrect,
         };
       });
 
       const score = gradedReview.reduce((sum, item) => sum + item.earnedPoints, 0);
       const percentage = totalPoints > 0 ? Math.round((score / totalPoints) * 100) : 0;
-      const passed = percentage >= 80;
+      const passed = percentage >= Number(studyCase.passing_percentage || 70);
 
       const { rows: attemptCountRows } = await db.query(
         `SELECT COUNT(*)::int AS total
@@ -258,6 +342,7 @@ export const CaseStudy = {
         [studentId, caseId]
       );
       const attemptNumber = Number(attemptCountRows[0]?.total || 0) + 1;
+      const now = new Date().toISOString();
 
       const { rows: insertedAttemptRows } = await db.query(
         `INSERT INTO student_case_attempts (
@@ -266,13 +351,13 @@ export const CaseStudy = {
            score,
            percentage,
            passed,
-           completed_at,
+           submitted_at,
            submitted_answers,
            review_payload
          )
-         VALUES ($1, $2, $3, $4, $5, now(), $6::jsonb, $7::jsonb)
+         VALUES ($1, $2, $3, $4, $5, $6, $7::jsonb, $8::jsonb)
          RETURNING *`,
-        [studentId, caseId, score, percentage, passed, JSON.stringify(answers || {}), JSON.stringify(gradedReview)]
+        [studentId, caseId, score, percentage, passed, now, JSON.stringify(answers || {}), JSON.stringify(gradedReview)]
       );
       const attempt = insertedAttemptRows[0];
 
@@ -284,14 +369,17 @@ export const CaseStudy = {
            status = EXCLUDED.status,
            score = EXCLUDED.score,
            completed_at = EXCLUDED.completed_at`,
-        [
-          studentId,
-          caseId,
-          passed ? 'completed' : 'available',
-          percentage,
-          passed ? new Date().toISOString() : null,
-        ]
+        [studentId, caseId, passed ? 'completed' : 'available', percentage, passed ? now : null]
       );
+
+      const competencies = Array.isArray(studyCase.content?.competencies) ? studyCase.content.competencies : [];
+      for (const competency of summarizeCompetencyPerformance(competencies, percentage)) {
+        await db.query(
+          `INSERT INTO student_performance (student_id, item_type, item_id, domain, score_pct, completed_at)
+           VALUES ($1, 'case_study', $2, $3, $4, $5)`,
+          [studentId, caseId, competency.name, competency.score_pct, now]
+        );
+      }
 
       let nextCaseUnlocked = null;
       if (passed) {
@@ -319,11 +407,16 @@ export const CaseStudy = {
         }
       }
 
+      const strengths = gradedReview.filter((item) => item.isCorrect).map((item) => item.phase);
+      const missedCompetencies = competencies.filter((competency) => !passed || percentage < Number(studyCase.passing_percentage || 70));
+
       return {
         caseStudy: {
           id: studyCase.id,
           title: studyCase.title,
           order_number: studyCase.order_number,
+          passing_percentage: Number(studyCase.passing_percentage || 70),
+          competencies,
         },
         attempt: {
           ...attempt,
@@ -331,6 +424,8 @@ export const CaseStudy = {
         },
         review: gradedReview,
         nextCaseUnlocked,
+        strengths: [...new Set(strengths)],
+        missedCompetencies: [...new Set(missedCompetencies)],
       };
     });
   },
@@ -340,7 +435,9 @@ export const CaseStudy = {
       `SELECT
          sca.*,
          cs.title,
-         cs.order_number
+         cs.order_number,
+         cs.passing_percentage,
+         cs.content
        FROM student_case_attempts sca
        INNER JOIN case_studies cs ON cs.id = sca.case_id
        WHERE sca.id = $1

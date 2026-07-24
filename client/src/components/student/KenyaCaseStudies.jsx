@@ -15,6 +15,10 @@ function labelForStatus(status) {
   return 'Locked';
 }
 
+function formatCaseTitle(title) {
+  return String(title || '').toUpperCase();
+}
+
 function CaseLibrary() {
   const navigate = useNavigate();
   const [cases, setCases] = useState(null);
@@ -31,20 +35,20 @@ function CaseLibrary() {
   }, []);
 
   if (error) return <div className="alert">{error}</div>;
-  if (!cases) return <Loading label="Loading Kenya case studies..." />;
+  if (!cases) return <Loading label="Loading Kenya EMS Cases..." />;
 
   return (
     <>
       <div className="page-head">
         <div>
-          <h1>Kenya's Case Studies</h1>
-          <div className="sub">Interactive EMS scenarios with case-by-case progression.</div>
+          <h1>Kenya EMS Cases</h1>
+          <div className="sub">Real Kenyan emergency scenarios organised into guided clinical learning phases.</div>
         </div>
       </div>
 
       {subscription && !subscription.allowed && (
         <div className="alert info">
-          Your subscription is {subscription.status}. Renew your plan to continue with Kenya case studies.
+          Your subscription is {subscription.status}. Renew your plan to continue with Kenya EMS Cases.
         </div>
       )}
 
@@ -54,15 +58,22 @@ function CaseLibrary() {
             <div className="case-study-card-top">
               <div>
                 <div className="case-study-order">Case {item.order_number}</div>
-                <h2>{item.title}</h2>
+                <h2>{formatCaseTitle(item.title)}</h2>
               </div>
               <span className={`badge ${badgeForStatus(item.status)}`}>{labelForStatus(item.status)}</span>
             </div>
 
-            <div className="case-study-meta">
-              <span>{item.category}</span>
-              <span>{item.location}</span>
-              <span>{item.difficulty}</span>
+            <div className="case-study-location">{item.location} | {item.incident_date}</div>
+
+            <div className="case-study-meta case-study-meta-block">
+              <span>Category: {item.category}</span>
+              <span>Difficulty: {item.difficulty}</span>
+            </div>
+
+            <div className="case-study-competencies">
+              {(item.competencies || []).map((competency) => (
+                <span key={`${item.id}-${competency}`}>{competency}</span>
+              ))}
             </div>
 
             <p className="case-study-description">{item.description}</p>
@@ -75,18 +86,18 @@ function CaseLibrary() {
             </div>
 
             <div className="case-study-summary">
-              <span>{item.total_points} Points</span>
+              <span>{item.total_points} points</span>
+              <span>Pass mark: {item.passing_percentage}%</span>
               <span>Attempts: {item.attempt_count || 0}</span>
-              <span>Best: {item.best_percentage != null ? `${item.best_percentage}%` : '--'}</span>
             </div>
 
             <button
               type="button"
               className={item.status === 'locked' ? 'ghost' : 'primary'}
               disabled={item.status === 'locked'}
-              onClick={() => navigate(`/student/kenya-case-studies/${item.id}`)}
+              onClick={() => navigate(`/student/kenya-ems-cases/${item.id}`)}
             >
-              {item.status === 'completed' ? 'Review Case' : item.status === 'available' ? 'Continue Case' : 'Locked'}
+              {item.status === 'completed' ? 'Review Case' : 'Start Case'}
             </button>
           </div>
         ))}
@@ -101,13 +112,17 @@ function CaseSession() {
   const [payload, setPayload] = useState(null);
   const [answers, setAnswers] = useState({});
   const [result, setResult] = useState(null);
+  const [activePhase, setActivePhase] = useState(0);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
 
   useEffect(() => {
     setBusy(true);
     api(`/case-studies/${id}`)
-      .then((data) => setPayload(data))
+      .then((data) => {
+        setPayload(data);
+        setActivePhase(0);
+      })
       .catch((err) => setError(err.message))
       .finally(() => setBusy(false));
   }, [id]);
@@ -123,9 +138,7 @@ function CaseSession() {
     try {
       const response = await api(`/case-studies/${id}/submit`, {
         method: 'POST',
-        body: {
-          answers,
-        },
+        body: { answers },
       });
       setResult(response);
     } catch (err) {
@@ -136,18 +149,20 @@ function CaseSession() {
   }
 
   if (error) return <div className="alert">{error}</div>;
-  if (busy && !payload) return <Loading label="Loading case study..." />;
-  if (!payload) return <Loading label="Loading case study..." />;
+  if (busy && !payload) return <Loading label="Loading Kenya EMS case..." />;
+  if (!payload) return <Loading label="Loading Kenya EMS case..." />;
 
-  const { caseStudy, questions } = payload;
+  const { caseStudy, phases } = payload;
+  const currentPhase = phases[activePhase] || phases[0];
+  const totalQuestions = phases.reduce((sum, phase) => sum + phase.questions.length, 0);
 
   if (result) {
     return (
       <>
         <div className="page-head">
           <div>
-            <h1>{caseStudy.title}</h1>
-            <div className="sub">Case result and guided feedback.</div>
+            <h1>{formatCaseTitle(caseStudy.title)}</h1>
+            <div className="sub">Case result, competency feedback, and next-step guidance.</div>
           </div>
         </div>
 
@@ -163,8 +178,8 @@ function CaseSession() {
           </div>
 
           <div className="case-study-summary">
-            <span>{result.attempt.score} / {caseStudy.total_points} points</span>
-            <span>80% required</span>
+            <span>{result.attempt.score} points earned</span>
+            <span>Pass mark: {result.caseStudy.passing_percentage}%</span>
             <span>Attempt #{result.attempt.attempt_number}</span>
           </div>
 
@@ -172,15 +187,39 @@ function CaseSession() {
             <div style={{ width: `${result.attempt.percentage}%` }} />
           </div>
 
+          <div className="case-study-feedback-grid">
+            <div className="card case-study-feedback-card">
+              <h2>Strengths</h2>
+              <ul className="objective-list">
+                {(result.strengths || []).length > 0
+                  ? result.strengths.map((item) => <li key={item}>{item}</li>)
+                  : <li>Build stronger phase-by-phase reasoning on retry.</li>}
+              </ul>
+            </div>
+            <div className="card case-study-feedback-card">
+              <h2>Recommended Review</h2>
+              <ul className="objective-list">
+                {(result.missedCompetencies || []).length > 0
+                  ? result.missedCompetencies.map((item) => <li key={item}>{item}</li>)
+                  : <li>Maintain your current EMS case competencies.</li>}
+              </ul>
+            </div>
+          </div>
+
           <div className="case-study-actions">
-            <button type="button" className="ghost" onClick={() => navigate('/student/kenya-case-studies')}>
+            <button type="button" className="ghost" onClick={() => navigate('/student/kenya-ems-cases')}>
               Back to Library
             </button>
             {!result.attempt.passed && (
-              <button type="button" className="primary" onClick={() => {
-                setResult(null);
-                setAnswers({});
-              }}>
+              <button
+                type="button"
+                className="primary"
+                onClick={() => {
+                  setResult(null);
+                  setAnswers({});
+                  setActivePhase(0);
+                }}
+              >
                 Retry Case
               </button>
             )}
@@ -188,9 +227,9 @@ function CaseSession() {
               <button
                 type="button"
                 className="primary"
-                onClick={() => navigate(`/student/kenya-case-studies/${result.nextCaseUnlocked.id}`)}
+                onClick={() => navigate(`/student/kenya-ems-cases/${result.nextCaseUnlocked.id}`)}
               >
-                Start Next Case
+                Open Next Case
               </button>
             )}
           </div>
@@ -200,14 +239,17 @@ function CaseSession() {
           {result.review.map((item) => (
             <div key={item.questionId} className="card case-review-card">
               <div className="mcq-review-head">
-                <h2>Question {item.questionNumber}</h2>
+                <div>
+                  <div className="case-section-kicker">{item.phase}</div>
+                  <h2>Question {item.questionNumber}</h2>
+                </div>
                 <span className={`badge ${item.isCorrect ? 'approved' : 'rejected'}`}>
-                  {item.isCorrect ? 'Correct' : 'Incorrect'}
+                  {item.isCorrect ? 'Correct' : 'Needs Review'}
                 </span>
               </div>
               <p className="mcq-review-question">{item.questionText}</p>
               <div className="case-review-row"><strong>Your answer:</strong> {item.selectedAnswerText || 'No answer provided'}</div>
-              <div className="case-review-row"><strong>Correct answer:</strong> {item.correctAnswerText}</div>
+              <div className="case-review-row"><strong>Expected focus:</strong> {item.correctAnswerText}</div>
               <div className="case-review-row"><strong>Points:</strong> {item.earnedPoints} / {item.points}</div>
               <div className="case-review-row"><strong>Feedback:</strong> {item.explanation}</div>
             </div>
@@ -221,104 +263,142 @@ function CaseSession() {
     <>
       <div className="page-head">
         <div>
-          <h1>{caseStudy.title}</h1>
-          <div className="sub">{caseStudy.location} • {caseStudy.date} • {caseStudy.category}</div>
+          <h1>{formatCaseTitle(caseStudy.title)}</h1>
+          <div className="sub">{caseStudy.location} | {caseStudy.incident_date} | {caseStudy.category}</div>
         </div>
       </div>
 
-      <div className="case-study-layout">
-        <div className="card case-study-overview-card">
-          <div className="case-section-kicker">Case Introduction</div>
-          <h2>Incident briefing</h2>
-          <p className="case-study-description">{caseStudy.description}</p>
+      <div className="case-shell">
+        <aside className="card case-phase-sidebar">
+          <div className="case-section-kicker">Case Navigation</div>
+          <h2>Learning Phases</h2>
+          <div className="case-phase-list">
+            {phases.map((phase, index) => (
+              <button
+                key={`${phase.phase}-${index}`}
+                type="button"
+                className={`case-phase-link ${index === activePhase ? 'active' : ''}`}
+                onClick={() => setActivePhase(index)}
+              >
+                <span>{phase.phase}</span>
+                <small>{phase.questions.length} prompts</small>
+              </button>
+            ))}
+          </div>
+        </aside>
 
-          <div className="case-study-brief-grid">
-            <div>
-              <div className="case-study-brief-label">Location</div>
-              <strong>{caseStudy.location}</strong>
-            </div>
-            <div>
-              <div className="case-study-brief-label">Date</div>
-              <strong>{caseStudy.date}</strong>
-            </div>
-            <div>
-              <div className="case-study-brief-label">Category</div>
-              <strong>{caseStudy.category}</strong>
-            </div>
-            <div>
-              <div className="case-study-brief-label">Pass mark</div>
-              <strong>80%</strong>
+        <section className="case-main-panel">
+          <div className="card case-study-overview-card">
+            <div className="case-section-kicker">Case Briefing</div>
+            <h2>Incident overview</h2>
+            <div className="case-study-location">{caseStudy.location} | {caseStudy.incident_date}</div>
+            <p className="case-study-description">{caseStudy.description}</p>
+            <div className="case-study-competencies">
+              {(caseStudy.competencies || []).map((competency) => (
+                <span key={`${caseStudy.id}-${competency}`}>{competency}</span>
+              ))}
             </div>
           </div>
-        </div>
 
-        <div className="card case-study-overview-card">
-          <div className="case-section-kicker">Student Scenario</div>
-          <h2>You are the responding EMT</h2>
-          <p className="case-study-description">
-            You are arriving as part of the first response team. Stabilize the scene, prioritise casualties,
-            and make safe clinical decisions using EMT principles suited to the Kenyan emergency context.
-          </p>
-
-          <div className="case-study-summary">
-            <span>{answeredCount}/{questions.length} answered</span>
-            <span>{caseStudy.total_points} total points</span>
-            <span className={`badge ${badgeForStatus(caseStudy.status)}`}>{labelForStatus(caseStudy.status)}</span>
+          <div className="card case-study-overview-card">
+            <div className="case-section-kicker">{currentPhase.phase}</div>
+            <h2>{currentPhase.phase === 'Reflection' ? 'Reflection' : 'Scenario content'}</h2>
+            <pre className="case-phase-body">{currentPhase.content}</pre>
           </div>
-        </div>
-      </div>
 
-      <div className="case-review-stack">
-        {questions.map((question, index) => (
-          <div key={question.id} className="card case-question-card">
-            <div className="mcq-review-head">
-              <h2>Question {index + 1}</h2>
-              <span className="badge draft">{question.points} pts</span>
-            </div>
-            <p className="mcq-review-question">{question.question}</p>
+          <div className="case-review-stack">
+            {currentPhase.questions.map((question, index) => (
+              <div key={question.id} className="card case-question-card">
+                <div className="mcq-review-head">
+                  <h2>Prompt {index + 1}</h2>
+                  <span className="badge draft">{question.points} pts</span>
+                </div>
+                <p className="mcq-review-question">{question.question}</p>
 
-            {question.question_type === 'multiple_choice' ? (
-              <div className="mcq-option-list">
-                {question.options.map((option) => (
-                  <label key={`${question.id}-${option.key}`} className={`mcq-option ${answers[question.id] === option.key ? 'selected' : ''}`}>
-                    <input
-                      type="radio"
-                      name={question.id}
-                      value={option.key}
-                      checked={answers[question.id] === option.key}
-                      onChange={() => setAnswers((current) => ({ ...current, [question.id]: option.key }))}
+                {question.question_type === 'multiple_choice' ? (
+                  <div className="mcq-option-list">
+                    {question.options.map((option) => (
+                      <label key={`${question.id}-${option.key}`} className={`mcq-option ${answers[question.id] === option.key ? 'selected' : ''}`}>
+                        <input
+                          type="radio"
+                          name={question.id}
+                          value={option.key}
+                          checked={answers[question.id] === option.key}
+                          onChange={() => setAnswers((current) => ({ ...current, [question.id]: option.key }))}
+                        />
+                        <span>{option.key}. {option.label}</span>
+                      </label>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="field" style={{ marginBottom: 0 }}>
+                    <textarea
+                      rows={6}
+                      placeholder="Enter your EMS decision-making response"
+                      value={answers[question.id] || ''}
+                      onChange={(event) => setAnswers((current) => ({ ...current, [question.id]: event.target.value }))}
                     />
-                    <span>{option.key}. {option.label}</span>
-                  </label>
-                ))}
+                  </div>
+                )}
               </div>
+            ))}
+          </div>
+        </section>
+
+        <aside className="card case-progress-panel">
+          <div className="case-section-kicker">Progress & Scoring</div>
+          <h2>Case status</h2>
+          <div className="case-progress-stat">
+            <span>Status</span>
+            <strong className={`badge ${badgeForStatus(caseStudy.status)}`}>{labelForStatus(caseStudy.status)}</strong>
+          </div>
+          <div className="case-progress-stat">
+            <span>Answered</span>
+            <strong>{answeredCount} / {totalQuestions}</strong>
+          </div>
+          <div className="case-progress-stat">
+            <span>Pass mark</span>
+            <strong>{caseStudy.passing_percentage}%</strong>
+          </div>
+          <div className="case-progress-stat">
+            <span>Total points</span>
+            <strong>{caseStudy.total_points}</strong>
+          </div>
+          <div className="case-progress-stat">
+            <span>Current score</span>
+            <strong>{caseStudy.score || 0}%</strong>
+          </div>
+
+          <div className="progress-bar case-progress-bar">
+            <div style={{ width: `${Math.max(0, Math.min(100, Number(caseStudy.score || 0)))}%` }} />
+          </div>
+
+          <div className="case-study-actions case-study-actions-stack">
+            <button type="button" className="ghost" onClick={() => navigate('/student/kenya-ems-cases')}>
+              Back to Library
+            </button>
+            {activePhase > 0 && (
+              <button type="button" className="ghost" onClick={() => setActivePhase((current) => current - 1)}>
+                Previous Phase
+              </button>
+            )}
+            {activePhase < phases.length - 1 ? (
+              <button type="button" className="primary" onClick={() => setActivePhase((current) => current + 1)}>
+                Next Phase
+              </button>
             ) : (
-              <div className="field" style={{ marginBottom: 0 }}>
-                <textarea
-                  rows={4}
-                  placeholder="Enter your scene decision or safety plan"
-                  value={answers[question.id] || ''}
-                  onChange={(event) => setAnswers((current) => ({ ...current, [question.id]: event.target.value }))}
-                />
-              </div>
+              <button type="button" className="primary" onClick={submit} disabled={busy}>
+                {busy ? 'Submitting...' : 'Submit Case'}
+              </button>
             )}
           </div>
-        ))}
-      </div>
-
-      <div className="case-study-actions">
-        <button type="button" className="ghost" onClick={() => navigate('/student/kenya-case-studies')}>
-          Back to Library
-        </button>
-        <button type="button" className="primary" onClick={submit} disabled={busy}>
-          {busy ? 'Submitting...' : 'Submit Responses'}
-        </button>
+        </aside>
       </div>
     </>
   );
 }
 
-export default function KenyaCaseStudies() {
+export default function KenyaEmsCases() {
   const { id } = useParams();
   return id ? <CaseSession /> : <CaseLibrary />;
 }

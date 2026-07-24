@@ -2,7 +2,7 @@
 import { useNavigate, useParams } from 'react-router-dom';
 import { api } from '../../services/api';
 import Loading from '../shared/Loading';
-import CaseRenderer from './CaseRenderer';
+import KenyaEMSWorksheet from './KenyaEMSWorksheet';
 
 function formatCaseTitle(title) {
   return String(title || '').toUpperCase();
@@ -18,16 +18,6 @@ function badgeClassForStatus(status) {
   if (status === 'completed') return 'completed';
   if (status === 'available') return 'approved';
   return 'draft';
-}
-
-function countAnswered(responses, blocks) {
-  return blocks.filter((block) => {
-    if (!block.activityId) return false;
-    const value = responses[block.activityId];
-    if (value == null) return false;
-    if (typeof value === 'string') return value.trim().length > 0;
-    return Object.values(value).some((item) => String(item || '').trim().length > 0);
-  }).length;
 }
 
 function CaseLibrary() {
@@ -150,11 +140,6 @@ function CaseSession() {
 
   const blocks = payload?.blocks || [];
   const caseStudy = payload?.caseStudy;
-  const interactiveBlocks = useMemo(
-    () => blocks.filter((block) => block.activityId),
-    [blocks]
-  );
-  const answeredCount = useMemo(() => countAnswered(responses, interactiveBlocks), [responses, interactiveBlocks]);
 
   async function saveNow() {
     setSaveState('saving');
@@ -247,15 +232,11 @@ function CaseSession() {
   return (
     <section className="case-worksheet-page">
       <div className="case-worksheet-sheet">
-        <div className="case-document-meta-row">
-          <span>Answered {answeredCount} of {interactiveBlocks.length} response sections</span>
-          <span>Pass mark: {caseStudy.passing_percentage}%</span>
-          <span>Save status: {saveState}</span>
-        </div>
-
-        <CaseRenderer
+        <KenyaEMSWorksheet
+          caseStudy={caseStudy}
           blocks={blocks}
           responses={responses}
+          saveState={saveState}
           onChange={(activityId, nextValue) => {
             hydratedRef.current = true;
             setResponses((current) => ({

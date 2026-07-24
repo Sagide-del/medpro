@@ -1854,6 +1854,27 @@ button:disabled { opacity: 0.5; cursor: default; }
   padding: 24px 20px 88px;
 }
 
+.kenya-case-workbook {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  box-shadow: 0 14px 40px rgba(15, 23, 42, 0.06);
+}
+
+.worksheet-header {
+  margin-bottom: 18px;
+  padding-bottom: 18px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.worksheet-header .case-document-meta-row {
+  margin-top: 8px;
+}
+
+.worksheet-dispatch-box {
+  margin-top: 12px;
+}
+
 .case-renderer-title,
 .case-renderer-section,
 .case-renderer-subsection {

@@ -57,9 +57,6 @@ import AdminKenyaEmsCasesManager from './components/admin/KenyaEmsCasesManager';
 import SuperAdminDashboard from './components/superadmin/Dashboard';
 import SuperAdminInstitutions from './components/superadmin/Institutions';
 import SuperAdminContentUpload from './components/superadmin/ContentUpload';
-import SuperAdminFlashcardsManager from './components/superadmin/FlashcardsManager';
-import SuperAdminWorksheetsManager from './components/superadmin/WorksheetsManager';
-import SuperAdminGraphicsManager from './components/superadmin/GraphicsManager';
 import SuperAdminClinicalReferenceCardsManager from './components/superadmin/ClinicalReferenceCardsManager';
 import SuperAdminRevenueAnalytics from './components/superadmin/RevenueAnalytics';
 import SuperAdminELibraryManager from './components/superadmin/ELibraryManager';
@@ -179,18 +176,6 @@ const SUPERADMIN_LINKS = [
       {
         to: '/superadmin/elibrary',
         label: 'E-Library',
-      },
-      {
-        to: '/superadmin/flashcards',
-        label: 'Flashcard Decks',
-      },
-      {
-        to: '/superadmin/worksheets',
-        label: 'Worksheets',
-      },
-      {
-        to: '/superadmin/graphics',
-        label: 'Graphics',
       },
       {
         to: '/superadmin/reference-cards',
@@ -370,9 +355,6 @@ function AppRoutes() {
           <Route path="/superadmin/users" element={<AdminUsers />} />
           <Route path="/superadmin/content" element={<SuperAdminContentUpload />} />
           <Route path="/superadmin/elibrary" element={<SuperAdminELibraryManager />} />
-          <Route path="/superadmin/flashcards" element={<SuperAdminFlashcardsManager />} />
-          <Route path="/superadmin/worksheets" element={<SuperAdminWorksheetsManager />} />
-          <Route path="/superadmin/graphics" element={<SuperAdminGraphicsManager />} />
           <Route path="/superadmin/reference-cards" element={<SuperAdminClinicalReferenceCardsManager />} />
           <Route path="/superadmin/revenue" element={<SuperAdminRevenueAnalytics />} />
 

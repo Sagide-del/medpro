@@ -33,6 +33,9 @@ const files = [
   'migration_007_subscription_refinement.sql',
   'migration_008_final_release_modules.sql',
   'migration_009_intasend_payment_method.sql',
+  'migration_010_mcq_module_assessments.sql',
+  'migration_011_kenya_case_studies.sql',
+  'migration_012_case_progress_jsonb.sql',
 ];
 
 if (!process.env.DATABASE_URL) {

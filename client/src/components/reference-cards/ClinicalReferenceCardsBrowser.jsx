@@ -32,6 +32,59 @@ function formatDate(value) {
   }
 }
 
+function ReferenceCardImage({ src, alt, className, wrapClassName, onClick, size = 'cover' }) {
+  const [loading, setLoading] = useState(true);
+  const [broken, setBroken] = useState(false);
+
+  useEffect(() => {
+    setLoading(true);
+    setBroken(false);
+  }, [src]);
+
+  if (!src) {
+    return (
+      <div className={`${wrapClassName || ''} ref-card-image-fallback`} role="img" aria-label={`${alt} unavailable`}>
+        <span>{alt}</span>
+      </div>
+    );
+  }
+
+  return (
+    <div className={wrapClassName}>
+      {loading && !broken && <div className="ref-card-image-loading" aria-hidden="true">Loading image...</div>}
+      {!broken ? (
+        <img
+          src={src}
+          alt={alt}
+          className={className}
+          loading="lazy"
+          onLoad={() => setLoading(false)}
+          onError={(event) => {
+            console.error('Clinical reference card image failed to load', { src, alt, event });
+            setLoading(false);
+            setBroken(true);
+          }}
+          onClick={onClick}
+          role={onClick ? 'button' : undefined}
+          tabIndex={onClick ? 0 : undefined}
+          onKeyDown={(event) => {
+            if (!onClick) return;
+            if (event.key === 'Enter' || event.key === ' ') {
+              event.preventDefault();
+              onClick();
+            }
+          }}
+          style={{ objectFit: size }}
+        />
+      ) : (
+        <div className="ref-card-image-fallback" role="img" aria-label={`${alt} failed to load`}>
+          <span>Image unavailable</span>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function ImageViewer({ cards, index, onClose, onChange }) {
   const card = cards[index];
   const touchStart = useRef(null);
@@ -77,7 +130,13 @@ function ImageViewer({ cards, index, onClose, onChange }) {
           </div>
         </div>
         <div className="ref-card-modal-image-wrap">
-          <img src={card.image_url || card.file_url} alt={card.title} className="ref-card-modal-image" />
+          <ReferenceCardImage
+            src={card.image_url}
+            alt={card.title}
+            className="ref-card-modal-image"
+            wrapClassName="ref-card-modal-image-wrap-inner"
+            size="contain"
+          />
         </div>
       </div>
     </div>
@@ -88,7 +147,12 @@ function GalleryCard({ card, onOpen }) {
   return (
     <button className="ref-card-gallery-card" onClick={onOpen}>
       <div className="ref-card-gallery-image-wrap">
-        <img src={card.image_url || card.file_url} alt={card.title} className="ref-card-gallery-image" />
+        <ReferenceCardImage
+          src={card.image_url}
+          alt={card.title}
+          className="ref-card-gallery-image"
+          wrapClassName="ref-card-gallery-image-shell"
+        />
       </div>
       <div className="ref-card-gallery-body">
         <div className="ref-card-kicker">{normalizeCategory(card)}</div>
@@ -207,11 +271,12 @@ function CardBrowser({ mode }) {
                 }}
               >
                 <div className="ref-card-category-preview">
-                  {preview?.image_url || preview?.file_url ? (
-                    <img src={preview.image_url || preview.file_url} alt={entry.category} />
-                  ) : (
-                    <span>{entry.category}</span>
-                  )}
+                  <ReferenceCardImage
+                    src={preview?.image_url}
+                    alt={entry.category}
+                    className="ref-card-category-preview-image"
+                    wrapClassName="ref-card-category-preview-shell"
+                  />
                 </div>
                 <div className="ref-card-category-body">
                   <div className="ref-card-kicker">Category</div>

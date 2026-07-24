@@ -2087,6 +2087,14 @@ button:disabled { opacity: 0.5; cursor: default; }
   overflow: hidden;
 }
 
+.ref-card-category-preview-shell,
+.ref-card-gallery-image-shell,
+.ref-card-modal-image-wrap-inner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
 .ref-card-category-preview img,
 .ref-card-gallery-image,
 .ref-card-admin-item img,
@@ -2095,6 +2103,35 @@ button:disabled { opacity: 0.5; cursor: default; }
   height: 100%;
   object-fit: cover;
   display: block;
+}
+
+.ref-card-category-preview-image,
+.ref-card-gallery-image,
+.ref-card-modal-image {
+  width: 100%;
+  height: 100%;
+  display: block;
+  background: #fff;
+}
+
+.ref-card-image-loading,
+.ref-card-image-fallback {
+  width: 100%;
+  height: 100%;
+  min-height: 140px;
+  display: grid;
+  place-items: center;
+  text-align: center;
+  padding: 16px;
+  background: linear-gradient(135deg, #f8fafc, #eef2f7);
+  color: var(--ink-soft);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.ref-card-image-fallback {
+  border: 1px dashed var(--line);
+  border-radius: 12px;
 }
 
 .ref-card-category-preview span {
@@ -2298,6 +2335,10 @@ button:disabled { opacity: 0.5; cursor: default; }
   overflow: auto;
 }
 
+.ref-card-modal-image-wrap-inner {
+  min-height: 320px;
+}
+
 .ref-card-modal-image {
   display: block;
   max-width: 100%;
@@ -2336,6 +2377,10 @@ button:disabled { opacity: 0.5; cursor: default; }
   .ref-card-gallery-image-wrap,
   .ref-card-admin-item img {
     height: 160px;
+  }
+
+  .ref-card-modal-image-wrap-inner {
+    min-height: 220px;
   }
 
   .ref-card-upload-preview {

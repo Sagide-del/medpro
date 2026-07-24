@@ -23,6 +23,12 @@ function formatCaseTitle(title) {
   return String(title || '').toUpperCase();
 }
 
+function actionLabelForPhase(phaseLabel) {
+  const match = String(phaseLabel || '').match(/Part\s+(\d+)/i);
+  if (match) return `STUDENT ACTION REQUIRED - PHASE ${match[1]}`;
+  return 'STUDENT ACTION REQUIRED';
+}
+
 function countAnswered(answers, scoredActivities) {
   return scoredActivities.filter((activity) => {
     const value = answers[activity.id];
@@ -146,18 +152,7 @@ function CaseLibrary() {
             </div>
 
             <div className="case-library-meta">
-              <div className="case-library-meta-line">
-                <span>Status</span>
-                <strong className={`badge ${badgeForStatus(item.status)}`}>{labelForStatus(item.status)}</strong>
-              </div>
-              <div className="case-library-meta-line">
-                <span>Pass mark</span>
-                <strong>{item.passing_percentage}%</strong>
-              </div>
-              <div className="case-library-meta-line">
-                <span>Best score</span>
-                <strong>{item.score || 0}%</strong>
-              </div>
+              <div className="case-library-meta-line"><span>Pass mark</span><strong>{item.passing_percentage}%</strong></div>
               <button
                 type="button"
                 className={item.status === 'locked' ? 'ghost' : 'primary'}
@@ -250,13 +245,6 @@ function CaseSession() {
   if (result) {
     return (
       <>
-      <div className="page-head">
-        <div>
-          <h1>Kenya EMS Cases</h1>
-          <div className="sub">Submitted EMT worksheet</div>
-        </div>
-      </div>
-
         <section className="case-document-single">
           <div className="case-result-sheet">
             <div className="case-result-top">
@@ -326,13 +314,6 @@ function CaseSession() {
 
   return (
     <>
-      <div className="page-head">
-        <div>
-          <h1>Kenya EMS Cases</h1>
-          <div className="sub">Interactive EMT practical worksheet</div>
-        </div>
-      </div>
-
       <section className="case-document-single">
         <article className="case-document">
           <header className="case-document-header">
@@ -350,7 +331,7 @@ function CaseSession() {
                 return (
                 <div key={activity.id}>
                   {isFirstInteractive && (
-                    <div className="case-action-banner">STUDENT ACTION REQUIRED</div>
+                    <div className="case-action-banner">{actionLabelForPhase(phase.phase)}</div>
                   )}
                   {renderActivity(
                     activity,

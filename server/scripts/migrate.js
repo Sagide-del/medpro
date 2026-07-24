@@ -38,6 +38,7 @@ const files = [
   'migration_012_case_progress_jsonb.sql',
   'migration_013_case_progress_responses.sql',
   'migration_014_case_content_manager.sql',
+  'migration_015_case_content_uploader_compatibility.sql',
 ];
 
 if (!process.env.DATABASE_URL) {

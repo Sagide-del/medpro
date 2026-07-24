@@ -192,7 +192,7 @@ function normalizePayload(rawPayload, userId) {
         ? Boolean(payload.active)
         : false,
     order_number: Number.isFinite(Number(payload.order_number ?? payload.case_number)) ? Number(payload.order_number ?? payload.case_number) : null,
-    created_by: userId,
+    created_by: userId || null,
   };
 }
 
@@ -211,7 +211,7 @@ function caseRow(row) {
     passing_percentage: row.passing_percentage,
     passing_score: row.passing_score ?? row.passing_percentage,
     is_active: row.is_active,
-    created_by: row.created_by,
+    created_by: row.created_by || null,
     created_by_name: row.created_by_name || null,
     order_number: row.order_number,
     case_number: row.case_number ?? row.order_number,

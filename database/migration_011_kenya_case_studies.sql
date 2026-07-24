@@ -9,6 +9,7 @@ CREATE TABLE IF NOT EXISTS case_studies (
   difficulty VARCHAR(40) NOT NULL DEFAULT 'intermediate',
   description TEXT NOT NULL,
   content JSONB NOT NULL DEFAULT '{}'::jsonb,
+  content_json JSONB NOT NULL DEFAULT '{}'::jsonb,
   order_number INTEGER NOT NULL UNIQUE,
   passing_percentage INTEGER NOT NULL DEFAULT 70,
   is_active BOOLEAN NOT NULL DEFAULT true,
@@ -70,9 +71,16 @@ END $$;
 
 ALTER TABLE case_studies
   ADD COLUMN IF NOT EXISTS content JSONB NOT NULL DEFAULT '{}'::jsonb,
+  ADD COLUMN IF NOT EXISTS content_json JSONB NOT NULL DEFAULT '{}'::jsonb,
   ADD COLUMN IF NOT EXISTS passing_percentage INTEGER NOT NULL DEFAULT 70,
   ADD COLUMN IF NOT EXISTS incident_date VARCHAR(120),
   ADD COLUMN IF NOT EXISTS is_active BOOLEAN NOT NULL DEFAULT true;
+
+UPDATE case_studies
+SET content_json = CASE
+  WHEN content_json = '{}'::jsonb THEN COALESCE(content, '{}'::jsonb)
+  ELSE content_json
+END;
 
 DO $$
 BEGIN

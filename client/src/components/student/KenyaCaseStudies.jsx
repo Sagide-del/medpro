@@ -2,6 +2,10 @@ import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { api } from '../../services/api';
 import Loading from '../shared/Loading';
+import CaseQuestionBlock from './CaseQuestionBlock';
+import CaseResponseForm from './CaseResponseForm';
+import CaseScenarioBlock from './CaseScenarioBlock';
+import CaseTableActivity from './CaseTableActivity';
 
 function badgeForStatus(status) {
   if (status === 'completed') return 'completed';
@@ -17,6 +21,72 @@ function labelForStatus(status) {
 
 function formatCaseTitle(title) {
   return String(title || '').toUpperCase();
+}
+
+function countAnswered(answers, scoredActivities) {
+  return scoredActivities.filter((activity) => {
+    const value = answers[activity.id];
+    if (!value) return false;
+    if (typeof value === 'string') return value.trim().length > 0;
+    if (value.rows) return Object.values(value.rows).some((row) => Object.values(row || {}).some((cell) => String(cell || '').trim().length > 0));
+    return Object.values(value).some((item) => String(item || '').trim().length > 0);
+  }).length;
+}
+
+function renderActivity(activity, answerValue, setAnswers, patientTables) {
+  if (activity.type === 'scenario_block') {
+    return <CaseScenarioBlock activity={activity} patientTables={patientTables} />;
+  }
+
+  if (activity.type === 'triage_table') {
+    return (
+      <CaseTableActivity
+        activity={activity}
+        value={answerValue || { rows: {} }}
+        onChange={(nextValue) => setAnswers((current) => ({ ...current, [activity.id]: nextValue }))}
+      />
+    );
+  }
+
+  if (activity.type === 'reflection' && activity.fields?.length) {
+    return (
+      <CaseResponseForm
+        activity={activity}
+        value={answerValue || {}}
+        onChange={(fieldId, fieldValue) => setAnswers((current) => ({
+          ...current,
+          [activity.id]: {
+            ...(current[activity.id] || {}),
+            [fieldId]: fieldValue,
+          },
+        }))}
+      />
+    );
+  }
+
+  if (activity.type === 'multiple_choice' || activity.type === 'reflection') {
+    return (
+      <CaseQuestionBlock
+        activity={activity}
+        value={answerValue || ''}
+        onChange={(nextValue) => setAnswers((current) => ({ ...current, [activity.id]: nextValue }))}
+      />
+    );
+  }
+
+  return (
+    <CaseResponseForm
+      activity={activity}
+      value={answerValue || {}}
+      onChange={(fieldId, fieldValue) => setAnswers((current) => ({
+        ...current,
+        [activity.id]: {
+          ...(current[activity.id] || {}),
+          [fieldId]: fieldValue,
+        },
+      }))}
+    />
+  );
 }
 
 function CaseLibrary() {
@@ -42,7 +112,7 @@ function CaseLibrary() {
       <div className="page-head">
         <div>
           <h1>Kenya EMS Cases</h1>
-          <div className="sub">Real Kenyan emergency scenarios organised into guided clinical learning phases.</div>
+          <div className="sub">Interactive EMT case worksheets built from real Kenyan emergency incidents.</div>
         </div>
       </div>
 
@@ -71,7 +141,7 @@ function CaseLibrary() {
             </div>
 
             <div className="case-study-competencies">
-              {(item.competencies || []).map((competency) => (
+              {(item.competencies || []).slice(0, 6).map((competency) => (
                 <span key={`${item.id}-${competency}`}>{competency}</span>
               ))}
             </div>
@@ -121,16 +191,22 @@ function CaseSession() {
     api(`/case-studies/${id}`)
       .then((data) => {
         setPayload(data);
+        setAnswers({});
+        setResult(null);
         setActivePhase(0);
       })
       .catch((err) => setError(err.message))
       .finally(() => setBusy(false));
   }, [id]);
 
-  const answeredCount = useMemo(
-    () => Object.values(answers).filter((value) => String(value || '').trim().length > 0).length,
-    [answers]
+  const phases = payload?.phases || [];
+  const caseStudy = payload?.caseStudy;
+  const patientTables = caseStudy?.content_json?.patient_information?.tables || [];
+  const scoredActivities = useMemo(
+    () => (payload?.activities || []).filter((activity) => Number(activity.points || 0) > 0),
+    [payload]
   );
+  const answeredCount = useMemo(() => countAnswered(answers, scoredActivities), [answers, scoredActivities]);
 
   async function submit() {
     setBusy(true);
@@ -150,11 +226,9 @@ function CaseSession() {
 
   if (error) return <div className="alert">{error}</div>;
   if (busy && !payload) return <Loading label="Loading Kenya EMS case..." />;
-  if (!payload) return <Loading label="Loading Kenya EMS case..." />;
+  if (!payload || !caseStudy) return <Loading label="Loading Kenya EMS case..." />;
 
-  const { caseStudy, phases } = payload;
   const currentPhase = phases[activePhase] || phases[0];
-  const totalQuestions = phases.reduce((sum, phase) => sum + phase.questions.length, 0);
 
   if (result) {
     return (
@@ -162,12 +236,12 @@ function CaseSession() {
         <div className="page-head">
           <div>
             <h1>{formatCaseTitle(caseStudy.title)}</h1>
-            <div className="sub">Case result, competency feedback, and next-step guidance.</div>
+            <div className="sub">Case result, feedback, and progression summary.</div>
           </div>
         </div>
 
         <div className="card case-study-result-card">
-          <div className="mcq-result-top">
+          <div className="mcq-review-head">
             <div>
               <div className="mcq-score-label">Score</div>
               <div className="mcq-score-value">{result.attempt.percentage}%</div>
@@ -193,7 +267,7 @@ function CaseSession() {
               <ul className="objective-list">
                 {(result.strengths || []).length > 0
                   ? result.strengths.map((item) => <li key={item}>{item}</li>)
-                  : <li>Build stronger phase-by-phase reasoning on retry.</li>}
+                  : <li>Retry with more complete worksheet responses across each phase.</li>}
               </ul>
             </div>
             <div className="card case-study-feedback-card">
@@ -201,7 +275,7 @@ function CaseSession() {
               <ul className="objective-list">
                 {(result.missedCompetencies || []).length > 0
                   ? result.missedCompetencies.map((item) => <li key={item}>{item}</li>)
-                  : <li>Maintain your current EMS case competencies.</li>}
+                  : <li>Maintain your current Kenya EMS case performance.</li>}
               </ul>
             </div>
           </div>
@@ -237,19 +311,18 @@ function CaseSession() {
 
         <div className="case-review-stack">
           {result.review.map((item) => (
-            <div key={item.questionId} className="card case-review-card">
+            <div key={item.activityId} className="card case-review-card">
               <div className="mcq-review-head">
                 <div>
                   <div className="case-section-kicker">{item.phase}</div>
-                  <h2>Question {item.questionNumber}</h2>
+                  <h2>{item.title}</h2>
                 </div>
                 <span className={`badge ${item.isCorrect ? 'approved' : 'rejected'}`}>
-                  {item.isCorrect ? 'Correct' : 'Needs Review'}
+                  {item.isCorrect ? 'Scored' : 'Needs Review'}
                 </span>
               </div>
-              <p className="mcq-review-question">{item.questionText}</p>
-              <div className="case-review-row"><strong>Your answer:</strong> {item.selectedAnswerText || 'No answer provided'}</div>
-              <div className="case-review-row"><strong>Expected focus:</strong> {item.correctAnswerText}</div>
+              <div className="case-review-row"><strong>Your response:</strong> {item.selectedAnswerText || 'No answer provided'}</div>
+              <div className="case-review-row"><strong>Expected focus:</strong> {item.expectedAnswerText || 'Review the source case criteria.'}</div>
               <div className="case-review-row"><strong>Points:</strong> {item.earnedPoints} / {item.points}</div>
               <div className="case-review-row"><strong>Feedback:</strong> {item.explanation}</div>
             </div>
@@ -271,7 +344,7 @@ function CaseSession() {
       <div className="case-shell">
         <aside className="card case-phase-sidebar">
           <div className="case-section-kicker">Case Navigation</div>
-          <h2>Learning Phases</h2>
+          <h2>Worksheet Phases</h2>
           <div className="case-phase-list">
             {phases.map((phase, index) => (
               <button
@@ -281,7 +354,7 @@ function CaseSession() {
                 onClick={() => setActivePhase(index)}
               >
                 <span>{phase.phase}</span>
-                <small>{phase.questions.length} prompts</small>
+                <small>{phase.activities.length} blocks</small>
               </button>
             ))}
           </div>
@@ -298,47 +371,21 @@ function CaseSession() {
                 <span key={`${caseStudy.id}-${competency}`}>{competency}</span>
               ))}
             </div>
-          </div>
-
-          <div className="card case-study-overview-card">
-            <div className="case-section-kicker">{currentPhase.phase}</div>
-            <h2>{currentPhase.phase === 'Reflection' ? 'Reflection' : 'Scenario content'}</h2>
-            <pre className="case-phase-body">{currentPhase.content}</pre>
+            <div className="case-study-summary">
+              <span>{caseStudy.total_points} points</span>
+              <span>Pass mark: {caseStudy.passing_percentage}%</span>
+              <span>{phases.length} guided phases</span>
+            </div>
           </div>
 
           <div className="case-review-stack">
-            {currentPhase.questions.map((question, index) => (
-              <div key={question.id} className="card case-question-card">
-                <div className="mcq-review-head">
-                  <h2>Prompt {index + 1}</h2>
-                  <span className="badge draft">{question.points} pts</span>
-                </div>
-                <p className="mcq-review-question">{question.question}</p>
-
-                {question.question_type === 'multiple_choice' ? (
-                  <div className="mcq-option-list">
-                    {question.options.map((option) => (
-                      <label key={`${question.id}-${option.key}`} className={`mcq-option ${answers[question.id] === option.key ? 'selected' : ''}`}>
-                        <input
-                          type="radio"
-                          name={question.id}
-                          value={option.key}
-                          checked={answers[question.id] === option.key}
-                          onChange={() => setAnswers((current) => ({ ...current, [question.id]: option.key }))}
-                        />
-                        <span>{option.key}. {option.label}</span>
-                      </label>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="field" style={{ marginBottom: 0 }}>
-                    <textarea
-                      rows={6}
-                      placeholder="Enter your EMS decision-making response"
-                      value={answers[question.id] || ''}
-                      onChange={(event) => setAnswers((current) => ({ ...current, [question.id]: event.target.value }))}
-                    />
-                  </div>
+            {(currentPhase?.activities || []).map((activity) => (
+              <div key={activity.id}>
+                {renderActivity(
+                  activity,
+                  answers[activity.id],
+                  setAnswers,
+                  activity.type === 'scenario_block' && activity.phase === 'Part 2: Arrival at Scene' ? patientTables : []
                 )}
               </div>
             ))}
@@ -354,7 +401,7 @@ function CaseSession() {
           </div>
           <div className="case-progress-stat">
             <span>Answered</span>
-            <strong>{answeredCount} / {totalQuestions}</strong>
+            <strong>{answeredCount} / {scoredActivities.length}</strong>
           </div>
           <div className="case-progress-stat">
             <span>Pass mark</span>
@@ -365,7 +412,7 @@ function CaseSession() {
             <strong>{caseStudy.total_points}</strong>
           </div>
           <div className="case-progress-stat">
-            <span>Current score</span>
+            <span>Best score</span>
             <strong>{caseStudy.score || 0}%</strong>
           </div>
 

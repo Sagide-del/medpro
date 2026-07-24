@@ -14,35 +14,48 @@ function requiredKeywordMatches(keywords) {
   return Math.max(2, Math.ceil(count * 0.4));
 }
 
-function gradeQuestion(question, response) {
-  if (question.question_type === 'multiple_choice') {
-    const selected = String(response || '').trim().toUpperCase();
-    const correct = String(question.correct_answer?.option || '').trim().toUpperCase();
-    return {
-      isCorrect: selected && selected === correct,
-      selectedAnswer: selected,
-      correctAnswer: correct,
-      selectedAnswerText: question.option_map?.[selected] || 'No answer selected',
-      correctAnswerText: question.option_map?.[correct] || '',
-      matchedKeywords: [],
-    };
+function resolveContentJson(row) {
+  return row?.content_json || row?.content || {};
+}
+
+function extractCompetencies(contentJson) {
+  if (Array.isArray(contentJson?.learning_objectives?.competencies)) {
+    return contentJson.learning_objectives.competencies;
   }
+  if (Array.isArray(contentJson?.competencies)) {
+    return contentJson.competencies;
+  }
+  return [];
+}
 
-  const answerText = String(response || '').trim();
-  const normalizedAnswer = normalizeText(answerText);
-  const keywords = Array.isArray(question.correct_answer?.keywords) ? question.correct_answer.keywords : [];
-  const matchedKeywords = keywords.filter((keyword) => normalizedAnswer.includes(normalizeText(keyword)));
-  const minimumMatches = requiredKeywordMatches(keywords);
-  const isCorrect = keywords.length > 0 && matchedKeywords.length >= minimumMatches;
+function extractTotalPoints(contentJson) {
+  if (Number.isFinite(Number(contentJson?.evaluation?.total_points))) {
+    return Number(contentJson.evaluation.total_points);
+  }
+  const activities = Array.isArray(contentJson?.activities) ? contentJson.activities : [];
+  return activities.reduce((sum, activity) => sum + Number(activity.points || 0), 0);
+}
 
-  return {
-    isCorrect,
-    selectedAnswer: answerText,
-    correctAnswer: keywords.join(', '),
-    selectedAnswerText: answerText || 'No answer provided',
-    correctAnswerText: keywords.join(', '),
-    matchedKeywords,
-  };
+function buildContentSections(contentJson = {}) {
+  const orderedKeys = [
+    ['incident', 'Incident'],
+    ['dispatch_information', 'Dispatch Information'],
+    ['scene_assessment', 'Scene Assessment'],
+    ['patient_information', 'Patient Information'],
+    ['ems_response', 'EMS Response'],
+    ['challenges', 'Challenges'],
+    ['student_tasks', 'Student Tasks'],
+    ['evaluation', 'Evaluation'],
+    ['learning_objectives', 'Learning Objectives'],
+  ];
+
+  return orderedKeys
+    .filter(([key]) => contentJson[key] != null)
+    .map(([key, label]) => ({
+      key,
+      label,
+      value: contentJson[key],
+    }));
 }
 
 function phaseSortValue(label) {
@@ -51,6 +64,138 @@ function phaseSortValue(label) {
   if (String(label || '').toLowerCase().includes('reflection')) return 99;
   if (String(label || '').toLowerCase().includes('analysis')) return 50;
   return 75;
+}
+
+function gradeKeywords(answerText, keywords) {
+  const normalizedAnswer = normalizeText(answerText);
+  const matchedKeywords = keywords.filter((keyword) => normalizedAnswer.includes(normalizeText(keyword)));
+  const minimumMatches = requiredKeywordMatches(keywords);
+  return {
+    isCorrect: keywords.length > 0 && matchedKeywords.length >= minimumMatches,
+    matchedKeywords,
+  };
+}
+
+function gradeTableRows(responseRows, expectedRows) {
+  let totalChecks = 0;
+  let matchedChecks = 0;
+
+  for (const row of expectedRows || []) {
+    for (const [field, expectedValue] of Object.entries(row.expected || {})) {
+      totalChecks += 1;
+      const actualValue = String(responseRows?.[row.row_id]?.[field] || '').trim().toLowerCase();
+      const normalizedExpected = String(expectedValue || '').trim().toLowerCase();
+      if (actualValue && actualValue === normalizedExpected) matchedChecks += 1;
+    }
+  }
+
+  const ratio = totalChecks > 0 ? matchedChecks / totalChecks : 0;
+  return {
+    isCorrect: totalChecks > 0 && matchedChecks === totalChecks,
+    ratio,
+    matchedChecks,
+    totalChecks,
+  };
+}
+
+function flattenResponseValue(value) {
+  if (value == null) return '';
+  if (typeof value === 'string') return value;
+  if (Array.isArray(value)) return value.map(flattenResponseValue).join(' ');
+  if (typeof value === 'object') return Object.values(value).map(flattenResponseValue).join(' ');
+  return String(value);
+}
+
+function groupActivitiesByPhase(activities) {
+  const phaseMap = new Map();
+
+  for (const activity of activities) {
+    const phase = activity.phase || 'Case Activity';
+    if (!phaseMap.has(phase)) {
+      phaseMap.set(phase, {
+        phase,
+        activities: [],
+      });
+    }
+    phaseMap.get(phase).activities.push(activity);
+  }
+
+  return [...phaseMap.values()].sort((left, right) => phaseSortValue(left.phase) - phaseSortValue(right.phase));
+}
+
+function gradeActivity(activity, response) {
+  const points = Number(activity.points || 0);
+  const baseReview = {
+    activityId: activity.id,
+    title: activity.title,
+    phase: activity.phase,
+    activityType: activity.type,
+    points,
+  };
+
+  if (activity.type === 'multiple_choice') {
+    const selected = String(response || '').trim().toUpperCase();
+    const correct = String(activity.correct_answer?.option || '').trim().toUpperCase();
+    const options = Array.isArray(activity.options) ? activity.options : [];
+    const optionMap = options.reduce((acc, option) => {
+      acc[String(option.key || '').toUpperCase()] = option.label || '';
+      return acc;
+    }, {});
+    const isCorrect = selected && selected === correct;
+    return {
+      ...baseReview,
+      isCorrect,
+      earnedPoints: isCorrect ? points : 0,
+      selectedAnswerText: optionMap[selected] || 'No answer selected',
+      expectedAnswerText: optionMap[correct] || '',
+      explanation: activity.evaluation_criteria || activity.explanation || '',
+      responseSnapshot: response || null,
+    };
+  }
+
+  if (activity.type === 'triage_table') {
+    const responseRows = response?.rows || {};
+    const expectedRows = Array.isArray(activity.correct_answer?.rows) ? activity.correct_answer.rows : [];
+    if (expectedRows.length === 0) {
+      const keywordReview = gradeKeywords(flattenResponseValue(responseRows), activity.correct_answer?.keywords || []);
+      return {
+        ...baseReview,
+        isCorrect: keywordReview.isCorrect,
+        earnedPoints: keywordReview.isCorrect ? points : 0,
+        selectedAnswerText: flattenResponseValue(responseRows) || 'No triage response provided',
+        expectedAnswerText: (activity.correct_answer?.keywords || []).join(', '),
+        explanation: activity.evaluation_criteria || activity.explanation || '',
+        matchedKeywords: keywordReview.matchedKeywords,
+        responseSnapshot: response || { rows: {} },
+      };
+    }
+    const graded = gradeTableRows(responseRows, expectedRows);
+    return {
+      ...baseReview,
+      isCorrect: graded.isCorrect,
+      earnedPoints: graded.isCorrect ? points : 0,
+      selectedAnswerText: `${graded.matchedChecks}/${graded.totalChecks} table decisions matched`,
+      expectedAnswerText: graded.totalChecks > 0 ? `${graded.totalChecks} scored table decisions expected` : '',
+      explanation: activity.evaluation_criteria || activity.explanation || '',
+      responseSnapshot: response || { rows: {} },
+    };
+  }
+
+  const answerText = activity.type === 'response_form' || activity.type === 'reflection'
+    ? flattenResponseValue(response || {})
+    : String(response || '');
+  const keywords = Array.isArray(activity.correct_answer?.keywords) ? activity.correct_answer.keywords : [];
+  const graded = gradeKeywords(answerText, keywords);
+  return {
+    ...baseReview,
+    isCorrect: graded.isCorrect,
+    earnedPoints: graded.isCorrect ? points : 0,
+    selectedAnswerText: answerText || 'No answer provided',
+    expectedAnswerText: keywords.join(', '),
+    explanation: activity.evaluation_criteria || activity.explanation || '',
+    matchedKeywords: graded.matchedKeywords,
+    responseSnapshot: response || null,
+  };
 }
 
 function summarizeCompetencyPerformance(competencies, percentage) {
@@ -91,31 +236,31 @@ export const CaseStudy = {
          cs.difficulty,
          cs.description,
          cs.content,
+         cs.content_json,
          cs.order_number,
          cs.passing_percentage,
          COALESCE(progress.status, CASE WHEN cs.order_number = 1 THEN 'available' ELSE 'locked' END) AS status,
          COALESCE(progress.score, attempts.best_percentage, 0) AS score,
          COALESCE(attempts.attempt_count, 0) AS attempt_count,
          attempts.best_percentage,
-         attempts.last_attempt_at,
-         COALESCE(question_totals.total_points, 0) AS total_points
+         attempts.last_attempt_at
        FROM case_studies cs
        LEFT JOIN progress ON progress.case_id = cs.id
        LEFT JOIN attempts ON attempts.case_id = cs.id
-       LEFT JOIN (
-         SELECT case_id, SUM(points)::int AS total_points
-         FROM case_questions
-         GROUP BY case_id
-       ) question_totals ON question_totals.case_id = cs.id
        WHERE cs.is_active = true
        ORDER BY cs.order_number ASC`,
       [studentId]
     );
 
-    return rows.map((row) => ({
-      ...row,
-      competencies: Array.isArray(row.content?.competencies) ? row.content.competencies : [],
-    }));
+    return rows.map((row) => {
+      const contentJson = resolveContentJson(row);
+      return {
+        ...row,
+        content_json: contentJson,
+        total_points: extractTotalPoints(contentJson),
+        competencies: extractCompetencies(contentJson),
+      };
+    });
   },
 
   async findForStudent(studentId, caseId) {
@@ -129,20 +274,15 @@ export const CaseStudy = {
          cs.difficulty,
          cs.description,
          cs.content,
+         cs.content_json,
          cs.order_number,
          cs.passing_percentage,
          COALESCE(progress.status, CASE WHEN cs.order_number = 1 THEN 'available' ELSE 'locked' END) AS status,
-         COALESCE(progress.score, 0) AS score,
-         COALESCE(question_totals.total_points, 0) AS total_points
+         COALESCE(progress.score, 0) AS score
        FROM case_studies cs
        LEFT JOIN student_case_progress progress
          ON progress.case_id = cs.id
         AND progress.student_id = $1
-       LEFT JOIN (
-         SELECT case_id, SUM(points)::int AS total_points
-         FROM case_questions
-         GROUP BY case_id
-       ) question_totals ON question_totals.case_id = cs.id
        WHERE cs.id = $2
          AND cs.is_active = true
        LIMIT 1`,
@@ -150,110 +290,40 @@ export const CaseStudy = {
     );
 
     if (!rows[0]) return null;
+    const contentJson = resolveContentJson(rows[0]);
     return {
       ...rows[0],
-      competencies: Array.isArray(rows[0].content?.competencies) ? rows[0].content.competencies : [],
+      content_json: contentJson,
+      total_points: extractTotalPoints(contentJson),
+      competencies: extractCompetencies(contentJson),
     };
-  },
-
-  async questionSet(caseId) {
-    const { rows } = await query(
-      `SELECT
-         id,
-         case_id,
-         phase,
-         question,
-         question_type,
-         options,
-         correct_answer,
-         explanation,
-         points
-       FROM case_questions
-       WHERE case_id = $1
-       ORDER BY phase ASC, created_at ASC, id ASC`,
-      [caseId]
-    );
-
-    return rows
-      .map((row) => {
-        const options = Array.isArray(row.options) ? row.options : [];
-        return {
-          ...row,
-          option_map: {
-            A: options[0] || '',
-            B: options[1] || '',
-            C: options[2] || '',
-            D: options[3] || '',
-          },
-        };
-      })
-      .sort((left, right) => {
-        const leftPhase = phaseSortValue(left.phase);
-        const rightPhase = phaseSortValue(right.phase);
-        if (leftPhase !== rightPhase) return leftPhase - rightPhase;
-        return left.id.localeCompare(right.id);
-      });
   },
 
   async startPayload(studentId, caseId) {
     const studyCase = await this.findForStudent(studentId, caseId);
     if (!studyCase) return null;
 
-    const questions = await this.questionSet(caseId);
-    const phaseBodies = Array.isArray(studyCase.content?.phases) ? studyCase.content.phases : [];
-
-    const phases = [];
-    const grouped = new Map();
-    for (const question of questions) {
-      if (!grouped.has(question.phase)) grouped.set(question.phase, []);
-      grouped.get(question.phase).push({
-        id: question.id,
-        question: question.question,
-        question_type: question.question_type,
-        options: Array.isArray(question.options)
-          ? question.options.map((label, index) => ({
-              key: String.fromCharCode(65 + index),
-              label,
-            }))
-          : [],
-        points: question.points,
-      });
-    }
-
-    for (const [phase, phaseQuestions] of grouped.entries()) {
-      const phaseContent = phaseBodies.find((item) => item.phase === phase);
-      phases.push({
-        phase,
-        content: phaseContent?.body || '',
-        questions: phaseQuestions,
-      });
-    }
-
-    phases.sort((left, right) => phaseSortValue(left.phase) - phaseSortValue(right.phase));
+    const activities = Array.isArray(studyCase.content_json?.activities)
+      ? [...studyCase.content_json.activities].sort((left, right) => {
+          const leftPhase = phaseSortValue(left.phase);
+          const rightPhase = phaseSortValue(right.phase);
+          if (leftPhase !== rightPhase) return leftPhase - rightPhase;
+          return String(left.id).localeCompare(String(right.id));
+        })
+      : [];
 
     return {
       caseStudy: studyCase,
-      phases,
-      questions: questions.map((question) => ({
-        id: question.id,
-        phase: question.phase,
-        question: question.question,
-        question_type: question.question_type,
-        options: Array.isArray(question.options)
-          ? question.options.map((label, index) => ({
-              key: String.fromCharCode(65 + index),
-              label,
-            }))
-          : [],
-        points: question.points,
-      })),
+      sections: buildContentSections(studyCase.content_json),
+      activities,
+      phases: groupActivitiesByPhase(activities),
     };
   },
 
   async submitAttempt({ studentId, caseId, answers = {} }) {
     return withTransaction(async (db) => {
       const { rows: caseRows } = await db.query(
-        `SELECT id, title, order_number, passing_percentage, content
+        `SELECT id, title, order_number, passing_percentage, content, content_json
          FROM case_studies
          WHERE id = $1
            AND is_active = true
@@ -279,60 +349,17 @@ export const CaseStudy = {
         throw error;
       }
 
-      const { rows: questionRows } = await db.query(
-        `SELECT id, phase, question, question_type, options, correct_answer, explanation, points
-         FROM case_questions
-         WHERE case_id = $1
-         ORDER BY phase ASC, created_at ASC, id ASC`,
-        [caseId]
-      );
+      const contentJson = resolveContentJson(studyCase);
+      const activities = Array.isArray(contentJson.activities)
+        ? contentJson.activities.filter((activity) => Number(activity.points || 0) > 0)
+        : [];
 
-      const questions = questionRows.map((row) => {
-        const options = Array.isArray(row.options) ? row.options : [];
-        return {
-          ...row,
-          option_map: {
-            A: options[0] || '',
-            B: options[1] || '',
-            C: options[2] || '',
-            D: options[3] || '',
-          },
-        };
-      });
-
-      questions.sort((left, right) => {
-        const leftPhase = phaseSortValue(left.phase);
-        const rightPhase = phaseSortValue(right.phase);
-        if (leftPhase !== rightPhase) return leftPhase - rightPhase;
-        return left.id.localeCompare(right.id);
-      });
-
-      const totalPoints = questions.reduce((sum, question) => sum + Number(question.points || 0), 0);
-      const gradedReview = questions.map((question, index) => {
-        const response = answers[question.id];
-        const grade = gradeQuestion(question, response);
-        const earnedPoints = grade.isCorrect ? Number(question.points || 0) : 0;
-        return {
-          questionId: question.id,
-          phase: question.phase,
-          questionNumber: index + 1,
-          questionText: question.question,
-          questionType: question.question_type,
-          points: Number(question.points || 0),
-          earnedPoints,
-          selectedAnswer: grade.selectedAnswer,
-          selectedAnswerText: grade.selectedAnswerText,
-          correctAnswer: grade.correctAnswer,
-          correctAnswerText: grade.correctAnswerText,
-          explanation: question.explanation,
-          matchedKeywords: grade.matchedKeywords,
-          isCorrect: grade.isCorrect,
-        };
-      });
-
-      const score = gradedReview.reduce((sum, item) => sum + item.earnedPoints, 0);
+      const totalPoints = extractTotalPoints(contentJson);
+      const gradedReview = activities.map((activity) => gradeActivity(activity, answers[activity.id]));
+      const score = gradedReview.reduce((sum, item) => sum + Number(item.earnedPoints || 0), 0);
       const percentage = totalPoints > 0 ? Math.round((score / totalPoints) * 100) : 0;
-      const passed = percentage >= Number(studyCase.passing_percentage || 70);
+      const passed = percentage >= Number(studyCase.passing_percentage || 80);
+      const now = new Date().toISOString();
 
       const { rows: attemptCountRows } = await db.query(
         `SELECT COUNT(*)::int AS total
@@ -342,7 +369,6 @@ export const CaseStudy = {
         [studentId, caseId]
       );
       const attemptNumber = Number(attemptCountRows[0]?.total || 0) + 1;
-      const now = new Date().toISOString();
 
       const { rows: insertedAttemptRows } = await db.query(
         `INSERT INTO student_case_attempts (
@@ -372,7 +398,7 @@ export const CaseStudy = {
         [studentId, caseId, passed ? 'completed' : 'available', percentage, passed ? now : null]
       );
 
-      const competencies = Array.isArray(studyCase.content?.competencies) ? studyCase.content.competencies : [];
+      const competencies = extractCompetencies(contentJson);
       for (const competency of summarizeCompetencyPerformance(competencies, percentage)) {
         await db.query(
           `INSERT INTO student_performance (student_id, item_type, item_id, domain, score_pct, completed_at)
@@ -407,16 +433,19 @@ export const CaseStudy = {
         }
       }
 
-      const strengths = gradedReview.filter((item) => item.isCorrect).map((item) => item.phase);
-      const missedCompetencies = competencies.filter((competency) => !passed || percentage < Number(studyCase.passing_percentage || 70));
+      const strengths = gradedReview.filter((item) => item.isCorrect).map((item) => item.title);
+      const missedCompetencies = competencies.filter(
+        (_competency, index) => !passed || index >= strengths.length
+      );
 
       return {
         caseStudy: {
           id: studyCase.id,
           title: studyCase.title,
           order_number: studyCase.order_number,
-          passing_percentage: Number(studyCase.passing_percentage || 70),
+          passing_percentage: Number(studyCase.passing_percentage || 80),
           competencies,
+          sections: buildContentSections(contentJson),
         },
         attempt: {
           ...attempt,
@@ -437,7 +466,8 @@ export const CaseStudy = {
          cs.title,
          cs.order_number,
          cs.passing_percentage,
-         cs.content
+         cs.content,
+         cs.content_json
        FROM student_case_attempts sca
        INNER JOIN case_studies cs ON cs.id = sca.case_id
        WHERE sca.id = $1
@@ -445,6 +475,11 @@ export const CaseStudy = {
        LIMIT 1`,
       [attemptId, studentId]
     );
-    return rows[0] || null;
+    if (!rows[0]) return null;
+
+    return {
+      ...rows[0],
+      content_json: resolveContentJson(rows[0]),
+    };
   },
 };

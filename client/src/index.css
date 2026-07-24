@@ -1221,6 +1221,82 @@ button:disabled { opacity: 0.5; cursor: default; }
   color: var(--ink);
   margin-top: 10px;
 }
+.case-activity-card {
+  padding: 20px 18px;
+}
+.case-section-stack {
+  display: grid;
+  gap: 14px;
+}
+.case-section-item {
+  display: grid;
+  gap: 8px;
+}
+.case-section-label,
+.case-table-title {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+.case-form-grid,
+.case-table-stack {
+  display: grid;
+  gap: 14px;
+  margin-top: 16px;
+}
+.case-field span {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink);
+}
+.case-field textarea,
+.case-entry-table textarea {
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 12px 14px;
+  font: inherit;
+  color: var(--ink);
+  background: #fff;
+  resize: vertical;
+}
+.case-data-table-wrap {
+  margin-top: 16px;
+}
+.case-data-table-scroll {
+  overflow-x: auto;
+  margin-top: 10px;
+}
+.case-data-table {
+  width: 100%;
+  min-width: 560px;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.case-data-table th,
+.case-data-table td {
+  border: 1px solid var(--line);
+  padding: 10px 12px;
+  vertical-align: top;
+  text-align: left;
+}
+.case-data-table th {
+  background: #f8fafc;
+  color: var(--ink);
+  font-weight: 700;
+}
+.case-entry-table td:first-child {
+  min-width: 220px;
+  font-weight: 600;
+  color: var(--ink);
+}
+.case-entry-table td {
+  min-width: 180px;
+}
 
 /* ---------- flashcards ---------- */
 .flip-card { perspective: 1200px; height: 220px; cursor: pointer; }

@@ -227,7 +227,7 @@ export const Assessment = {
                 aa.submitted_at,
                 aa.graded_at,
                 a.title,
-                a.type,
+                a.type::text AS type,
                 a.category
          FROM assessment_attempts aa
          JOIN assessments a ON a.assessment_id = aa.assessment_id

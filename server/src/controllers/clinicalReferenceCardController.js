@@ -108,7 +108,6 @@ export const createClinicalReferenceCard = asyncHandler(async (req, res) => {
     difficulty: difficulty || 'intermediate',
     fileUrl,
     fileType: fileType || 'pdf',
-    graphicId: req.body.graphicId || req.body.graphic_id || null,
     institutionId,
     isActive: Object.prototype.hasOwnProperty.call(req.body, 'isActive') ? Boolean(isActive) : true,
   });
@@ -149,7 +148,6 @@ export const bulkUploadClinicalReferenceCards = asyncHandler(async (req, res) =>
       difficulty,
       fileUrl: uploadedUrl(req, file),
       fileType: 'pdf',
-      graphicId: req.body.graphicId || req.body.graphic_id || null,
       institutionId,
       isActive,
     });
@@ -173,7 +171,6 @@ export const updateClinicalReferenceCard = asyncHandler(async (req, res) => {
     difficulty: req.body.difficulty,
     file_url: req.body.file_url || req.body.fileUrl,
     file_type: req.body.file_type || req.body.fileType,
-    graphic_id: req.body.graphic_id,
     institution_id: req.body.institution_id,
     is_active: req.body.is_active,
   });

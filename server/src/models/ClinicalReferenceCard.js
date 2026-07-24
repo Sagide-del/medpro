@@ -9,7 +9,6 @@ function rowToCard(row) {
     difficulty: row.difficulty,
     file_url: row.file_url,
     file_type: row.file_type,
-    graphic_id: row.graphic_id,
     institution_id: row.institution_id,
     is_active: row.is_active !== false,
     created_at: row.created_at,
@@ -68,7 +67,6 @@ export const ClinicalReferenceCard = {
          crc.difficulty,
          crc.file_url,
          crc.file_type,
-         crc.graphic_id,
          crc.institution_id,
          crc.is_active,
          crc.created_at,
@@ -91,7 +89,6 @@ export const ClinicalReferenceCard = {
          crc.difficulty,
          crc.file_url,
          crc.file_type,
-         crc.graphic_id,
          crc.institution_id,
          crc.is_active,
          crc.created_at,
@@ -103,13 +100,13 @@ export const ClinicalReferenceCard = {
     return rowToCard(rows[0] || null);
   },
 
-  async create({ title, category, difficulty = 'intermediate', fileUrl, fileType = 'pdf', graphicId = null, institutionId = null, isActive = true }) {
+  async create({ title, category, difficulty = 'intermediate', fileUrl, fileType = 'pdf', institutionId = null, isActive = true }) {
     const { rows } = await query(
       `INSERT INTO clinical_reference_cards
-       (title, category, difficulty, file_url, file_type, graphic_id, institution_id, is_active)
-       VALUES ($1, $2, $3, $4, $5, $6, $7::uuid, $8)
-       RETURNING id, title, category, difficulty, file_url, file_type, graphic_id, institution_id, is_active, created_at, updated_at`,
-      [title, category, difficulty || null, fileUrl, fileType || 'pdf', graphicId, institutionId || null, isActive]
+       (title, category, difficulty, file_url, file_type, institution_id, is_active)
+       VALUES ($1, $2, $3, $4, $5, $6::uuid, $7)
+       RETURNING id, title, category, difficulty, file_url, file_type, institution_id, is_active, created_at, updated_at`,
+      [title, category, difficulty || null, fileUrl, fileType || 'pdf', institutionId || null, isActive]
     );
     return rowToCard(rows[0]);
   },
@@ -118,7 +115,7 @@ export const ClinicalReferenceCard = {
     const current = await this.findById(cardId);
     if (!current) return null;
 
-    const allowedFields = ['title', 'category', 'difficulty', 'file_url', 'file_type', 'graphic_id', 'institution_id', 'is_active'];
+    const allowedFields = ['title', 'category', 'difficulty', 'file_url', 'file_type', 'institution_id', 'is_active'];
     const sets = [];
     const params = [];
     let i = 1;
@@ -138,7 +135,7 @@ export const ClinicalReferenceCard = {
        SET ${sets.join(', ')},
            updated_at = now()
        WHERE id = $${i}
-       RETURNING id, title, category, difficulty, file_url, file_type, graphic_id, institution_id, is_active, created_at, updated_at`,
+       RETURNING id, title, category, difficulty, file_url, file_type, institution_id, is_active, created_at, updated_at`,
       params
     );
     return rowToCard(rows[0] || null);

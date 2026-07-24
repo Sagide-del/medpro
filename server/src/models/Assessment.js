@@ -220,7 +220,7 @@ export const Assessment = {
        FROM (
          SELECT aa.attempt_id,
                 aa.student_id,
-                aa.status,
+                aa.status::text AS status,
                 aa.score_pct,
                 aa.points_awarded,
                 aa.started_at,

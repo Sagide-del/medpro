@@ -36,7 +36,11 @@ function cleanFilename(filename) {
 
 
 export function createUploader(folder = 'uploads', options = {}) {
-  const forcedContentType = options.contentType || null;
+  // Reserved for future per-uploader options. multer-s3's `contentType` must
+  // be undefined or a function (e.g. multerS3.AUTO_CONTENT_TYPE) — it cannot
+  // be a static string like 'application/pdf', or multer-s3 throws
+  // "Expected opts.contentType to be undefined or function" on every upload.
+  void options;
 
   let upload;
 
@@ -51,7 +55,7 @@ export function createUploader(folder = 'uploads', options = {}) {
 
         bucket: process.env.AWS_S3_BUCKET,
 
-        contentType: forcedContentType || multerS3.AUTO_CONTENT_TYPE,
+        contentType: multerS3.AUTO_CONTENT_TYPE,
 
 
         key: (req, file, cb) => {

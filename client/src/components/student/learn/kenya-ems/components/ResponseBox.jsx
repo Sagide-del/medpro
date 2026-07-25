@@ -2,6 +2,13 @@
 // a labeled <textarea/> here. Used for both scored response fields and
 // reflection prompts -- when a case has no discrete fields (a single open
 // reflection blank), one full-width textarea is rendered instead.
+const RECOMMENDED_WORDS = 250;
+
+function wordCount(text) {
+  const trimmed = String(text || '').trim();
+  return trimmed ? trimmed.split(/\s+/).length : 0;
+}
+
 function valueForField(value, fieldId) {
   if (value == null) return '';
   if (typeof value === 'string') return value;
@@ -10,6 +17,8 @@ function valueForField(value, fieldId) {
 
 export default function ResponseBox({ fields = [], value, onChange, points, placeholder = 'Enter your response', reflection = false }) {
   if (fields.length === 0) {
+    const text = typeof value === 'string' ? value : '';
+    const count = wordCount(text);
     return (
       <div className={`kems-response-box${reflection ? ' kems-response-box-reflection' : ''}`}>
         {Number.isFinite(points) && <div className="kems-points-badge">{points} pts</div>}
@@ -17,14 +26,19 @@ export default function ResponseBox({ fields = [], value, onChange, points, plac
           <span>{reflection ? 'Reflection' : 'Your Response'}</span>
           <textarea
             rows={6}
-            value={typeof value === 'string' ? value : ''}
+            value={text}
             placeholder={placeholder}
             onChange={(event) => onChange(event.target.value)}
           />
         </label>
+        <div className={`kems-word-hint${count > RECOMMENDED_WORDS ? ' over' : ''}`}>
+          {count} words · {RECOMMENDED_WORDS} words recommended
+        </div>
       </div>
     );
   }
+
+  const combinedCount = fields.reduce((sum, field) => sum + wordCount(valueForField(value, field.id)), 0);
 
   return (
     <div className={`kems-response-box${reflection ? ' kems-response-box-reflection' : ''}`}>
@@ -44,6 +58,9 @@ export default function ResponseBox({ fields = [], value, onChange, points, plac
             />
           </label>
         ))}
+      </div>
+      <div className={`kems-word-hint${combinedCount > RECOMMENDED_WORDS ? ' over' : ''}`}>
+        {combinedCount} words · {RECOMMENDED_WORDS} words recommended
       </div>
     </div>
   );

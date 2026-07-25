@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { api } from '../../../../services/api';
-import Loading from '../../../shared/Loading';
 import CaseDashboard from './components/CaseDashboard';
 import CaseCard from './components/CaseCard';
 import ScoreCard from './components/ScoreCard';
@@ -13,6 +12,31 @@ import { findCaseEntry } from './kenyaEmsRegistry';
 // (1-15), never a database id/UUID. The only thing the server stores for this
 // module is per-student progress -- case number, score, completion status --
 // via the /api/kenya-ems endpoints (server/src/models/KenyaEmsProgress.js).
+
+// Lightweight shimmer skeletons for the initial fetch -- kept local to this
+// module (rather than the shared Loading component) so the premium redesign
+// stays entirely within client/src/components/student/learn/kenya-ems/**.
+function DashboardSkeleton() {
+  return (
+    <section className="kems-page">
+      <div className="kems-skeleton kems-skeleton-hero" />
+      <div className="kems-skeleton-grid">
+        {Array.from({ length: 6 }).map((_, index) => (
+          <div key={index} className="kems-skeleton kems-skeleton-card" />
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function CaseRunnerSkeleton() {
+  return (
+    <section className="kems-page">
+      <div className="kems-skeleton" style={{ height: 160, borderRadius: 20, marginBottom: 16 }} />
+      <div className="kems-skeleton" style={{ height: 220, borderRadius: 16 }} />
+    </section>
+  );
+}
 
 function KenyaEmsDashboard() {
   const navigate = useNavigate();
@@ -30,7 +54,7 @@ function KenyaEmsDashboard() {
   }, []);
 
   if (error) return <div className="alert">{error}</div>;
-  if (!cases) return <Loading label="Loading Kenya EMS case simulation..." />;
+  if (!cases) return <DashboardSkeleton />;
 
   return (
     <section className="kems-page">
@@ -100,8 +124,8 @@ function KenyaEmsCaseRunner() {
   }
 
   if (error) return <div className="alert">{error}</div>;
-  if (busy && !caseStudy) return <Loading label="Loading Kenya EMS case..." />;
-  if (!caseStudy || !entry) return <Loading label="Loading Kenya EMS case..." />;
+  if (busy && !caseStudy) return <CaseRunnerSkeleton />;
+  if (!caseStudy || !entry) return <CaseRunnerSkeleton />;
 
   const CaseComponent = entry.Component;
 
@@ -124,7 +148,7 @@ function KenyaEmsCaseRunner() {
         <div className="kems-sticky-actions">
           <button type="button" className="ghost" onClick={() => navigate('/student/learn/kenya-ems')}>Back to Case Library</button>
           {!result.attempt.passed && (
-            <button type="button" className="primary" onClick={() => setResult(null)}>Retry Case</button>
+            <button type="button" className="primary" onClick={() => setResult(null)}>Retry Simulation</button>
           )}
           {result.nextCaseUnlocked && (
             <button
@@ -132,7 +156,7 @@ function KenyaEmsCaseRunner() {
               className="primary"
               onClick={() => navigate(`/student/learn/kenya-ems/${result.nextCaseUnlocked.case_number}`)}
             >
-              Open Next Case
+              Start Next Simulation →
             </button>
           )}
         </div>

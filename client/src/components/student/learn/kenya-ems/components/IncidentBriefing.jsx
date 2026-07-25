@@ -30,8 +30,11 @@ export default function IncidentBriefing({ node }) {
 
   if (node.type === 'paragraph') {
     return (
-      <section className="kems-card kems-card-paragraph" aria-label="Incident background">
-        <span className="kems-card-icon" aria-hidden="true">📋</span>
+      <section className="kems-card kems-card-paragraph" aria-label="Incident briefing">
+        <div className="kems-card-head">
+          <span className="kems-card-icon" aria-hidden="true">🚨</span>
+          <span className="kems-card-label">Incident Briefing</span>
+        </div>
         <p>{node.text}</p>
       </section>
     );

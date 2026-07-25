@@ -41,6 +41,9 @@ export default function QuestionCard({ question, answer, value, onChange }) {
         ))}
       </div>
 
+      <div className="kems-student-decision-label">
+        <span aria-hidden="true">🖊️</span> Student Decision
+      </div>
       {answer?.type === 'response' && answer.table ? (
         <VitalSignsTable table={answer.table} value={value} onChange={onChange} points={points} />
       ) : (

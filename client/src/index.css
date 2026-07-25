@@ -3103,3 +3103,260 @@ button:disabled { opacity: 0.5; cursor: default; }
   .kems-case-grid { grid-template-columns: 1fr; }
   .kems-skeleton-grid { grid-template-columns: 1fr; }
 }
+
+/* ============================================================
+   Exams -> MCQ -> Mock Pre-Test
+   Uses the platform's existing black/red MedPro brand tokens
+   (--black, --red, --ink, --paper, --line, --success, --radius --
+   defined at the top of this file) rather than a new palette, so it
+   reads as part of the same product as the rest of Exams/MCQ.
+   ============================================================ */
+.mpt-page { max-width: 900px; margin: 0 auto; padding-bottom: 60px; }
+
+.mpt-hero {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  background: linear-gradient(135deg, var(--black) 0%, var(--black-soft) 100%);
+  color: var(--white);
+  border-radius: var(--radius);
+  padding: 26px 28px;
+  margin-bottom: 20px;
+  box-shadow: 0 10px 26px rgba(17, 24, 39, 0.22);
+}
+.mpt-hero-icon { font-size: 30px; line-height: 1; }
+.mpt-hero h1 { margin: 0 0 6px; font-size: 24px; font-weight: 800; }
+.mpt-hero p { margin: 0; color: rgba(255, 255, 255, 0.78); font-size: 14px; max-width: 56ch; line-height: 1.5; }
+
+.mpt-alert-banner {
+  margin-bottom: 16px;
+  border-left: 3px solid var(--amber);
+  background: var(--amber-tint);
+  padding: 10px 14px;
+  border-radius: 6px;
+  font-size: 13px;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.mpt-selector-section { margin-bottom: 20px; }
+.mpt-selector-section:last-of-type { margin-bottom: 16px; }
+.mpt-selector-label {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--ink-soft);
+  margin-bottom: 10px;
+}
+
+.mpt-topic-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+.mpt-topic-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  text-align: center;
+  background: var(--paper);
+  border: 1.5px solid var(--line);
+  border-radius: 12px;
+  padding: 16px 10px;
+  cursor: pointer;
+  color: var(--ink);
+  transition: border-color 0.14s ease, background 0.14s ease, transform 0.14s ease;
+}
+.mpt-topic-btn:hover:not(:disabled) { transform: translateY(-2px); border-color: var(--red); }
+.mpt-topic-btn.selected { border-color: var(--red); background: var(--red-tint); }
+.mpt-topic-btn.disabled { opacity: 0.5; cursor: not-allowed; }
+.mpt-topic-icon { font-size: 22px; }
+.mpt-topic-label { font-weight: 700; font-size: 13.5px; }
+.mpt-topic-sub { font-size: 11px; color: var(--ink-soft); }
+
+.mpt-count-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.mpt-count-btn {
+  background: var(--paper);
+  border: 1.5px solid var(--line);
+  border-radius: 12px;
+  padding: 12px 10px;
+  font-weight: 700;
+  font-size: 13.5px;
+  cursor: pointer;
+  color: var(--ink);
+  transition: border-color 0.14s ease, background 0.14s ease;
+}
+.mpt-count-btn:hover { border-color: var(--red); }
+.mpt-count-btn.selected { border-color: var(--red); background: var(--red-tint); color: var(--red-dark); }
+
+.mpt-start-btn {
+  width: 100%;
+  background: var(--red);
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  padding: 15px;
+  font-weight: 800;
+  font-size: 14.5px;
+  letter-spacing: 0.03em;
+  cursor: pointer;
+  transition: background 0.14s ease, transform 0.14s ease;
+}
+.mpt-start-btn:hover:not(:disabled) { background: var(--red-dark); transform: translateY(-1px); }
+.mpt-start-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+/* Runner */
+.mpt-runner { display: flex; flex-direction: column; gap: 16px; }
+.mpt-runner-topbar { margin-bottom: 4px; }
+.mpt-runner-meta { display: flex; justify-content: space-between; font-size: 12.5px; color: var(--ink-soft); margin-top: 8px; font-weight: 600; }
+.mpt-progress-track { height: 8px; border-radius: 999px; background: var(--line); overflow: hidden; }
+.mpt-progress-fill { height: 100%; background: linear-gradient(90deg, var(--red), var(--red-dark)); transition: width 0.3s ease; }
+
+.mpt-question-topic {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--red-dark);
+  background: var(--red-tint);
+  border-radius: 999px;
+  padding: 4px 12px;
+  margin-bottom: 12px;
+}
+.mpt-question-text { margin: 0 0 18px; font-size: 18px; font-weight: 700; line-height: 1.4; color: var(--ink); }
+
+.mpt-option-list { display: flex; flex-direction: column; gap: 10px; }
+.mpt-option {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  text-align: left;
+  padding: 14px 16px;
+  border: 1.5px solid var(--line);
+  border-radius: 12px;
+  background: #fff;
+  cursor: pointer;
+  font: inherit;
+  color: var(--ink);
+  transition: border-color 0.14s ease, background 0.14s ease;
+}
+.mpt-option:hover { border-color: var(--red); }
+.mpt-option.selected { border-color: var(--red); background: var(--red-tint); }
+.mpt-option-letter {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 12.5px;
+  background: var(--paper);
+  border: 1px solid var(--line);
+}
+.mpt-option.selected .mpt-option-letter { background: var(--red); border-color: var(--red); color: #fff; }
+.mpt-option-text { line-height: 1.5; }
+
+.mpt-jump-strip { display: flex; flex-wrap: wrap; gap: 6px; }
+.mpt-jump-dot {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: var(--paper);
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--ink-soft);
+  cursor: pointer;
+}
+.mpt-jump-dot.answered { background: var(--success-tint); border-color: var(--success); color: var(--success); }
+.mpt-jump-dot.current { border-color: var(--red); box-shadow: 0 0 0 2px var(--red-tint); color: var(--red); }
+
+.mpt-nav-bar { display: flex; justify-content: space-between; gap: 10px; }
+.mpt-submit-btn {
+  background: var(--success);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 11px 22px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.mpt-submit-btn:hover { opacity: 0.9; }
+.mpt-submit-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* Results */
+.mpt-results { display: flex; flex-direction: column; gap: 20px; }
+.mpt-score-card { border-width: 2px; }
+.mpt-score-card.excellent { border-color: var(--success); background: var(--success-tint); }
+.mpt-score-card.good { border-color: var(--amber); background: var(--amber-tint); }
+.mpt-score-card.needs-improvement { border-color: var(--red); background: var(--red-tint); }
+.mpt-score-headline { display: flex; align-items: center; gap: 28px; flex-wrap: wrap; }
+.mpt-score-label { font-size: 12px; color: var(--ink-soft); text-transform: uppercase; letter-spacing: 0.04em; font-weight: 700; }
+.mpt-score-value { font-size: 38px; font-weight: 800; color: var(--ink); line-height: 1.1; }
+.mpt-score-value-sm { font-size: 28px; }
+.mpt-performance-pill-wrap { margin-left: auto; }
+.mpt-performance-pill { display: inline-block; padding: 6px 16px; border-radius: 999px; font-weight: 800; font-size: 13px; }
+.mpt-performance-pill.excellent { background: var(--success); color: #fff; }
+.mpt-performance-pill.good { background: var(--amber); color: #fff; }
+.mpt-performance-pill.needs-improvement { background: var(--red); color: #fff; }
+.mpt-score-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 16px; }
+
+.mpt-review-heading { font-size: 18px; font-weight: 700; margin: 0; color: var(--ink); }
+.mpt-review-stack { display: flex; flex-direction: column; gap: 12px; }
+.mpt-review-card.correct { border-left: 4px solid var(--success); }
+.mpt-review-card.incorrect { border-left: 4px solid var(--red); }
+.mpt-review-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+.mpt-review-number { font-weight: 700; font-size: 13px; color: var(--ink-soft); text-transform: uppercase; letter-spacing: 0.04em; }
+.mpt-review-badge { font-size: 11.5px; font-weight: 800; padding: 3px 10px; border-radius: 999px; }
+.mpt-review-badge.correct { background: var(--success-tint); color: var(--success); }
+.mpt-review-badge.incorrect { background: var(--red-tint); color: var(--red); }
+.mpt-review-question { font-weight: 600; margin: 0 0 8px; color: var(--ink); line-height: 1.5; }
+.mpt-review-row { font-size: 13px; color: var(--ink-soft); margin-top: 4px; }
+.mpt-review-explanation { font-size: 13px; color: var(--ink-soft); margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--line); line-height: 1.5; }
+
+/* Skeletons */
+.mpt-skeleton {
+  background: linear-gradient(90deg, var(--paper) 25%, #eef0f3 37%, var(--paper) 63%);
+  background-size: 640px 100%;
+  animation: kemsShimmer 1.4s ease-in-out infinite;
+  border-radius: var(--radius);
+}
+.mpt-skeleton-hero { height: 130px; margin-bottom: 20px; }
+.mpt-skeleton-block { height: 320px; }
+
+/* Entry point card on the existing MCQ page (Assessments.jsx) */
+.mpt-entry-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: linear-gradient(135deg, var(--black) 0%, var(--black-soft) 100%);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius);
+  padding: 20px 22px;
+  margin-bottom: 22px;
+  cursor: pointer;
+  width: 100%;
+  text-align: left;
+  transition: transform 0.14s ease, box-shadow 0.14s ease;
+  box-shadow: 0 8px 20px rgba(17, 24, 39, 0.18);
+}
+.mpt-entry-card:hover { transform: translateY(-2px); box-shadow: 0 12px 26px rgba(17, 24, 39, 0.26); }
+.mpt-entry-icon { font-size: 26px; }
+.mpt-entry-title { font-weight: 800; font-size: 15.5px; margin-bottom: 2px; }
+.mpt-entry-sub { font-size: 12.5px; color: rgba(255, 255, 255, 0.72); }
+.mpt-entry-arrow { margin-left: auto; font-size: 20px; }
+
+@media (max-width: 720px) {
+  .mpt-hero { flex-direction: column; padding: 20px; }
+  .mpt-topic-grid { grid-template-columns: repeat(2, 1fr); }
+  .mpt-count-grid { grid-template-columns: 1fr; }
+  .mpt-score-headline { gap: 16px; }
+  .mpt-performance-pill-wrap { margin-left: 0; }
+  .mpt-score-actions { flex-direction: column; }
+  .mpt-score-actions button { width: 100%; }
+  .mpt-nav-bar { flex-direction: column; }
+  .mpt-nav-bar button { width: 100%; }
+}

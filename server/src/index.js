@@ -37,6 +37,7 @@ import clinicalRotationRoutes from './routes/clinicalRotations.js';
 import communicationRoutes from './routes/communications.js';
 import proctoredExamRoutes from './routes/proctoredExams.js';
 import kenyaEmsRoutes from './routes/kenyaEms.js';
+import mockPreTestRoutes from './routes/mockPreTest.js';
 
 function assertRequiredEnv() {
   const missing = ['DATABASE_URL', 'JWT_SECRET'].filter((key) => !process.env[key]);
@@ -140,6 +141,11 @@ app.use('/api/proctored-exams', proctoredExamRoutes);
 // case content) -- this route only serves per-student progress (case number,
 // score, lock/complete status). See server/src/models/KenyaEmsProgress.js.
 app.use('/api/kenya-ems', kenyaEmsRoutes);
+
+// Exams -> MCQ -> Mock Pre-Test: separate, additive practice-exam feature.
+// Does not read/write the existing mcq_modules/mcq_questions tables used by
+// /api/assessments -- the formal MCQ exam system is untouched.
+app.use('/api/mock-pretest', mockPreTestRoutes);
 
 app.use((req, res) => {
   res.status(404).json({ error: `No route for ${req.method} ${req.originalUrl}` });

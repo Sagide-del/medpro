@@ -29,6 +29,7 @@ import StudentResearch from './components/student/Research';
 import StudentSimulations from './components/student/Simulations';
 import StudentProctoredExams from './components/student/ProctoredExams';
 import StudentKenyaEmsCases from './components/student/learn/kenya-ems/KenyaEmsLearnPage';
+import StudentMockPreTest from './components/student/exams/mockPreTest/MockPreTestPage';
 
 import TeacherDashboard from './components/teacher/Dashboard';
 import TeacherAssignments from './components/teacher/Assignments';
@@ -289,6 +290,7 @@ function AppRoutes() {
           <Route path="/student/case-studies/:id" element={<Navigate to="/student/learn/kenya-ems" replace />} />
           <Route path="/student/mcq-questions" element={<StudentAssessments />} />
           <Route path="/student/mcq-questions/:id" element={<StudentAssessments />} />
+          <Route path="/student/mcq/mock-pretest" element={<StudentMockPreTest />} />
           <Route path="/student/mock-prep-tests" element={<StudentAssessments />} />
           <Route path="/student/mock-prep-tests/:id" element={<StudentAssessments />} />
           <Route path="/student/question-bank" element={<StudentAssessments />} />

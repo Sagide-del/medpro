@@ -63,6 +63,26 @@ function ModuleList() {
         </div>
       </div>
 
+      {/* Mock Pre-Test entry point -- additive only. This is a separate,
+          self-contained practice feature (see components/student/exams/mockPreTest/)
+          with its own API surface; it does not read from or change anything
+          on this EMT-B module list below. Only shown on the MCQ Questions
+          page itself, not on the other aliased routes that share this component. */}
+      {location.pathname.startsWith('/student/mcq-questions') && (
+        <button
+          type="button"
+          className="mpt-entry-card"
+          onClick={() => navigate('/student/mcq/mock-pretest')}
+        >
+          <span className="mpt-entry-icon" aria-hidden="true">🚑</span>
+          <span>
+            <div className="mpt-entry-title">EMT Mock Pre-Test</div>
+            <div className="mpt-entry-sub">Practice with randomized questions before your formal exams</div>
+          </span>
+          <span className="mpt-entry-arrow" aria-hidden="true">→</span>
+        </button>
+      )}
+
       {subscription && !subscription.allowed && (
         <div className="alert info">
           Your subscription is {subscription.status}. Renew your plan to continue with EMT-B module assessments.

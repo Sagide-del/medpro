@@ -17,12 +17,18 @@ function titleFromFilename(filename) {
 }
 
 function cardDocumentUrl(card) {
-  return card.file_url || '';
+  return card.pdf_url || '';
 }
 
-function openDocument(url) {
-  if (!url) return;
-  window.open(url, '_blank', 'noopener,noreferrer');
+function openDocument(url, onError) {
+  if (!url) {
+    if (onError) onError('This PDF is not available right now. Try refreshing the list.');
+    return;
+  }
+  const opened = window.open(url, '_blank', 'noopener,noreferrer');
+  if (!opened && onError) {
+    onError('Your browser blocked the PDF from opening in a new tab. Allow pop-ups for this site and try again.');
+  }
 }
 
 export default function ClinicalReferenceCardsManager({ title, subtitle }) {
@@ -33,14 +39,18 @@ export default function ClinicalReferenceCardsManager({ title, subtitle }) {
   const [categoryFilter, setCategoryFilter] = useState('');
   const [status, setStatus] = useState(null);
   const [busy, setBusy] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [openErrors, setOpenErrors] = useState({});
 
   function load() {
+    setLoading(true);
     const params = new URLSearchParams();
     if (statusFilter) params.set('status', statusFilter);
     if (categoryFilter) params.set('category', categoryFilter);
     api(`/clinical-reference-cards${params.toString() ? `?${params.toString()}` : ''}`)
       .then((data) => setCards(data.cards || []))
-      .catch((err) => setStatus({ kind: 'err', text: err.message }));
+      .catch((err) => setStatus({ kind: 'err', text: err.message }))
+      .finally(() => setLoading(false));
   }
 
   useEffect(load, [statusFilter, categoryFilter]);
@@ -168,27 +178,38 @@ export default function ClinicalReferenceCardsManager({ title, subtitle }) {
         </div>
 
         <div className="ref-card-admin-grid">
-          {cards.map((card) => (
-            <div className="ref-card-admin-item" key={card.clinical_card_id || card.id}>
-              <div className="ref-card-admin-item-body">
-                <div className="ref-card-kicker">{card.category || card.module || 'Uncategorised'}</div>
-                <h3>{card.title}</h3>
-                <div className="ref-card-admin-meta">
-                  <span>{card.difficulty || 'intermediate'}</span>
-                  <span>{card.file_type || 'pdf'}</span>
-                  <span>{card.is_active ? 'Active' : 'Draft'}</span>
+          {loading && <div className="dashboard-empty">Loading clinical reference cards…</div>}
+          {!loading && cards.map((card) => {
+            const cardKey = card.clinical_card_id || card.id;
+            return (
+              <div className="ref-card-admin-item" key={cardKey}>
+                <div className="ref-card-admin-item-body">
+                  <div className="ref-card-kicker">{card.category || card.module || 'Uncategorised'}</div>
+                  <h3>{card.title}</h3>
+                  <div className="ref-card-admin-meta">
+                    <span>{card.difficulty || 'intermediate'}</span>
+                    <span>{card.file_type || 'pdf'}</span>
+                    <span>{card.is_active ? 'Active' : 'Draft'}</span>
+                  </div>
+                  {openErrors[cardKey] && <div className="error-note">{openErrors[cardKey]}</div>}
+                </div>
+                <div className="ref-card-admin-actions">
+                  <button
+                    className="ghost"
+                    disabled={!cardDocumentUrl(card)}
+                    title={!cardDocumentUrl(card) ? 'PDF is not available right now.' : undefined}
+                    onClick={() => openDocument(cardDocumentUrl(card), (message) =>
+                      setOpenErrors((prev) => ({ ...prev, [cardKey]: message })))}
+                  >
+                    Open PDF
+                  </button>
+                  <button className="ghost" onClick={() => toggleActive(card)}>{card.is_active ? 'Unpublish' : 'Publish'}</button>
+                  <button className="ghost danger" onClick={() => remove(card.clinical_card_id || card.id)}>Delete</button>
                 </div>
               </div>
-              <div className="ref-card-admin-actions">
-                {cardDocumentUrl(card) && (
-                  <button className="ghost" onClick={() => openDocument(cardDocumentUrl(card))}>Open PDF</button>
-                )}
-                <button className="ghost" onClick={() => toggleActive(card)}>{card.is_active ? 'Unpublish' : 'Publish'}</button>
-                <button className="ghost danger" onClick={() => remove(card.clinical_card_id || card.id)}>Delete</button>
-              </div>
-            </div>
-          ))}
-          {cards.length === 0 && <div className="dashboard-empty">No clinical reference cards yet.</div>}
+            );
+          })}
+          {!loading && cards.length === 0 && <div className="dashboard-empty">No clinical reference cards yet.</div>}
         </div>
       </div>
     </>

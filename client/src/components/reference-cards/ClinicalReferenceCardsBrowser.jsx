@@ -32,12 +32,26 @@ function formatDate(value) {
   }
 }
 
-function openDocument(url) {
-  if (!url) return;
-  window.open(url, '_blank', 'noopener,noreferrer');
+function openDocument(url, onError) {
+  if (!url) {
+    if (onError) onError('This PDF is not available right now. Try refreshing the page.');
+    return;
+  }
+  const opened = window.open(url, '_blank', 'noopener,noreferrer');
+  if (!opened && onError) {
+    onError('Your browser blocked the PDF from opening in a new tab. Allow pop-ups for this site and try again.');
+  }
 }
 
 function PdfModal({ card, onClose }) {
+  const [frameLoading, setFrameLoading] = useState(true);
+  const [frameError, setFrameError] = useState('');
+
+  useEffect(() => {
+    setFrameLoading(Boolean(card?.pdf_url));
+    setFrameError(card?.pdf_url ? '' : 'This PDF is not available right now. Try refreshing the page.');
+  }, [card]);
+
   if (!card) return null;
 
   return (
@@ -54,23 +68,40 @@ function PdfModal({ card, onClose }) {
             </div>
           </div>
           <div className="ref-card-modal-actions">
-            <button className="ghost" onClick={() => openDocument(card.file_url)} disabled={!card.file_url}>
+            <button
+              className="ghost"
+              onClick={() => openDocument(card.pdf_url, setFrameError)}
+              disabled={!card.pdf_url}
+            >
               Open in new tab
             </button>
             <button className="primary" onClick={onClose}>Close</button>
           </div>
         </div>
         <div className="ref-card-pdf-frame-wrap">
-          {card.file_url ? (
-            <iframe
-              title={card.title}
-              src={card.file_url}
-              className="ref-card-pdf-frame"
-            />
-          ) : (
+          {frameError ? (
             <div className="ref-card-image-fallback">
-              <span>PDF unavailable</span>
+              <span>{frameError}</span>
             </div>
+          ) : (
+            <>
+              {frameLoading && (
+                <div className="ref-card-image-loading">
+                  <span>Loading PDF…</span>
+                </div>
+              )}
+              <iframe
+                title={card.title}
+                src={card.pdf_url}
+                className="ref-card-pdf-frame"
+                style={frameLoading ? { display: 'none' } : undefined}
+                onLoad={() => setFrameLoading(false)}
+                onError={() => {
+                  setFrameLoading(false);
+                  setFrameError('This PDF failed to load. Try again or open it in a new tab.');
+                }}
+              />
+            </>
           )}
         </div>
       </div>
@@ -79,6 +110,7 @@ function PdfModal({ card, onClose }) {
 }
 
 function CardRow({ card, onOpen }) {
+  const [openError, setOpenError] = useState('');
   return (
     <div className="ref-card-document-row">
       <div className="ref-card-document-main">
@@ -89,16 +121,25 @@ function CardRow({ card, onOpen }) {
           {card.file_type ? <span>{card.file_type.toUpperCase()}</span> : null}
           {card.created_at ? <span>{formatDate(card.created_at)}</span> : null}
         </div>
+        {openError && <div className="error-note">{openError}</div>}
       </div>
       <div className="ref-card-document-actions">
-        <button className="primary" onClick={onOpen} disabled={!card.file_url}>
+        <button
+          className="primary"
+          onClick={onOpen}
+          disabled={!card.pdf_url}
+          title={!card.pdf_url ? 'PDF is not available right now.' : undefined}
+        >
           Open Reference Card
         </button>
-        {card.file_url && (
-          <button className="ghost" onClick={() => openDocument(card.file_url)}>
-            Open in new tab
-          </button>
-        )}
+        <button
+          className="ghost"
+          onClick={() => openDocument(card.pdf_url, setOpenError)}
+          disabled={!card.pdf_url}
+          title={!card.pdf_url ? 'PDF is not available right now.' : undefined}
+        >
+          Open in new tab
+        </button>
       </div>
     </div>
   );

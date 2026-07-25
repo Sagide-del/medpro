@@ -1,6 +1,21 @@
 import { ClinicalReferenceCard } from '../models/ClinicalReferenceCard.js';
 import { resolveStudentSubscriptionAccess } from '../services/subscriptionAccess.js';
+import { getSignedPdfUrl } from '../services/storage.js';
 import { asyncHandler } from '../utils/helpers.js';
+
+const PDF_URL_EXPIRES_IN = 3600; // 1 hour, per the signed-URL access policy for Clinical Reference Cards.
+
+/**
+ * Never hand raw private S3 URLs to the client. Strip file_url from any
+ * API response and replace it with a short-lived signed pdf_url instead
+ * (or null when the card has no file yet / the caller isn't unlocked).
+ */
+async function toClientCard(card, { unlocked = true } = {}) {
+  if (!card) return card;
+  const { file_url, ...rest } = card;
+  const pdf_url = unlocked && file_url ? await getSignedPdfUrl(file_url, PDF_URL_EXPIRES_IN) : null;
+  return { ...rest, pdf_url };
+}
 
 const ALLOWED_CATEGORIES = new Set([
   'Airway',
@@ -69,7 +84,8 @@ export const listClinicalReferenceCards = asyncHandler(async (req, res) => {
     institutionId,
   });
 
-  res.json({ cards });
+  const clientCards = await Promise.all(cards.map((card) => toClientCard(card, { unlocked: true })));
+  res.json({ cards: clientCards });
 });
 
 export const getClinicalReferenceCard = asyncHandler(async (req, res) => {
@@ -88,7 +104,7 @@ export const getClinicalReferenceCard = asyncHandler(async (req, res) => {
   }
 
   res.json({
-    card: unlocked ? card : { ...card, file_url: null },
+    card: await toClientCard(card, { unlocked }),
     unlocked,
   });
 });

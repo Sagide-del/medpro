@@ -28,7 +28,7 @@ import StudentProgressAnalytics from './components/student/ProgressAnalytics';
 import StudentResearch from './components/student/Research';
 import StudentSimulations from './components/student/Simulations';
 import StudentProctoredExams from './components/student/ProctoredExams';
-import StudentKenyaEmsCases from './components/student/EMSCaseSimulation';
+import StudentKenyaEmsCases from './components/student/learn/kenya-ems/KenyaEmsLearnPage';
 
 import TeacherDashboard from './components/teacher/Dashboard';
 import TeacherAssignments from './components/teacher/Assignments';

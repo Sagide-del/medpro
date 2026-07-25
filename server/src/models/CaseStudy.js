@@ -123,6 +123,8 @@ export const CaseStudy = {
          progress.completed,
          progress.completed_at
        FROM case_studies cs
+       LEFT JOIN progress ON progress.case_id = cs.id
+       LEFT JOIN attempts ON attempts.case_id = cs.id
        WHERE cs.is_active = true
        ORDER BY cs.order_number ASC`,
       [studentId]

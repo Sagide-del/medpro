@@ -2479,3 +2479,224 @@ button:disabled { opacity: 0.5; cursor: default; }
     height: 80px;
   }
 }
+
+/* ===== Kenya EMS Case Simulation ===== */
+
+.ems-library-page { max-width: 1080px; margin: 0 auto; }
+
+.ems-library-header h1 {
+  display: flex; align-items: center; gap: 10px;
+  font-size: 26px; margin-bottom: 4px;
+}
+
+.ems-library-header p { color: var(--ink-soft); margin-top: 0; }
+
+.ems-library-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+  margin-top: 20px;
+}
+
+.ems-library-card {
+  text-align: left;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: #fff;
+  padding: 18px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  transition: box-shadow 0.15s ease, transform 0.15s ease;
+}
+
+.ems-library-card:hover:not(:disabled) {
+  box-shadow: 0 6px 18px rgba(17, 24, 39, 0.08);
+  transform: translateY(-2px);
+}
+
+.ems-library-card:disabled { cursor: not-allowed; opacity: 0.6; background: #f9fafb; }
+
+.ems-library-card.completed { border-color: var(--success); }
+
+.ems-library-card-top { display: flex; align-items: center; gap: 8px; }
+
+.ems-lock-icon { font-size: 20px; }
+
+.ems-library-case-number { font-size: 12px; font-weight: 700; text-transform: uppercase; color: var(--ink-soft); letter-spacing: 0.04em; }
+
+.ems-library-card h2 { font-size: 16px; margin: 0; line-height: 1.3; }
+
+.ems-library-location { color: var(--ink-soft); font-size: 13px; margin: 0; }
+
+.ems-library-locked-hint { color: var(--ink-soft); font-size: 13px; margin: 0; }
+
+.ems-library-card-meta { display: flex; flex-wrap: wrap; gap: 8px; font-size: 12px; color: var(--ink-soft); }
+
+.ems-library-card-action {
+  margin-top: auto; font-weight: 700; font-size: 13px; color: var(--red);
+}
+
+.ems-case-simulation-page { max-width: 880px; margin: 0 auto; padding-bottom: 90px; }
+
+.ems-case-container { display: flex; flex-direction: column; gap: 16px; }
+
+.ems-case-header {
+  background: var(--black);
+  color: #fff;
+  border-radius: var(--radius);
+  padding: 24px;
+}
+
+.ems-case-header-kicker {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 13px; text-transform: uppercase; letter-spacing: 0.05em; color: #cbd5e1;
+}
+
+.ems-case-title { font-size: 22px; margin: 8px 0 2px; }
+
+.ems-case-subtitle { color: #cbd5e1; margin: 0 0 12px; }
+
+.ems-case-meta-row { display: flex; flex-wrap: wrap; gap: 8px; }
+
+.ems-meta-chip {
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 999px;
+  padding: 4px 12px;
+  font-size: 12px;
+}
+
+.ems-case-body { display: flex; flex-direction: column; gap: 14px; }
+
+.ems-card {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 16px 18px;
+}
+
+.ems-card-head { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+
+.ems-card-icon { font-size: 18px; }
+
+.ems-card-label { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--ink-soft); }
+
+.ems-card-paragraph { display: flex; align-items: flex-start; gap: 10px; }
+
+.ems-card-paragraph p { margin: 0; line-height: 1.55; }
+
+.ems-section-divider {
+  display: flex; align-items: center; gap: 10px;
+  margin-top: 6px;
+}
+
+.ems-section-divider-label {
+  font-size: 12px; font-weight: 700; text-transform: uppercase; color: var(--ink-soft); letter-spacing: 0.04em;
+}
+
+.ems-section-divider-text { font-size: 16px; margin: 0; }
+
+.ems-card-dispatch { background: #0f172a; color: #e2e8f0; border-color: #0f172a; }
+
+.ems-card-dispatch .ems-card-label { color: #94a3b8; }
+
+.ems-dispatch-text {
+  white-space: pre-wrap; font-family: var(--font-mono, monospace); font-size: 13px; line-height: 1.6; margin: 0;
+}
+
+.ems-table-scroll { overflow-x: auto; }
+
+.ems-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+
+.ems-table-bordered th, .ems-table-bordered td, .ems-table-entry th, .ems-table-entry td {
+  border: 1px solid var(--line); padding: 8px 10px; text-align: left; vertical-align: top;
+}
+
+.ems-table-bordered th, .ems-table-entry th { background: #f9fafb; color: var(--ink-soft); font-size: 12px; text-transform: uppercase; letter-spacing: 0.03em; }
+
+.ems-table-entry textarea, .ems-response-field textarea {
+  width: 100%; border: 1px solid var(--line); border-radius: 8px; padding: 8px; font: inherit; resize: vertical;
+}
+
+.ems-vitals-row-label { min-width: 220px; font-size: 12.5px; }
+
+.ems-vitals-table-title { font-weight: 700; margin-bottom: 6px; }
+
+.ems-points-badge {
+  display: inline-block; background: var(--red-tint); color: var(--red);
+  border-radius: 999px; padding: 2px 10px; font-size: 12px; font-weight: 700; margin-bottom: 10px;
+}
+
+.ems-question-title { margin: 0 0 6px; font-size: 16px; }
+
+.ems-question-prompt { margin-bottom: 12px; }
+
+.ems-prompt-line { margin: 0 0 4px; line-height: 1.5; }
+
+.ems-prompt-line.ems-prompt-blank { height: 8px; }
+
+.ems-response-field-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
+
+.ems-response-field { display: flex; flex-direction: column; gap: 4px; font-size: 13px; font-weight: 600; color: var(--ink-soft); }
+
+.ems-response-box-reflection .ems-response-field-grid,
+.ems-response-box-reflection { display: block; }
+
+.ems-sticky-actions {
+  position: sticky; bottom: 0;
+  display: flex; gap: 10px; justify-content: flex-end;
+  background: #fff; border-top: 1px solid var(--line);
+  padding: 14px 0; margin-top: 12px;
+}
+
+.ems-feedback-panel { display: flex; flex-direction: column; gap: 16px; }
+
+.ems-feedback-headline { display: flex; align-items: center; gap: 16px; }
+
+.ems-feedback-icon { font-size: 32px; }
+
+.ems-feedback-score-label, .ems-feedback-status-label { font-size: 12px; text-transform: uppercase; color: var(--ink-soft); letter-spacing: 0.04em; }
+
+.ems-feedback-score { font-size: 30px; font-weight: 800; }
+
+.ems-feedback-status { margin-left: auto; text-align: right; }
+
+.ems-feedback-status-value { font-size: 18px; font-weight: 800; }
+
+.ems-feedback-status-value.pass { color: var(--success); }
+
+.ems-feedback-status-value.fail { color: var(--red); }
+
+.ems-feedback-pass { border-color: var(--success); }
+
+.ems-feedback-fail { border-color: var(--red); }
+
+.ems-feedback-meta { display: flex; gap: 16px; color: var(--ink-soft); font-size: 13px; }
+
+.ems-feedback-clinical h3 { margin: 0 0 8px; font-size: 15px; }
+
+.ems-feedback-block { margin-bottom: 10px; }
+
+.ems-feedback-block-label { font-weight: 700; font-size: 13px; margin-bottom: 2px; }
+
+.ems-feedback-block ul { margin: 0; padding-left: 20px; }
+
+.ems-feedback-unlock, .ems-feedback-retry {
+  display: flex; align-items: center; gap: 8px;
+  background: var(--success-tint); color: var(--success);
+  border-radius: 10px; padding: 10px 14px; font-weight: 600; font-size: 14px;
+}
+
+.ems-feedback-retry { background: var(--red-tint); color: var(--red); }
+
+@media (max-width: 720px) {
+  .ems-case-header { padding: 18px; }
+  .ems-card { padding: 14px; }
+  .ems-response-field-grid { grid-template-columns: 1fr; }
+  .ems-feedback-headline { flex-wrap: wrap; }
+  .ems-feedback-status { margin-left: 0; text-align: left; }
+  .ems-sticky-actions { flex-direction: column; }
+  .ems-sticky-actions button { width: 100%; }
+  .ems-library-grid { grid-template-columns: 1fr; }
+}

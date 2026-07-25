@@ -302,12 +302,12 @@ export const AssignmentWorkflow = {
 
   async recommendedCards({ program, topic, skill }) {
     const { rows } = await query(
-      `SELECT clinical_card_id, title, module, topic, skill
+      `SELECT id AS clinical_card_id, title, category, difficulty, image_url
        FROM clinical_reference_cards
-       WHERE status = 'published' AND program = $1 AND (topic = $2 OR skill = $3)
+       WHERE is_active = true AND (category = $1 OR title ILIKE $2 OR title ILIKE $3)
        ORDER BY created_at DESC
        LIMIT 3`,
-      [program, topic, skill]
+      [topic, `%${topic || ''}%`, `%${skill || ''}%`]
     );
     return rows;
   },

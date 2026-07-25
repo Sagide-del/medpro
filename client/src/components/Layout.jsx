@@ -3,6 +3,7 @@ import { Link, NavLink, Outlet, useNavigate, useLocation } from 'react-router-do
 import { useAuth } from '../context/AuthContext';
 import PulseLine from './PulseLine';
 import ErrorBoundary from './ErrorBoundary';
+import PlatformFooter from './shared/PlatformFooter';
 
 /**
  * Shared authenticated-app shell: sidebar + <Outlet/>.
@@ -145,6 +146,8 @@ export default function Layout({ links, roleLabel }) {
         <ErrorBoundary key={location.pathname}>
           <Outlet />
         </ErrorBoundary>
+
+        <PlatformFooter />
 
       </main>
 

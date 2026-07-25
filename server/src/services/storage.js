@@ -34,7 +34,8 @@ function cleanFilename(filename) {
 }
 
 
-export function createUploader(folder = 'uploads') {
+export function createUploader(folder = 'uploads', options = {}) {
+  const forcedContentType = options.contentType || null;
 
   let upload;
 
@@ -49,7 +50,7 @@ export function createUploader(folder = 'uploads') {
 
         bucket: process.env.AWS_S3_BUCKET,
 
-        contentType: multerS3.AUTO_CONTENT_TYPE,
+        contentType: forcedContentType || multerS3.AUTO_CONTENT_TYPE,
 
 
         key: (req, file, cb) => {

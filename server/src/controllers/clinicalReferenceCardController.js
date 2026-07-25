@@ -131,11 +131,16 @@ export const bulkUploadClinicalReferenceCards = asyncHandler(async (req, res) =>
     : true;
 
   const cards = [];
-  for (const file of files) {
+  const uploadedFileUrls = Array.isArray(req.body?.uploadedFileUrls) ? req.body.uploadedFileUrls : [];
+  for (const [index, file] of files.entries()) {
     if (!file?.mimetype || file.mimetype !== 'application/pdf') {
       return res.status(400).json({ error: 'Only PDF files are supported for Clinical Reference Cards.' });
     }
     const institutionId = resolveInstitutionId(req);
+    const fileUrl = uploadedFileUrls[index] || uploadedUrl(req, file);
+    if (!fileUrl) {
+      return res.status(400).json({ error: 'PDF upload succeeded but no file URL was returned from storage.' });
+    }
 
     const card = await ClinicalReferenceCard.create({
       title: String(file.originalname || 'Clinical Reference Card')
@@ -146,7 +151,7 @@ export const bulkUploadClinicalReferenceCards = asyncHandler(async (req, res) =>
         .replace(/\b\w/g, (letter) => letter.toUpperCase()) || 'Clinical Reference Card',
       category,
       difficulty,
-      fileUrl: uploadedUrl(req, file),
+      fileUrl,
       fileType: 'pdf',
       institutionId,
       isActive,
@@ -154,7 +159,10 @@ export const bulkUploadClinicalReferenceCards = asyncHandler(async (req, res) =>
     cards.push(card);
   }
 
-  res.status(201).json({ cards });
+  res.status(201).json({
+    cards,
+    fileUrls: cards.map((card) => card.file_url).filter(Boolean),
+  });
 });
 
 export const updateClinicalReferenceCard = asyncHandler(async (req, res) => {

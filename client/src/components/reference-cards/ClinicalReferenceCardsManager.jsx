@@ -64,7 +64,13 @@ export default function ClinicalReferenceCardsManager({ title, subtitle }) {
       formData.append('difficulty', form.difficulty);
       formData.append('is_active', publishNow ? 'true' : 'false');
       const response = await api('/clinical-reference-cards/bulk-upload', { method: 'POST', body: formData });
-      setStatus({ kind: 'ok', text: `Uploaded ${response?.cards?.length || files.length} card(s).` });
+      const firstUrl = response?.fileUrls?.[0] || response?.cards?.[0]?.file_url || '';
+      setStatus({
+        kind: 'ok',
+        text: firstUrl
+          ? `Uploaded ${response?.cards?.length || files.length} card(s). Saved file URL: ${firstUrl}`
+          : `Uploaded ${response?.cards?.length || files.length} card(s).`,
+      });
       setFiles([]);
       load();
     } catch (err) {

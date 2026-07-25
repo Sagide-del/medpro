@@ -20,7 +20,7 @@ const ALLOWED_MIME_TYPES = new Set([
 ]);
 
 const router = Router();
-const { upload, urlFor } = createUploader('clinical-reference-cards');
+const { upload, urlFor } = createUploader('clinical-reference-cards', { contentType: 'application/pdf' });
 
 router.use(authenticate);
 

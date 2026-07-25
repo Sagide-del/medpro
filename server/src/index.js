@@ -36,7 +36,7 @@ import practicalVideoRoutes from './routes/practicalVideos.js';
 import clinicalRotationRoutes from './routes/clinicalRotations.js';
 import communicationRoutes from './routes/communications.js';
 import proctoredExamRoutes from './routes/proctoredExams.js';
-import caseStudyRoutes from './routes/caseStudies.js';
+import kenyaEmsRoutes from './routes/kenyaEms.js';
 
 function assertRequiredEnv() {
   const missing = ['DATABASE_URL', 'JWT_SECRET'].filter((key) => !process.env[key]);
@@ -136,9 +136,10 @@ app.use('/api/practical-videos', practicalVideoRoutes);
 app.use('/api/clinical-rotations', clinicalRotationRoutes);
 app.use('/api/communications', communicationRoutes);
 app.use('/api/proctored-exams', proctoredExamRoutes);
-app.use('/api/case-studies', caseStudyRoutes);
-app.use('/api/cases', caseStudyRoutes);
-app.use('/api/kenya-ems-cases', caseStudyRoutes);
+// Kenya EMS: content is hard-coded in React/backend data files (no DB-backed
+// case content) -- this route only serves per-student progress (case number,
+// score, lock/complete status). See server/src/models/KenyaEmsProgress.js.
+app.use('/api/kenya-ems', kenyaEmsRoutes);
 
 app.use((req, res) => {
   res.status(404).json({ error: `No route for ${req.method} ${req.originalUrl}` });

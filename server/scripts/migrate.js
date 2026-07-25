@@ -43,6 +43,7 @@ const files = [
   'migration_015_case_content_uploader_compatibility.sql',
   'migration_016_clinical_reference_cards_upload.sql',
   'migration_017_clinical_reference_cards_pdf_documents.sql',
+  'migration_018_kenya_ems_case_progress.sql',
 ];
 
 if (!process.env.DATABASE_URL) {

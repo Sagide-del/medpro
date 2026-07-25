@@ -2863,6 +2863,7 @@ button:disabled { opacity: 0.5; cursor: default; }
 .kems-score-status-value { font-weight: 800; font-size: 15px; }
 .kems-score-status-value.pass { color: var(--success); }
 .kems-score-status-value.fail { color: var(--red); }
+.kems-score-congrats { margin: 12px 0 0; font-size: 15px; font-weight: 700; color: var(--success); }
 .kems-score-meta { display: flex; gap: 16px; margin: 14px 0; font-size: 13px; color: var(--ink-soft); font-weight: 600; }
 .kems-score-clinical h3 { margin: 0 0 8px; font-size: 15px; }
 .kems-score-block { margin-bottom: 10px; }

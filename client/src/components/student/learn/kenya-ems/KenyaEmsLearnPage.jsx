@@ -1,15 +1,19 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { api } from '../../../../services/api';
 import Loading from '../../../shared/Loading';
 import CaseDashboard from './components/CaseDashboard';
 import CaseCard from './components/CaseCard';
 import ScoreCard from './components/ScoreCard';
-import { kenyaEmsCaseRegistry, findCaseEntry } from './casesRegistry';
+import { findCaseEntry } from './kenyaEmsRegistry';
 
-// Learn -> Kenya EMS Dashboard -> Case Library. Fetches progress/unlock state
-// from the existing /cases API; all worksheet content is hard-coded per-case
-// (see ./cases/CaseN.jsx) and never fetched from a database or JSON file.
+// Learn -> Kenya EMS. This module never depends on the `case_studies` database
+// table: all 15 cases are hard-coded React components (see ./cases/CaseN.jsx,
+// registered in ./kenyaEmsRegistry.js) and are addressed by case NUMBER
+// (1-15), never a database id/UUID. The only thing the server stores for this
+// module is per-student progress -- case number, score, completion status --
+// via the /api/kenya-ems endpoints (server/src/models/KenyaEmsProgress.js).
+
 function KenyaEmsDashboard() {
   const navigate = useNavigate();
   const [cases, setCases] = useState(null);
@@ -17,7 +21,7 @@ function KenyaEmsDashboard() {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    api('/cases')
+    api('/kenya-ems')
       .then((data) => {
         setCases(Array.isArray(data?.cases) ? data.cases : []);
         setSubscription(data?.subscription || null);
@@ -34,19 +38,19 @@ function KenyaEmsDashboard() {
 
       <div className="kems-case-grid">
         {cases.map((studyCase, index) => {
-          const entry = findCaseEntry(studyCase.order_number);
+          const entry = findCaseEntry(studyCase.case_number);
           const locked = studyCase.status === 'locked';
           const completed = studyCase.status === 'completed';
           const previous = cases[index - 1];
           return (
             <CaseCard
-              key={studyCase.id}
+              key={studyCase.case_number}
               meta={entry?.meta}
               progress={studyCase}
               locked={locked}
               completed={completed}
-              previousLabel={previous?.order_number ?? studyCase.order_number - 1}
-              onOpen={() => navigate(`/student/kenya-ems-cases/${studyCase.id}`)}
+              previousLabel={previous?.case_number ?? studyCase.case_number - 1}
+              onOpen={() => navigate(`/student/learn/kenya-ems/${studyCase.case_number}`)}
             />
           );
         })}
@@ -55,71 +59,39 @@ function KenyaEmsDashboard() {
   );
 }
 
-// Case runner: fetches progress + hydrates the hard-coded case component for
-// this order_number, autosaves responses, and submits for grading -- all
-// through the same /cases API the backend progress/unlock system already uses.
+// Case runner: loads lock/score status for this case NUMBER from the server
+// (so a direct URL to a locked case is still blocked server-side), then
+// hydrates the matching hard-coded Case component. Answers live only in
+// local component state until Submit -- per the storage design, the server
+// never persists in-progress responses, only the graded outcome.
 function KenyaEmsCaseRunner() {
-  const { id } = useParams();
+  const { caseNumber } = useParams();
   const navigate = useNavigate();
-  const [progress, setProgress] = useState(null);
+  const [caseStudy, setCaseStudy] = useState(null);
   const [responses, setResponses] = useState({});
   const [result, setResult] = useState(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
-  const [saveState, setSaveState] = useState('saved');
-  const hydratedRef = useRef(false);
-  const skipAutosaveRef = useRef(true);
-  const saveTimerRef = useRef(null);
 
   useEffect(() => {
     setBusy(true);
     setError('');
-    hydratedRef.current = false;
-    api(`/cases/${id}`)
-      .then((data) => {
-        setProgress(data.caseStudy);
-        setResult(null);
-        setResponses(data.responses || {});
-        setSaveState('saved');
-        skipAutosaveRef.current = true;
-        hydratedRef.current = true;
-      })
+    setResult(null);
+    setResponses({});
+    api(`/kenya-ems/${caseNumber}`)
+      .then((data) => setCaseStudy(data.caseStudy))
       .catch((err) => setError(err.message))
       .finally(() => setBusy(false));
-  }, [id]);
+  }, [caseNumber]);
 
-  useEffect(() => {
-    if (!progress || !hydratedRef.current) return undefined;
-    if (skipAutosaveRef.current) {
-      skipAutosaveRef.current = false;
-      return undefined;
-    }
-    setSaveState('unsaved');
-
-    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
-    saveTimerRef.current = setTimeout(async () => {
-      try {
-        await api(`/cases/${id}/progress`, { method: 'POST', body: { responses } });
-        setSaveState('saved');
-      } catch {
-        setSaveState('error');
-      }
-    }, 900);
-
-    return () => {
-      if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
-    };
-  }, [id, progress, responses]);
-
-  const entry = progress ? findCaseEntry(progress.order_number) : null;
+  const entry = findCaseEntry(caseNumber);
 
   async function submit() {
     setBusy(true);
     setError('');
     try {
-      const response = await api(`/cases/${id}/submit`, { method: 'POST', body: { answers: responses } });
+      const response = await api(`/kenya-ems/${caseNumber}/submit`, { method: 'POST', body: { answers: responses } });
       setResult(response);
-      setSaveState('saved');
     } catch (err) {
       setError(err.message);
     } finally {
@@ -128,8 +100,8 @@ function KenyaEmsCaseRunner() {
   }
 
   if (error) return <div className="alert">{error}</div>;
-  if (busy && !progress) return <Loading label="Loading Kenya EMS case..." />;
-  if (!progress || !entry) return <Loading label="Loading Kenya EMS case..." />;
+  if (busy && !caseStudy) return <Loading label="Loading Kenya EMS case..." />;
+  if (!caseStudy || !entry) return <Loading label="Loading Kenya EMS case..." />;
 
   const CaseComponent = entry.Component;
 
@@ -143,14 +115,14 @@ function KenyaEmsCaseRunner() {
       strengths: result.strengths,
       improvements: result.improvements,
       nextCaseUnlocked: result.nextCaseUnlocked,
-      passingScore: result.caseStudy.passing_percentage,
+      passingScore: result.passingScore,
     };
 
     return (
       <section className="kems-page">
         <ScoreCard result={scoreResult} />
         <div className="kems-sticky-actions">
-          <button type="button" className="ghost" onClick={() => navigate('/student/kenya-ems-cases')}>Back to Case Library</button>
+          <button type="button" className="ghost" onClick={() => navigate('/student/learn/kenya-ems')}>Back to Case Library</button>
           {!result.attempt.passed && (
             <button type="button" className="primary" onClick={() => setResult(null)}>Retry Case</button>
           )}
@@ -158,7 +130,7 @@ function KenyaEmsCaseRunner() {
             <button
               type="button"
               className="primary"
-              onClick={() => navigate(`/student/kenya-ems-cases/${result.nextCaseUnlocked.id}`)}
+              onClick={() => navigate(`/student/learn/kenya-ems/${result.nextCaseUnlocked.case_number}`)}
             >
               Open Next Case
             </button>
@@ -172,30 +144,13 @@ function KenyaEmsCaseRunner() {
     <section className="kems-page">
       <CaseComponent
         responses={responses}
-        saveState={saveState}
         onChangeResponse={(activityId, value) => {
-          hydratedRef.current = true;
           setResponses((current) => ({ ...current, [activityId]: value }));
         }}
       />
 
       <div className="kems-sticky-actions">
-        <button type="button" className="ghost" onClick={() => navigate('/student/kenya-ems-cases')}>Back</button>
-        <button
-          type="button"
-          className="ghost"
-          onClick={async () => {
-            setSaveState('saving');
-            try {
-              await api(`/cases/${id}/progress`, { method: 'POST', body: { responses } });
-              setSaveState('saved');
-            } catch {
-              setSaveState('error');
-            }
-          }}
-        >
-          {saveState === 'saving' ? 'Saving...' : 'Save Progress'}
-        </button>
+        <button type="button" className="ghost" onClick={() => navigate('/student/learn/kenya-ems')}>Back</button>
         <button type="button" className="primary" onClick={submit} disabled={busy}>
           {busy ? 'Submitting...' : 'Submit Case'}
         </button>
@@ -205,8 +160,6 @@ function KenyaEmsCaseRunner() {
 }
 
 export default function KenyaEmsLearnPage() {
-  const { id } = useParams();
-  return id ? <KenyaEmsCaseRunner /> : <KenyaEmsDashboard />;
+  const { caseNumber } = useParams();
+  return caseNumber ? <KenyaEmsCaseRunner /> : <KenyaEmsDashboard />;
 }
-
-export { kenyaEmsCaseRegistry };

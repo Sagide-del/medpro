@@ -20,6 +20,12 @@ export default function ScoreCard({ result }) {
         </div>
       </div>
 
+      {passed && (
+        <p className="kems-score-congrats">
+          🎉 Congratulations{nextCaseUnlocked ? " -- you've passed this case!" : ' -- you\'ve passed every Kenya EMS case!'}
+        </p>
+      )}
+
       <div className="kems-score-meta">
         <span>{earnedPoints} / {totalPoints} points earned</span>
         <span>Attempt #{attemptNumber}</span>
@@ -51,7 +57,7 @@ export default function ScoreCard({ result }) {
       {passed && nextCaseUnlocked && (
         <div className="kems-score-unlock">
           <span className="kems-card-icon" aria-hidden="true">🔓</span>
-          Case {nextCaseUnlocked.order_number} unlocked: {nextCaseUnlocked.title}
+          Case {nextCaseUnlocked.case_number} unlocked: {nextCaseUnlocked.title}
         </div>
       )}
       {!passed && (

@@ -15,7 +15,7 @@ export default function UnlockProgress({ cases = [] }) {
           const state = c.status === 'completed' ? 'completed' : c.status === 'locked' ? 'locked' : 'available';
           const icon = state === 'completed' ? '✅' : state === 'locked' ? '🔒' : '🔓';
           return (
-            <div key={c.id} className={`kems-unlock-step kems-unlock-step-${state}`} title={`Case ${c.order_number}`}>
+            <div key={c.case_number} className={`kems-unlock-step kems-unlock-step-${state}`} title={`Case ${c.case_number}`}>
               <span aria-hidden="true">{icon}</span>
             </div>
           );

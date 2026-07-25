@@ -2,8 +2,8 @@
 // score, and a clear call to action -- built to feel like a commercial EMS
 // training SaaS rather than a plain document list.
 export default function CaseCard({ meta, progress, locked, completed, previousLabel, onOpen }) {
-  const orderNumber = progress?.order_number ?? meta?.id;
-  const bestScore = progress?.score || progress?.best_percentage || 0;
+  const orderNumber = progress?.case_number ?? meta?.id;
+  const bestScore = progress?.score || 0;
 
   return (
     <button

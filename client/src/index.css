@@ -3795,3 +3795,57 @@ button:disabled { opacity: 0.5; cursor: default; }
     gap: 8px;
   }
 }
+
+/* ---------- e-library research hub ---------- */
+.dashboard-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.dashboard-list-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: #fff;
+}
+
+.dashboard-list-sub {
+  margin-top: 2px;
+  color: var(--ink-soft);
+  font-size: 12px;
+}
+
+.research-card {
+  height: 100%;
+}
+
+.research-card h3 {
+  margin: 0 0 8px;
+  font-size: 16px;
+  line-height: 1.35;
+}
+
+.research-authors {
+  margin: 0 0 8px;
+  color: var(--ink-soft);
+  font-size: 12.5px;
+}
+
+.research-abstract {
+  margin: 0 0 12px;
+  color: var(--ink);
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+@media (max-width: 640px) {
+  .dashboard-list-item {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}

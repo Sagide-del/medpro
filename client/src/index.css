@@ -3552,6 +3552,41 @@ button:disabled { opacity: 0.5; cursor: default; }
 }
 
 /* ---------- clinical rotation logbook ---------- */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.stat-card {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 16px 18px;
+  min-height: 90px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: 6px;
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.05);
+}
+
+.stat-card strong {
+  font-size: 28px;
+  line-height: 1;
+  color: var(--black);
+  letter-spacing: -0.03em;
+}
+
+.stat-card span {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink-soft);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
 .logbook-layout {
   display: grid;
   grid-template-columns: 1fr 1.1fr;
@@ -3635,71 +3670,66 @@ button:disabled { opacity: 0.5; cursor: default; }
   gap: 10px;
 }
 
-.logbook-status-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  font-size: 13px;
-}
-
-.logbook-status-label {
-  color: var(--ink-soft);
-  font-weight: 600;
-}
-
-.logbook-status-value {
-  font-weight: 700;
-  color: var(--ink);
-}
-
-.logbook-status-muted {
-  color: var(--ink-soft);
-}
-
-.logbook-feed {
-  display: grid;
-  gap: 12px;
-}
-
-.logbook-feed-item {
-  border: 1px solid var(--line);
-  border-radius: 14px;
-  padding: 14px 16px;
-  background: #fff;
-}
-
-.logbook-feed-top {
-  display: flex;
-  justify-content: space-between;
-  gap: 10px;
-  font-size: 13px;
-  color: var(--ink-soft);
-  margin-bottom: 6px;
-}
-
-.logbook-feed-title {
-  font-weight: 700;
-  color: var(--ink);
-  margin-bottom: 8px;
-}
-
-.logbook-feed-meta {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  font-size: 12px;
-  color: var(--ink-soft);
-}
-
-.logbook-feed-meta span {
-  padding: 4px 8px;
+.logbook-status-pill {
+  width: fit-content;
+  padding: 6px 10px;
   border-radius: 999px;
-  background: #f8fafc;
+  background: #f3f4f6;
+  color: #374151;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.logbook-status-pill.ready {
+  background: var(--success-tint);
+  color: var(--success);
+}
+
+.logbook-open-link {
+  width: fit-content;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.logbook-status-meta {
+  color: var(--ink-soft);
+  font-size: 12px;
 }
 
 @media (max-width: 900px) {
+  .stats-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .logbook-layout {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 540px) {
+  .stats-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+
+  .stat-card {
+    min-height: 78px;
+    padding: 14px 14px 12px;
+  }
+
+  .stat-card strong {
+    font-size: 24px;
+  }
+
+  .logbook-upload-actions,
+  .logbook-actions {
+    flex-direction: column;
+  }
+
+  .logbook-upload-actions button,
+  .logbook-actions button {
+    width: 100%;
   }
 }

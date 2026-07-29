@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { api } from '../../services/api';
 import Loading from '../shared/Loading';
 import UiIcon from '../shared/UiIcon';
@@ -39,8 +39,6 @@ export default function Logbook() {
   }, []);
 
   const currentLogbookUrl = data?.logbook?.file_url || '';
-
-  const recentActivity = useMemo(() => (data?.activities || []).slice(0, 6), [data?.activities]);
 
   async function uploadPdf() {
     if (!pdfFile) {
@@ -112,25 +110,23 @@ export default function Logbook() {
       <div className="page-head">
         <div>
           <h1>Clinical rotation logbook</h1>
-          <div className="sub">Upload the PDF copy of your logbook, then record verified attendance and skills as they happen.</div>
         </div>
       </div>
 
       {status && <div className={data.access?.activated ? 'ok-note' : 'alert'}>{status}</div>}
 
       <div className="stats-grid">
-        <div className="stat-card"><strong>{data.summary.approved}</strong><span>Approved entries</span></div>
-        <div className="stat-card"><strong>{data.summary.pending}</strong><span>Pending review</span></div>
-        <div className="stat-card"><strong>{data.summary.totalHours}</strong><span>Hours completed</span></div>
-        <div className="stat-card"><strong>{data.assignments.length}</strong><span>Rotation assignments</span></div>
+        <div className="stat-card"><strong>{data.summary.approved}</strong><span>Approved</span></div>
+        <div className="stat-card"><strong>{data.summary.pending}</strong><span>Pending</span></div>
+        <div className="stat-card"><strong>{data.summary.totalHours}</strong><span>Hours</span></div>
+        <div className="stat-card"><strong>{data.assignments.length}</strong><span>Assignments</span></div>
       </div>
 
       <div className="logbook-layout">
         <section className="card logbook-upload-card">
           <div className="section-head">
             <div>
-              <h2>Upload PDF logbook</h2>
-              <p>Attach the scanned or exported PDF version of your physical logbook.</p>
+              <h2>PDF logbook</h2>
             </div>
             <UiIcon name="document" />
           </div>
@@ -147,36 +143,27 @@ export default function Logbook() {
                     onChange={(event) => setPdfFile(event.target.files?.[0] || null)}
                   />
                   <span className="upload-dropzone-title">Choose PDF file</span>
-                  <span className="upload-dropzone-sub">
-                    {pdfFile ? pdfFile.name : 'Select a PDF from your device'}
-                  </span>
+                  <span className="upload-dropzone-sub">{pdfFile ? pdfFile.name : 'No file selected'}</span>
                 </label>
                 <div className="logbook-upload-actions">
-                  <button className="primary" onClick={uploadPdf} disabled={uploading || !pdfFile}>
+                  <button type="button" className="primary" onClick={uploadPdf} disabled={uploading || !pdfFile}>
                     {uploading ? 'Uploading...' : 'Upload PDF'}
                   </button>
-                  <button className="ghost" onClick={exportPdf}>Download logbook PDF</button>
+                  <button type="button" className="ghost" onClick={exportPdf}>Download PDF</button>
                 </div>
               </div>
 
               <div className="logbook-upload-status">
-                <div className="logbook-status-row">
-                  <span className="logbook-status-label">Current file</span>
-                  <span className="logbook-status-value">{pdfReady ? 'Uploaded' : 'Not uploaded yet'}</span>
+                <div className={`logbook-status-pill ${pdfReady ? 'ready' : ''}`}>
+                  {pdfReady ? 'PDF uploaded' : 'PDF not uploaded'}
                 </div>
-                <div className="logbook-status-row">
-                  <span className="logbook-status-label">File URL</span>
-                  {pdfReady ? (
-                    <a href={currentLogbookUrl} target="_blank" rel="noreferrer">Open PDF</a>
-                  ) : (
-                    <span className="logbook-status-muted">Will appear after upload</span>
-                  )}
-                </div>
+                {pdfReady && (
+                  <a className="logbook-open-link" href={currentLogbookUrl} target="_blank" rel="noreferrer">
+                    Open PDF
+                  </a>
+                )}
                 {data.logbook?.file_uploaded_at && (
-                  <div className="logbook-status-row">
-                    <span className="logbook-status-label">Uploaded at</span>
-                    <span className="logbook-status-muted">{new Date(data.logbook.file_uploaded_at).toLocaleString('en-KE')}</span>
-                  </div>
+                  <div className="logbook-status-meta">{new Date(data.logbook.file_uploaded_at).toLocaleString('en-KE')}</div>
                 )}
               </div>
             </>
@@ -186,8 +173,7 @@ export default function Logbook() {
         <section className="card logbook-activity-card">
           <div className="section-head">
             <div>
-              <h2>Record clinical activity</h2>
-              <p>Capture the real shift activity, date, hours, and skill evidence as it happens.</p>
+              <h2>Activity record</h2>
             </div>
             <UiIcon name="activity" />
           </div>
@@ -222,6 +208,7 @@ export default function Logbook() {
               </div>
               <div className="logbook-actions">
                 <button
+                  type="button"
                   className="primary"
                   onClick={submitActivity}
                   disabled={busy || !form.rotationAssignmentId || !form.activityDate || !form.hospital || !form.activityPerformed || !form.clinicalSkill}
@@ -238,7 +225,6 @@ export default function Logbook() {
         <div className="section-head">
           <div>
             <h2>Verified records</h2>
-            <p>Every activity is stored permanently for review and attendance tracking.</p>
           </div>
           <UiIcon name="result" />
         </div>
@@ -267,33 +253,6 @@ export default function Logbook() {
             {data.activities.length === 0 && <tr><td colSpan="6" style={{ color: 'var(--ink-soft)' }}>No activities logged yet.</td></tr>}
           </tbody>
         </table>
-      </div>
-
-      <div className="card">
-        <div className="section-head">
-          <div>
-            <h2>Recent activity feed</h2>
-            <p>Latest entries from the live logbook workflow.</p>
-          </div>
-          <UiIcon name="calendar" />
-        </div>
-        <div className="logbook-feed">
-          {recentActivity.map((activity) => (
-            <article key={activity.activity_id} className="logbook-feed-item">
-              <div className="logbook-feed-top">
-                <strong>{activity.activity_date}</strong>
-                <span>{activity.hours_completed} hrs</span>
-              </div>
-              <div className="logbook-feed-title">{activity.activity_performed}</div>
-              <div className="logbook-feed-meta">
-                <span>{activity.hospital}</span>
-                <span>{activity.clinical_skill}</span>
-                <span>{activity.status}</span>
-              </div>
-            </article>
-          ))}
-          {recentActivity.length === 0 && <div className="dashboard-empty">No recent activity yet.</div>}
-        </div>
       </div>
     </>
   );

@@ -1,5 +1,6 @@
 import { ClinicalRotation } from '../models/ClinicalRotation.js';
 import { asyncHandler } from '../utils/helpers.js';
+import { createUploader } from '../services/storage.js';
 
 function buildSimplePdf(title, lines) {
   const safeLines = [title, '', ...lines].map((line) => String(line || '').replace(/[()\\]/g, ''));
@@ -69,6 +70,32 @@ export const assignStudents = asyncHandler(async (req, res) => {
 export const studentLogbook = asyncHandler(async (req, res) => {
   const data = await ClinicalRotation.studentLogbook(req.user.sub);
   res.json(data);
+});
+
+export const uploadLogbookPdf = asyncHandler(async (req, res) => {
+  if (!req.file) {
+    return res.status(400).json({ error: 'A PDF file is required.' });
+  }
+  if (req.file.mimetype !== 'application/pdf') {
+    return res.status(400).json({ error: 'Only PDF files are allowed.' });
+  }
+
+  const { urlFor } = createUploader('logbook');
+  const fileUrl = urlFor(req.file);
+  if (!fileUrl) {
+    return res.status(400).json({ error: 'Upload failed. No file URL was returned.' });
+  }
+
+  const logbook = await ClinicalRotation.updateLogbookFile({
+    studentId: req.user.sub,
+    fileUrl,
+  });
+
+  res.status(201).json({
+    logbook,
+    fileUrl,
+    message: 'Logbook PDF uploaded successfully.',
+  });
 });
 
 export const createActivity = asyncHandler(async (req, res) => {

@@ -44,6 +44,7 @@ const files = [
   'migration_016_clinical_reference_cards_upload.sql',
   'migration_017_clinical_reference_cards_pdf_documents.sql',
   'migration_018_kenya_ems_case_progress.sql',
+  'migration_019_logbook_pdf_upload.sql',
 ];
 
 if (!process.env.DATABASE_URL) {
@@ -87,4 +88,3 @@ run().catch((err) => {
   console.error(err);
   process.exitCode = 1;
 });
-

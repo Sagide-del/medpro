@@ -7,14 +7,17 @@ import {
   createSite,
   exportLogbookPdf,
   institutionDashboard,
+  uploadLogbookPdf,
   reviewActivity,
   reviewQueue,
   studentLogbook,
 } from '../controllers/clinicalRotationController.js';
 import { authenticate } from '../middleware/auth.js';
 import { requireRole } from '../middleware/roleCheck.js';
+import { createUploader } from '../services/storage.js';
 
 const router = Router();
+const { upload } = createUploader('logbook');
 
 router.get('/dashboard', authenticate, requireRole('institution_admin', 'super_admin'), institutionDashboard);
 router.post('/hospitals', authenticate, requireRole('institution_admin', 'super_admin'), createHospital);
@@ -22,6 +25,7 @@ router.post('/sites', authenticate, requireRole('institution_admin', 'super_admi
 router.post('/rotations', authenticate, requireRole('institution_admin', 'super_admin'), createRotation);
 router.post('/rotations/:rotationId/assign', authenticate, requireRole('institution_admin', 'super_admin'), assignStudents);
 router.get('/my-logbook', authenticate, requireRole('student'), studentLogbook);
+router.post('/my-logbook/upload', authenticate, requireRole('student'), upload.single('file'), uploadLogbookPdf);
 router.post('/activities', authenticate, requireRole('student'), createActivity);
 router.get('/review-queue', authenticate, requireRole('teacher', 'institution_admin', 'super_admin'), reviewQueue);
 router.patch('/activities/:activityId/review', authenticate, requireRole('teacher', 'institution_admin', 'super_admin'), reviewActivity);

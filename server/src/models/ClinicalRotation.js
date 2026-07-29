@@ -1,5 +1,21 @@
 import { query, withTransaction } from '../config/database.js';
 
+async function findOrCreateLogbook(studentId) {
+  const { rows } = await query(
+    `SELECT * FROM logbooks WHERE student_id = $1 ORDER BY created_at DESC LIMIT 1`,
+    [studentId]
+  );
+  if (rows[0]) return rows[0];
+
+  const { rows: created } = await query(
+    `INSERT INTO logbooks (student_id, title, required_entries)
+     VALUES ($1, 'Clinical Logbook', 20)
+     RETURNING *`,
+    [studentId]
+  );
+  return created[0];
+}
+
 export const ClinicalRotation = {
   async dashboard(institutionId) {
     const [{ rows: hospitals }, { rows: rotations }, { rows: assignments }, { rows: pending }] = await Promise.all([
@@ -93,7 +109,8 @@ export const ClinicalRotation = {
   },
 
   async studentLogbook(studentId) {
-    const [{ rows: assignments }, { rows: activities }] = await Promise.all([
+    const [logbook, { rows: assignments }, { rows: activities }] = await Promise.all([
+      findOrCreateLogbook(studentId),
       query(
         `SELECT cra.*, r.title AS rotation_title, r.department, r.starts_on, r.ends_on,
                 h.name AS hospital_name, s.name AS site_name, sup.full_name AS supervisor_name
@@ -123,6 +140,7 @@ export const ClinicalRotation = {
     }, { totalHours: 0, approved: 0, pending: 0 });
 
     return {
+      logbook,
       assignments,
       activities,
       summary,
@@ -130,6 +148,20 @@ export const ClinicalRotation = {
         activated: assignments.some((assignment) => assignment.logbook_enabled),
       },
     };
+  },
+
+  async updateLogbookFile({ studentId, fileUrl }) {
+    const logbook = await findOrCreateLogbook(studentId);
+
+    const { rows } = await query(
+      `UPDATE logbooks
+       SET file_url = $1,
+           file_uploaded_at = now()
+       WHERE logbook_id = $2
+       RETURNING *`,
+      [fileUrl, logbook.logbook_id]
+    );
+    return rows[0];
   },
 
   async createActivity({ studentId, rotationAssignmentId, activityDate, hospital, department, activityPerformed, clinicalSkill, hoursCompleted, supervisor, comments }) {

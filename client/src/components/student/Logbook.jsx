@@ -1,10 +1,13 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { api } from '../../services/api';
 import Loading from '../shared/Loading';
+import UiIcon from '../shared/UiIcon';
+
+const today = () => new Date().toISOString().slice(0, 10);
 
 const initialForm = {
   rotationAssignmentId: '',
-  activityDate: '',
+  activityDate: today(),
   hospital: '',
   department: '',
   activityPerformed: '',
@@ -19,18 +22,50 @@ export default function Logbook() {
   const [form, setForm] = useState(initialForm);
   const [status, setStatus] = useState('');
   const [busy, setBusy] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [pdfFile, setPdfFile] = useState(null);
 
   async function load() {
     const details = await api('/clinical-rotations/my-logbook');
     setData(details);
-    if (!form.rotationAssignmentId && details.assignments[0]?.assignment_id) {
-      setForm((current) => ({ ...current, rotationAssignmentId: details.assignments[0].assignment_id }));
-    }
+    setForm((current) => ({
+      ...current,
+      rotationAssignmentId: current.rotationAssignmentId || details.assignments[0]?.assignment_id || '',
+    }));
   }
 
   useEffect(() => {
     load().catch((error) => setStatus(error.message));
   }, []);
+
+  const currentLogbookUrl = data?.logbook?.file_url || '';
+
+  const recentActivity = useMemo(() => (data?.activities || []).slice(0, 6), [data?.activities]);
+
+  async function uploadPdf() {
+    if (!pdfFile) {
+      setStatus('Choose a PDF file first.');
+      return;
+    }
+
+    setUploading(true);
+    setStatus('');
+    try {
+      const formData = new FormData();
+      formData.append('file', pdfFile);
+      const response = await api('/clinical-rotations/my-logbook/upload', {
+        method: 'POST',
+        body: formData,
+      });
+      setStatus(response.message || 'Logbook PDF uploaded successfully.');
+      setPdfFile(null);
+      await load();
+    } catch (error) {
+      setStatus(error.message);
+    } finally {
+      setUploading(false);
+    }
+  }
 
   async function submitActivity() {
     setBusy(true);
@@ -43,8 +78,8 @@ export default function Logbook() {
           hoursCompleted: Number(form.hoursCompleted || 0),
         },
       });
-      setForm((current) => ({ ...initialForm, rotationAssignmentId: current.rotationAssignmentId }));
-      setStatus('Clinical activity submitted for supervisor verification.');
+      setForm((current) => ({ ...initialForm, rotationAssignmentId: current.rotationAssignmentId, activityDate: today() }));
+      setStatus('Clinical activity recorded.');
       await load();
     } catch (error) {
       setStatus(error.message);
@@ -70,12 +105,14 @@ export default function Logbook() {
 
   if (!data) return <Loading label="Loading digital logbook..." />;
 
+  const pdfReady = Boolean(currentLogbookUrl);
+
   return (
     <>
       <div className="page-head">
         <div>
           <h1>Clinical rotation logbook</h1>
-          <div className="sub">Verified digital records with hospital, department, supervisor, hours, and approval history.</div>
+          <div className="sub">Upload the PDF copy of your logbook, then record verified attendance and skills as they happen.</div>
         </div>
       </div>
 
@@ -88,66 +125,129 @@ export default function Logbook() {
         <div className="stat-card"><strong>{data.assignments.length}</strong><span>Rotation assignments</span></div>
       </div>
 
-      <div className="card">
-        <h2>Assigned rotations</h2>
-        <table>
-          <thead>
-            <tr>
-              <th>Rotation</th>
-              <th>Hospital</th>
-              <th>Supervisor</th>
-              <th>Logbook</th>
-            </tr>
-          </thead>
-          <tbody>
-            {data.assignments.map((assignment) => (
-              <tr key={assignment.assignment_id}>
-                <td>{assignment.rotation_title}</td>
-                <td>{assignment.hospital_name || assignment.site_name || '—'}</td>
-                <td>{assignment.supervisor_name || 'Pending assignment'}</td>
-                <td>{assignment.logbook_enabled ? 'Active' : 'Locked'}</td>
-              </tr>
-            ))}
-            {data.assignments.length === 0 && <tr><td colSpan="4" style={{ color: 'var(--ink-soft)' }}>No clinical rotations assigned yet.</td></tr>}
-          </tbody>
-        </table>
+      <div className="logbook-layout">
+        <section className="card logbook-upload-card">
+          <div className="section-head">
+            <div>
+              <h2>Upload PDF logbook</h2>
+              <p>Attach the scanned or exported PDF version of your physical logbook.</p>
+            </div>
+            <UiIcon name="document" />
+          </div>
+
+          {!data.access?.activated ? (
+            <div className="alert">Your digital logbook stays locked until your institution activates your clinical rotation assignment.</div>
+          ) : (
+            <>
+              <div className="logbook-upload-panel">
+                <label className="upload-dropzone">
+                  <input
+                    type="file"
+                    accept="application/pdf"
+                    onChange={(event) => setPdfFile(event.target.files?.[0] || null)}
+                  />
+                  <span className="upload-dropzone-title">Choose PDF file</span>
+                  <span className="upload-dropzone-sub">
+                    {pdfFile ? pdfFile.name : 'Select a PDF from your device'}
+                  </span>
+                </label>
+                <div className="logbook-upload-actions">
+                  <button className="primary" onClick={uploadPdf} disabled={uploading || !pdfFile}>
+                    {uploading ? 'Uploading...' : 'Upload PDF'}
+                  </button>
+                  <button className="ghost" onClick={exportPdf}>Download logbook PDF</button>
+                </div>
+              </div>
+
+              <div className="logbook-upload-status">
+                <div className="logbook-status-row">
+                  <span className="logbook-status-label">Current file</span>
+                  <span className="logbook-status-value">{pdfReady ? 'Uploaded' : 'Not uploaded yet'}</span>
+                </div>
+                <div className="logbook-status-row">
+                  <span className="logbook-status-label">File URL</span>
+                  {pdfReady ? (
+                    <a href={currentLogbookUrl} target="_blank" rel="noreferrer">Open PDF</a>
+                  ) : (
+                    <span className="logbook-status-muted">Will appear after upload</span>
+                  )}
+                </div>
+                {data.logbook?.file_uploaded_at && (
+                  <div className="logbook-status-row">
+                    <span className="logbook-status-label">Uploaded at</span>
+                    <span className="logbook-status-muted">{new Date(data.logbook.file_uploaded_at).toLocaleString('en-KE')}</span>
+                  </div>
+                )}
+              </div>
+            </>
+          )}
+        </section>
+
+        <section className="card logbook-activity-card">
+          <div className="section-head">
+            <div>
+              <h2>Record clinical activity</h2>
+              <p>Capture the real shift activity, date, hours, and skill evidence as it happens.</p>
+            </div>
+            <UiIcon name="activity" />
+          </div>
+
+          {!data.access?.activated ? (
+            <div className="alert">Your digital logbook stays locked until your institution activates your clinical rotation assignment.</div>
+          ) : (
+            <>
+              <div className="form-grid">
+                <div className="field">
+                  <label>Rotation assignment</label>
+                  <select value={form.rotationAssignmentId} onChange={(event) => setForm({ ...form, rotationAssignmentId: event.target.value })}>
+                    <option value="">Select assignment</option>
+                    {data.assignments.map((assignment) => (
+                      <option key={assignment.assignment_id} value={assignment.assignment_id}>
+                        {assignment.rotation_title}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="field"><label>Date</label><input type="date" value={form.activityDate} onChange={(event) => setForm({ ...form, activityDate: event.target.value })} /></div>
+                <div className="field"><label>Hospital</label><input value={form.hospital} onChange={(event) => setForm({ ...form, hospital: event.target.value })} /></div>
+                <div className="field"><label>Department</label><input value={form.department} onChange={(event) => setForm({ ...form, department: event.target.value })} /></div>
+                <div className="field"><label>Activity performed</label><input value={form.activityPerformed} onChange={(event) => setForm({ ...form, activityPerformed: event.target.value })} /></div>
+                <div className="field"><label>Clinical skill learnt</label><input value={form.clinicalSkill} onChange={(event) => setForm({ ...form, clinicalSkill: event.target.value })} /></div>
+                <div className="field"><label>Hours completed</label><input type="number" min="0" step="0.5" value={form.hoursCompleted} onChange={(event) => setForm({ ...form, hoursCompleted: event.target.value })} /></div>
+                <div className="field"><label>Supervisor</label><input value={form.supervisor} onChange={(event) => setForm({ ...form, supervisor: event.target.value })} /></div>
+              </div>
+              <div className="field">
+                <label>Comments</label>
+                <textarea rows="3" value={form.comments} onChange={(event) => setForm({ ...form, comments: event.target.value })} />
+              </div>
+              <div className="logbook-actions">
+                <button
+                  className="primary"
+                  onClick={submitActivity}
+                  disabled={busy || !form.rotationAssignmentId || !form.activityDate || !form.hospital || !form.activityPerformed || !form.clinicalSkill}
+                >
+                  {busy ? 'Submitting...' : 'Submit activity'}
+                </button>
+              </div>
+            </>
+          )}
+        </section>
       </div>
 
       <div className="card">
-        <h2>Log clinical activity</h2>
-        {!data.access?.activated ? (
-          <div className="alert">Your digital logbook stays locked until your institution activates your clinical rotation assignment.</div>
-        ) : (
-          <>
-            <div className="form-grid">
-              <div className="field"><label>Rotation assignment</label><input value={form.rotationAssignmentId} onChange={(event) => setForm({ ...form, rotationAssignmentId: event.target.value })} /></div>
-              <div className="field"><label>Date</label><input type="date" value={form.activityDate} onChange={(event) => setForm({ ...form, activityDate: event.target.value })} /></div>
-              <div className="field"><label>Hospital</label><input value={form.hospital} onChange={(event) => setForm({ ...form, hospital: event.target.value })} /></div>
-              <div className="field"><label>Department</label><input value={form.department} onChange={(event) => setForm({ ...form, department: event.target.value })} /></div>
-              <div className="field"><label>Activity performed</label><input value={form.activityPerformed} onChange={(event) => setForm({ ...form, activityPerformed: event.target.value })} /></div>
-              <div className="field"><label>Clinical skill</label><input value={form.clinicalSkill} onChange={(event) => setForm({ ...form, clinicalSkill: event.target.value })} /></div>
-              <div className="field"><label>Hours completed</label><input type="number" min="0" step="0.5" value={form.hoursCompleted} onChange={(event) => setForm({ ...form, hoursCompleted: event.target.value })} /></div>
-              <div className="field"><label>Supervisor</label><input value={form.supervisor} onChange={(event) => setForm({ ...form, supervisor: event.target.value })} /></div>
-            </div>
-            <div className="field"><label>Comments</label><textarea rows="3" value={form.comments} onChange={(event) => setForm({ ...form, comments: event.target.value })} /></div>
-            <div style={{ display: 'flex', gap: 10 }}>
-              <button className="primary" onClick={submitActivity} disabled={busy || !form.rotationAssignmentId || !form.activityDate || !form.hospital || !form.activityPerformed || !form.clinicalSkill}>
-                {busy ? 'Submitting...' : 'Submit activity'}
-              </button>
-              <button className="ghost" onClick={exportPdf}>Download logbook PDF</button>
-            </div>
-          </>
-        )}
-      </div>
-
-      <div className="card">
-        <h2>Verified records</h2>
+        <div className="section-head">
+          <div>
+            <h2>Verified records</h2>
+            <p>Every activity is stored permanently for review and attendance tracking.</p>
+          </div>
+          <UiIcon name="result" />
+        </div>
         <table>
           <thead>
             <tr>
               <th>Date</th>
               <th>Hospital</th>
-              <th>Skill</th>
+              <th>Skill learnt</th>
               <th>Hours</th>
               <th>Status</th>
               <th>Supervisor</th>
@@ -167,6 +267,33 @@ export default function Logbook() {
             {data.activities.length === 0 && <tr><td colSpan="6" style={{ color: 'var(--ink-soft)' }}>No activities logged yet.</td></tr>}
           </tbody>
         </table>
+      </div>
+
+      <div className="card">
+        <div className="section-head">
+          <div>
+            <h2>Recent activity feed</h2>
+            <p>Latest entries from the live logbook workflow.</p>
+          </div>
+          <UiIcon name="calendar" />
+        </div>
+        <div className="logbook-feed">
+          {recentActivity.map((activity) => (
+            <article key={activity.activity_id} className="logbook-feed-item">
+              <div className="logbook-feed-top">
+                <strong>{activity.activity_date}</strong>
+                <span>{activity.hours_completed} hrs</span>
+              </div>
+              <div className="logbook-feed-title">{activity.activity_performed}</div>
+              <div className="logbook-feed-meta">
+                <span>{activity.hospital}</span>
+                <span>{activity.clinical_skill}</span>
+                <span>{activity.status}</span>
+              </div>
+            </article>
+          ))}
+          {recentActivity.length === 0 && <div className="dashboard-empty">No recent activity yet.</div>}
+        </div>
       </div>
     </>
   );

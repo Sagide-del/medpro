@@ -84,7 +84,7 @@ const STUDENT_LINKS = [
     group: 'Practice',
     items: [
       { to: '/student/logbook', label: 'Clinical Logbook', icon: 'document' },
-      { to: '/student/videos', label: 'Video Practicals', icon: 'practice' },
+      { to: '/student/videos', label: 'Clinical Skills Videos', icon: 'practice' },
       { to: '/student/reference-cards', label: 'Clinical Reference Cards', icon: 'document' },
     ],
   },

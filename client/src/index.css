@@ -3733,3 +3733,65 @@ button:disabled { opacity: 0.5; cursor: default; }
     width: 100%;
   }
 }
+
+/* ---------- clinical skills videos ---------- */
+.video-workflow-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.video-workflow-head h2 {
+  margin-bottom: 4px;
+}
+
+.video-script-card {
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: #f8fafc;
+  padding: 14px 16px;
+  margin-bottom: 14px;
+}
+
+.video-script-label {
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--ink-soft);
+  margin-bottom: 6px;
+}
+
+.video-script-text {
+  font-size: 14px;
+  color: var(--ink);
+  line-height: 1.55;
+  font-weight: 500;
+}
+
+.video-meta-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  margin: 14px 0 2px;
+  font-size: 12px;
+  color: var(--ink-soft);
+}
+
+.video-meta-row span {
+  padding: 5px 9px;
+  border-radius: 999px;
+  background: #f8fafc;
+}
+
+@media (max-width: 640px) {
+  .video-workflow-head {
+    flex-direction: column;
+  }
+
+  .video-meta-row {
+    gap: 8px;
+  }
+}

@@ -1,5 +1,5 @@
-// Post-submission score + clinical feedback panel: ✅ passed / 🔓 next case
-// unlocked, or ❌ incomplete with room to retry.
+import UiIcon from '../../shared/UiIcon';
+
 export default function FeedbackPanel({ result }) {
   if (!result) return null;
   const { percentage, passed, earnedPoints, totalPoints, attemptNumber, strengths = [], improvements = [], nextCaseUnlocked } = result;
@@ -7,9 +7,9 @@ export default function FeedbackPanel({ result }) {
   return (
     <section className={`ems-card ems-feedback-panel ${passed ? 'ems-feedback-pass' : 'ems-feedback-fail'}`}>
       <div className="ems-feedback-headline">
-        <span className="ems-feedback-icon" aria-hidden="true">{passed ? '✅' : '❌'}</span>
+        <span className="ems-feedback-icon" aria-hidden="true"><UiIcon name={passed ? 'result' : 'alert'} /></span>
         <div>
-          <div className="ems-feedback-score-label">Case Score</div>
+          <div className="ems-feedback-score-label">Case score</div>
           <div className="ems-feedback-score">{percentage}%</div>
         </div>
         <div className="ems-feedback-status">
@@ -26,7 +26,7 @@ export default function FeedbackPanel({ result }) {
       </div>
 
       <div className="ems-feedback-clinical">
-        <h3>🧠 Clinical Feedback</h3>
+        <h3>Clinical feedback</h3>
         {strengths.length > 0 && (
           <div className="ems-feedback-block">
             <div className="ems-feedback-block-label">Strengths</div>
@@ -50,14 +50,12 @@ export default function FeedbackPanel({ result }) {
 
       {passed && nextCaseUnlocked && (
         <div className="ems-feedback-unlock">
-          <span className="ems-card-icon" aria-hidden="true">🔓</span>
-          Case {nextCaseUnlocked.order_number} unlocked: {nextCaseUnlocked.title}
+          <UiIcon name="unlock" /> Case {nextCaseUnlocked.order_number} unlocked: {nextCaseUnlocked.title}
         </div>
       )}
       {!passed && (
         <div className="ems-feedback-retry">
-          <span className="ems-card-icon" aria-hidden="true">🔒</span>
-          Retry this case to reach the {result.passingScore}% pass mark and unlock the next one.
+          <UiIcon name="lock" /> Retry this case to reach the {result.passingScore}% pass mark and unlock the next one.
         </div>
       )}
     </section>

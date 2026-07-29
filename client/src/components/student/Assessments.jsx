@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { api } from '../../services/api';
 import Loading from '../shared/Loading';
+import UiIcon from '../shared/UiIcon';
 
 const VIEW_META = [
   { match: '/student/mcq-questions', title: 'EMT-B Modules', subtitle: 'Database-driven MCQ progression' },
@@ -63,23 +64,18 @@ function ModuleList() {
         </div>
       </div>
 
-      {/* Mock Pre-Test entry point -- additive only. This is a separate,
-          self-contained practice feature (see components/student/exams/mockPreTest/)
-          with its own API surface; it does not read from or change anything
-          on this EMT-B module list below. Only shown on the MCQ Questions
-          page itself, not on the other aliased routes that share this component. */}
       {location.pathname.startsWith('/student/mcq-questions') && (
         <button
           type="button"
           className="mpt-entry-card"
           onClick={() => navigate('/student/mcq/mock-pretest')}
         >
-          <span className="mpt-entry-icon" aria-hidden="true">🚑</span>
+          <span className="mpt-entry-icon" aria-hidden="true"><UiIcon name="exam" /></span>
           <span>
             <div className="mpt-entry-title">EMT Mock Pre-Test</div>
             <div className="mpt-entry-sub">Practice with randomized questions before your formal exams</div>
           </span>
-          <span className="mpt-entry-arrow" aria-hidden="true">→</span>
+          <span className="mpt-entry-arrow" aria-hidden="true"><UiIcon name="arrowRight" /></span>
         </button>
       )}
 
@@ -156,10 +152,7 @@ function ModuleExam() {
       .finally(() => setBusy(false));
   }, [id]);
 
-  const answeredCount = useMemo(
-    () => Object.values(answers).filter(Boolean).length,
-    [answers]
-  );
+  const answeredCount = useMemo(() => Object.values(answers).filter(Boolean).length, [answers]);
 
   async function submit() {
     setBusy(true);

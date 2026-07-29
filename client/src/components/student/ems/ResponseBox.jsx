@@ -1,7 +1,3 @@
-// Every blank area from the original worksheet ("HOT ZONE: ________") becomes
-// a labeled <textarea/> here. Used for both scored response fields and
-// reflection prompts -- when a case has no discrete fields (a single open
-// reflection blank), one full-width textarea is rendered instead.
 function valueForField(value, fieldId) {
   if (value == null) return '';
   if (typeof value === 'string') return value;
@@ -14,7 +10,7 @@ export default function ResponseBox({ fields = [], value, onChange, points, plac
       <div className={`ems-response-box${reflection ? ' ems-response-box-reflection' : ''}`}>
         {Number.isFinite(points) && <div className="ems-points-badge">{points} points</div>}
         <label className="ems-response-field">
-          <span>{reflection ? 'Reflection' : 'Your Response'}</span>
+          <span>{reflection ? 'Reflection' : 'Your response'}</span>
           <textarea
             rows={6}
             value={typeof value === 'string' ? value : ''}

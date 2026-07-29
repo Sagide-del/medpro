@@ -1,7 +1,5 @@
-// Premium case-library tile: CASE NN / status badge, thumbnail (or 🚑
-// placeholder), metadata icons, difficulty badge, best score, and a clear
-// call to action -- built to feel like a commercial EMS training SaaS rather
-// than a plain document list.
+import UiIcon from '../../../../shared/UiIcon';
+
 function difficultyClass(difficulty) {
   const label = String(difficulty || '').toLowerCase();
   if (label.includes('advanced')) return 'difficulty-advanced';
@@ -28,25 +26,23 @@ export default function CaseCard({ meta, progress, locked, completed, previousLa
         {meta?.thumbnail ? (
           <img src={meta.thumbnail} alt="" />
         ) : (
-          <span aria-hidden="true">🚑</span>
+          <UiIcon name="cases" />
         )}
       </div>
       <div className="kems-case-card-body">
         <div className="kems-case-card-top">
           <span className="kems-case-card-number">Case {paddedNumber}</span>
-          <span className={`kems-status-pill ${statusClass}`}>
-            {completed ? '✓ ' : locked ? '🔒 ' : ''}{statusLabel}
-          </span>
+          <span className={`kems-status-pill ${statusClass}`}>{statusLabel}</span>
         </div>
         <h3>{meta?.shortTitle || meta?.title || `Case ${orderNumber}`}</h3>
         {!locked ? (
           <>
             <p className="kems-case-card-location">
-              {meta?.location && <span>📍 {meta.location}</span>}
-              {meta?.incidentDate && <span>📅 {meta.incidentDate}</span>}
+              {meta?.location && <span><UiIcon name="calendar" /> {meta.location}</span>}
+              {meta?.incidentDate && <span><UiIcon name="document" /> {meta.incidentDate}</span>}
             </p>
             <div className="kems-case-card-meta">
-              {meta?.category && <span className="kems-badge">🚑 {meta.category}</span>}
+              {meta?.category && <span className="kems-badge"><UiIcon name="cases" /> {meta.category}</span>}
               {meta?.difficulty && <span className={`kems-badge ${difficultyClass(meta.difficulty)}`}>{meta.difficulty}</span>}
             </div>
             <div className="kems-case-card-score">
@@ -63,7 +59,7 @@ export default function CaseCard({ meta, progress, locked, completed, previousLa
         )}
       </div>
       <div className="kems-case-card-action">
-        {completed ? 'Review Simulation' : locked ? 'Locked' : <>Start Simulation →</>}
+        {completed ? 'Review Case' : locked ? 'Locked' : 'Start Case'}
       </div>
     </button>
   );

@@ -1,19 +1,8 @@
 import { useEffect, useState } from 'react';
 import { api } from '../../../../services/api';
+import UiIcon from '../../../shared/UiIcon';
 import QuestionRunner from './components/QuestionRunner';
 import ResultsReview from './components/ResultsReview';
-
-// Exams -> MCQ -> Mock Pre-Test.
-//
-// This is a self-contained practice tool that sits alongside the existing,
-// database-backed MCQ module system (client/src/components/student/Assessments.jsx,
-// server /api/assessments) -- it does not read from or modify that system in
-// any way. All content and grading come from the separate /api/mock-pretest
-// endpoints (server/src/models/MockPreTest.js), which never send the correct
-// answer to the browser until after a test is submitted.
-//
-// View states, held entirely in local component state (no URL sub-routes
-// needed): 'dashboard' -> 'running' -> 'results'.
 
 function DashboardSkeleton() {
   return (
@@ -34,16 +23,16 @@ function TopicDashboard({ modules, questionCountOptions, subscription, onStart, 
   return (
     <div className="mpt-page">
       <header className="mpt-hero">
-        <div className="mpt-hero-icon" aria-hidden="true">🚑</div>
+        <div className="mpt-hero-icon" aria-hidden="true"><UiIcon name="exam" /></div>
         <div>
           <h1>EMT Mock Pre-Test</h1>
-          <p>Practice before your formal exams -- randomized questions, instant scoring, and a full answer review after you submit.</p>
+          <p>Practice before your formal exams with randomized questions, instant scoring, and review after submission.</p>
         </div>
       </header>
 
       {subscription && !subscription.allowed && (
         <div className="mpt-alert-banner" role="status">
-          <span aria-hidden="true">⚠️</span> Your subscription is {subscription.status}. Renew to continue with the Mock Pre-Test.
+          <UiIcon name="alert" /> Your subscription is {subscription.status}. Renew to continue with the Mock Pre-Test.
         </div>
       )}
 
@@ -101,7 +90,7 @@ function TopicDashboard({ modules, questionCountOptions, subscription, onStart, 
 }
 
 export default function MockPreTestPage() {
-  const [view, setView] = useState('dashboard'); // dashboard | running | results
+  const [view, setView] = useState('dashboard');
   const [modules, setModules] = useState(null);
   const [questionCountOptions, setQuestionCountOptions] = useState([20, 50, 100]);
   const [subscription, setSubscription] = useState(null);

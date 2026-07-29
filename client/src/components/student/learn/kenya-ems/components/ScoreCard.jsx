@@ -1,6 +1,5 @@
-// Post-submission score + clinical feedback panel.
-// Passed: "🎉 Case Completed" headline, PASSED status, next-simulation unlock notice.
-// Failed: "Simulation Review Required" headline, areas to improve, retry notice.
+import UiIcon from '../../../../shared/UiIcon';
+
 export default function ScoreCard({ result }) {
   if (!result) return null;
   const { percentage, passed, earnedPoints, totalPoints, attemptNumber, strengths = [], improvements = [], nextCaseUnlocked } = result;
@@ -8,10 +7,10 @@ export default function ScoreCard({ result }) {
   return (
     <section className={`kems-card kems-score-card ${passed ? 'kems-score-pass' : 'kems-score-fail'}`}>
       <div className="kems-score-headline">
-        <span className="kems-score-icon" aria-hidden="true">{passed ? '🎉' : '📋'}</span>
+        <span className="kems-score-icon" aria-hidden="true"><UiIcon name={passed ? 'result' : 'document'} /></span>
         <div>
-          <div className="kems-score-headline-eyebrow">{passed ? 'Case Completed' : 'Simulation Review Required'}</div>
-          <div className="kems-score-title">{passed ? '🎉 Case Completed' : 'Simulation Review Required'}</div>
+          <div className="kems-score-headline-eyebrow">{passed ? 'Case completed' : 'Simulation review required'}</div>
+          <div className="kems-score-title">{passed ? 'Case completed' : 'Simulation review required'}</div>
         </div>
         <div className="kems-score-status">
           <div className="kems-score-status-label">Score</div>
@@ -34,7 +33,7 @@ export default function ScoreCard({ result }) {
       </div>
 
       <div className="kems-score-clinical">
-        <h3>🧠 Clinical Feedback</h3>
+        <h3>Clinical feedback</h3>
         {strengths.length > 0 && (
           <div className="kems-score-block">
             <div className="kems-score-block-label">Strengths</div>
@@ -45,7 +44,7 @@ export default function ScoreCard({ result }) {
         )}
         {improvements.length > 0 && (
           <div className="kems-score-block">
-            <div className="kems-score-block-label">Improve:</div>
+            <div className="kems-score-block-label">Improve</div>
             <ul>
               {improvements.map((item, index) => <li key={`improve-${index}`}>{item}</li>)}
             </ul>
@@ -58,14 +57,12 @@ export default function ScoreCard({ result }) {
 
       {passed && nextCaseUnlocked && (
         <div className="kems-score-unlock">
-          <span className="kems-card-icon" aria-hidden="true">🔓</span>
-          Next Simulation Unlocked: Case {nextCaseUnlocked.case_number} — {nextCaseUnlocked.title}
+          <UiIcon name="unlock" /> Next simulation unlocked: Case {nextCaseUnlocked.case_number} — {nextCaseUnlocked.title}
         </div>
       )}
       {!passed && (
         <div className="kems-score-retry">
-          <span className="kems-card-icon" aria-hidden="true">🔒</span>
-          Retry this simulation to reach the {result.passingScore}% pass mark and unlock the next case.
+          <UiIcon name="lock" /> Retry this simulation to reach the {result.passingScore}% pass mark and unlock the next case.
         </div>
       )}
     </section>

@@ -1,14 +1,14 @@
-// Premium scenario header -- case number badge, title, location/date, and a
-// row of meta chips (category, difficulty, pass mark, progress, save status).
+import UiIcon from '../../../../shared/UiIcon';
+
 export default function ScenarioHeader({ caseData, answeredCount, totalGradable, saveState }) {
   if (!caseData) return null;
 
   return (
     <header className="kems-case-header">
       <div className="kems-case-header-kicker">
-        <span className="kems-card-icon" aria-hidden="true">🚑</span>
+        <span className="kems-card-icon" aria-hidden="true"><UiIcon name="cases" /></span>
         Case {caseData.id}
-        <span className="kems-alert-chip" aria-hidden="true">🚨 Live Scenario</span>
+        <span className="kems-alert-chip" aria-hidden="true"><UiIcon name="alert" /> Live scenario</span>
       </div>
       <h1 className="kems-case-title">{caseData.title}</h1>
       <p className="kems-case-subtitle">

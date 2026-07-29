@@ -1,8 +1,3 @@
-// 🩸 Editable vital-signs / triage entry table -- one row per patient, with an
-// input cell for every scored column (e.g. HR, RR, BP, SpO2, GCS, Notes, or a
-// triage Color / Priority / Rationale set, depending on the case). The row
-// label carries the patient's presenting vitals exactly as given in the
-// worksheet; only the remaining columns are editable by the student.
 export default function VitalSignsTable({ title, table, value, onChange, points }) {
   const columns = table?.columns || [];
   const rows = table?.rows || [];

@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import PulseLine from './PulseLine';
 import ErrorBoundary from './ErrorBoundary';
 import PlatformFooter from './shared/PlatformFooter';
+import UiIcon from './shared/UiIcon';
 
 /**
  * Shared authenticated-app shell: sidebar + <Outlet/>.
@@ -75,11 +76,12 @@ export default function Layout({ links, roleLabel }) {
                   </div>
 
                   {item.items.map((link) => (
-                    <NavLink
+                  <NavLink
                       key={link.to}
                       to={link.to}
                       end={link.end}
                     >
+                      {link.icon && <UiIcon name={link.icon} className="nav-link-icon" />}
                       <span className="nav-link-copy">{link.label}</span>
                     </NavLink>
                   ))}
@@ -91,7 +93,7 @@ export default function Layout({ links, roleLabel }) {
 
             // Existing flat navigation
             return (
-              <NavLink
+            <NavLink
                 key={item.to}
                 to={item.to}
                 end={item.end}

@@ -67,48 +67,48 @@ const STUDENT_LINKS = [
   {
     group: 'Dashboard',
     items: [
-      { to: '/student/dashboard', label: 'Dashboard', end: true },
-      { to: '/student/subscription', label: 'Subscription' },
+      { to: '/student/dashboard', label: 'Dashboard', end: true, icon: 'dashboard' },
+      { to: '/student/subscription', label: 'Subscription', icon: 'subscription' },
     ],
   },
   {
     group: 'Learn',
     items: [
-      { to: '/student/exam-center', label: 'Exam Center' },
-      { to: '/student/assignments', label: 'Assignments' },
-      { to: '/student/simulations', label: 'Skill Simulations' },
-      { to: '/student/learn/kenya-ems', label: 'Kenya EMS Cases' },
+      { to: '/student/exam-center', label: 'Exam Center', icon: 'exam' },
+      { to: '/student/assignments', label: 'Assignments', icon: 'document' },
+      { to: '/student/simulations', label: 'Skill Simulations', icon: 'simulation' },
+      { to: '/student/learn/kenya-ems', label: 'Kenya EMS Cases', icon: 'cases' },
     ],
   },
   {
     group: 'Practice',
     items: [
-      { to: '/student/logbook', label: 'Clinical Logbook' },
-      { to: '/student/videos', label: 'Video Practicals' },
-      { to: '/student/reference-cards', label: 'Clinical Reference Cards' },
+      { to: '/student/logbook', label: 'Clinical Logbook', icon: 'document' },
+      { to: '/student/videos', label: 'Video Practicals', icon: 'practice' },
+      { to: '/student/reference-cards', label: 'Clinical Reference Cards', icon: 'document' },
     ],
   },
   {
     group: 'Progress',
     items: [
-      { to: '/student/progress-analytics', label: 'Analytics' },
+      { to: '/student/progress-analytics', label: 'Analytics', icon: 'progress' },
     ],
   },
   {
     group: 'Community',
     items: [
-      { to: '/student/community', label: 'My Study Group' },
-      { to: '/student/elibrary', label: 'E-Library' },
+      { to: '/student/community', label: 'My Study Group', icon: 'community' },
+      { to: '/student/elibrary', label: 'E-Library', icon: 'document' },
     ],
   },
   {
     group: 'Aliases',
     items: [
-      { to: '/student/mcq-questions', label: 'MCQ Questions' },
-      { to: '/student/mock-prep-tests', label: 'Mock Prep Tests' },
-      { to: '/student/kenya-case-studies', label: 'Kenya EMS Cases' },
-      { to: '/student/case-studies', label: 'Kenya EMS Cases' },
-      { to: '/student/research', label: 'Research' },
+      { to: '/student/mcq-questions', label: 'MCQ Questions', icon: 'exam' },
+      { to: '/student/mock-prep-tests', label: 'Mock Prep Tests', icon: 'exam' },
+      { to: '/student/kenya-case-studies', label: 'Kenya EMS Cases', icon: 'cases' },
+      { to: '/student/case-studies', label: 'Kenya EMS Cases', icon: 'cases' },
+      { to: '/student/research', label: 'Research', icon: 'document' },
     ],
   },
 ];

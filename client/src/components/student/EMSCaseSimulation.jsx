@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { api } from '../../services/api';
 import { kenyaEmsCaseStudies } from '../../data/CaseStudyData';
 import Loading from '../shared/Loading';
+import UiIcon from '../shared/UiIcon';
 import EMSCaseContainer from './ems/EMSCaseContainer';
 import FeedbackPanel from './ems/FeedbackPanel';
 
@@ -31,7 +32,7 @@ function CaseLibrary() {
   return (
     <section className="ems-library-page">
       <header className="ems-library-header">
-        <h1><span aria-hidden="true">🚑</span> Kenya EMS Case Simulation</h1>
+        <h1><UiIcon name="cases" /> Kenya EMS Case Simulation</h1>
         <p>15 real Kenya EMS worksheets, digitized case by case. Pass each case to unlock the next.</p>
       </header>
 
@@ -54,7 +55,9 @@ function CaseLibrary() {
               onClick={() => navigate(`/student/kenya-ems-cases/${studyCase.id}`)}
             >
               <div className="ems-library-card-top">
-                <span className="ems-lock-icon" aria-hidden="true">{locked ? '🔒' : completed ? '✅' : '🔓'}</span>
+                <span className="ems-lock-icon" aria-hidden="true">
+                  <UiIcon name={locked ? 'lock' : completed ? 'result' : 'unlock'} />
+                </span>
                 <span className="ems-library-case-number">Case {studyCase.order_number}</span>
               </div>
               <h2>{caseData?.shortTitle || `Case ${studyCase.order_number}`}</h2>

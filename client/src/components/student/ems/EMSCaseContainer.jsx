@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import UiIcon from '../../shared/UiIcon';
 import EMSSection from './EMSSection';
 import { groupCaseSections, gradableActivityIds } from './groupSections';
 
@@ -14,9 +15,6 @@ function isAnswered(value) {
   return false;
 }
 
-// Reproduces the original EMT worksheet flow end to end: scenario briefing ->
-// dispatch -> safety questions -> patient assessment -> vitals/triage entry ->
-// treatment decisions -> reflection, as a stack of EMS-styled cards.
 export default function EMSCaseContainer({ caseData, responses = {}, onChangeResponse, saveState }) {
   const nodes = useMemo(() => groupCaseSections(caseData?.sections || []), [caseData]);
   const gradableIds = useMemo(() => gradableActivityIds(caseData?.sections || []), [caseData]);
@@ -28,7 +26,7 @@ export default function EMSCaseContainer({ caseData, responses = {}, onChangeRes
     <article className="ems-case-container">
       <header className="ems-case-header">
         <div className="ems-case-header-kicker">
-          <span className="ems-card-icon" aria-hidden="true">🚑</span>
+          <span className="ems-card-icon" aria-hidden="true"><UiIcon name="cases" /></span>
           Case {caseData.id}
         </div>
         <h1 className="ems-case-title">{caseData.title}</h1>

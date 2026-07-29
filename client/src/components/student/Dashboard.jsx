@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { api } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import Loading from '../shared/Loading';
+import UiIcon from '../shared/UiIcon';
 
 function formatDate(value, fallback = 'No due date') {
   return value ? new Date(value).toLocaleDateString('en-KE') : fallback;
@@ -71,7 +72,7 @@ export default function StudentDashboard() {
       meta: `Renewal date ${renewalDate}`,
       progress: subscription?.active ? 100 : 20,
       tone: subscription?.active ? 'success' : 'danger',
-      icon: 'SB',
+      icon: 'subscription',
     },
     {
       title: 'Exam Readiness',
@@ -79,7 +80,7 @@ export default function StudentDashboard() {
       meta: 'Based on assessments and practice',
       progress: clampPercent(readinessScore),
       tone: 'accent',
-      icon: 'EX',
+      icon: 'exam',
     },
     {
       title: 'Clinical Progress',
@@ -87,7 +88,7 @@ export default function StudentDashboard() {
       meta: 'Based on simulations and logbook',
       progress: clampPercent(clinicalProgress),
       tone: 'accent',
-      icon: 'CP',
+      icon: 'activity',
     },
     {
       title: 'Logbook Completion',
@@ -95,7 +96,7 @@ export default function StudentDashboard() {
       meta: 'Clinical entries completed',
       progress: clampPercent(logbookPct),
       tone: 'neutral',
-      icon: 'LG',
+      icon: 'document',
     },
   ]), [clinicalProgress, logbookCounts, logbookPct, readinessScore, renewalDate, subscription?.active]);
 
@@ -107,27 +108,31 @@ export default function StudentDashboard() {
     return [
       {
         title: 'Trauma Assessment MCQs',
-        meta: `MCQ Practice • ${mcqCount || 12} questions completed`,
+        meta: `MCQ practice | ${mcqCount || 12} questions completed`,
         action: 'Continue',
         to: '/student/mcq-questions',
+        icon: 'exam',
       },
       {
         title: 'Airway Management',
-        meta: 'Clinical Reference Card',
+        meta: 'Clinical reference card',
         action: 'Review',
         to: '/student/reference-cards',
+        icon: 'document',
       },
       {
         title: 'Cardiac Emergencies Mock Test',
-        meta: latestSimulation ? `Mock Prep Test • ${latestSimulation.category || '100 questions'}` : 'Mock Prep Test • 100 questions',
+        meta: latestSimulation ? `Mock prep test | ${latestSimulation.category || '100 questions'}` : 'Mock prep test | 100 questions',
         action: 'Continue',
         to: '/student/mock-prep-tests',
+        icon: 'simulation',
       },
       {
         title: nextAssignment?.title || 'Patient Assessment Assignment',
-        meta: nextAssignment?.due_date ? `Assignment • Due ${formatDate(nextAssignment.due_date)}` : 'Assignment • Due in 2 days',
+        meta: nextAssignment?.due_date ? `Assignment | Due ${formatDate(nextAssignment.due_date)}` : 'Assignment | Due in 2 days',
         action: 'Open',
         to: nextAssignment ? `/student/assignments/${nextAssignment.assignment_id}` : '/student/assignments',
+        icon: 'document',
       },
     ];
   }, [assignments, attempts, simulationResults]);
@@ -208,7 +213,7 @@ export default function StudentDashboard() {
         {kpis.map((item) => (
           <div key={item.title} className="card dashboard-kpi-card">
             <div className="dashboard-kpi-top">
-              <span className={`dashboard-kpi-icon ${item.tone}`}>{item.icon}</span>
+              <span className={`dashboard-kpi-icon ${item.tone}`}><UiIcon name={item.icon} /></span>
               <span className="dashboard-kpi-title">{item.title}</span>
             </div>
             <div className="dashboard-kpi-value">{item.value}</div>
@@ -230,6 +235,7 @@ export default function StudentDashboard() {
           <div className="dashboard-stack">
             {continueLearning.map((item) => (
               <Link key={`${item.title}-${item.to}`} to={item.to} className="dashboard-list-card">
+                <span className="dashboard-list-icon"><UiIcon name={item.icon} /></span>
                 <div>
                   <div className="dashboard-list-title">{item.title}</div>
                   <div className="dashboard-list-meta">{item.meta}</div>
@@ -249,6 +255,7 @@ export default function StudentDashboard() {
           <div className="dashboard-stack">
             {upcomingTasks.map((task) => (
               <Link key={`${task.title}-${task.to}`} to={task.to} className="dashboard-list-card">
+                <span className="dashboard-list-icon"><UiIcon name="calendar" /></span>
                 <div>
                   <div className="dashboard-list-title">{task.title}</div>
                   <div className="dashboard-list-meta">{task.area}</div>
@@ -269,6 +276,7 @@ export default function StudentDashboard() {
         <div className="dashboard-stack">
           {recentActivity.map((activity) => (
             <Link key={activity.id} to={activity.to} className="dashboard-list-card">
+              <span className="dashboard-list-icon"><UiIcon name="activity" /></span>
               <div>
                 <div className="dashboard-list-title">{activity.title}</div>
                 <div className="dashboard-list-meta">{activity.detail}</div>

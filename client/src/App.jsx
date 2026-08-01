@@ -30,12 +30,16 @@ import StudentSimulations from './components/student/Simulations';
 import StudentProctoredExams from './components/student/ProctoredExams';
 import StudentKenyaEmsCases from './pages/student/KenyaEmsCases';
 import StudentMockPreTest from './components/student/exams/mockPreTest/MockPreTestPage';
+import MedProhubEmsAssignments from './components/medprohub/student/EmsAssignments';
+import MedProhubEmsPlayer from './components/medprohub/student/EmsPlayer';
 
 import TeacherDashboard from './components/teacher/Dashboard';
 import TeacherAssignments from './components/teacher/Assignments';
 import TeacherQuestionBank from './components/teacher/QuestionBank';
 import TeacherAiAssignmentGenerator from './components/teacher/AiAssignmentGenerator';
 import TeacherContentCustomizer from './pages/teacher/ContentCustomizer';
+import MedProhubEmsBrowser from './components/medprohub/teacher/EmsBrowser';
+import MedProhubEmsCustomizer from './components/medprohub/teacher/EmsCustomizer';
 import TeacherMarkingQueue from './components/teacher/MarkingQueue';
 import TeacherStudentPerformance from './components/teacher/StudentPerformance';
 import TeacherSimulationPerformance from './components/teacher/SimulationPerformance';
@@ -56,6 +60,8 @@ import AdminRevenue from './components/admin/Revenue';
 import AdminClinicalRotations from './components/admin/ClinicalRotations';
 import AdminKenyaEmsCasesManager from './components/admin/KenyaEmsCasesManager';
 import AdminContentBank from './pages/admin/ContentBank';
+import MedProhubEmsBankManager from './components/medprohub/admin/EmsBankManager';
+import MedProhubEmsCaseGenerator from './components/medprohub/admin/EmsCaseGenerator';
 
 import SuperAdminDashboard from './components/superadmin/Dashboard';
 import SuperAdminInstitutions from './components/superadmin/Institutions';
@@ -63,7 +69,6 @@ import SuperAdminContentUpload from './components/superadmin/ContentUpload';
 import SuperAdminClinicalReferenceCardsManager from './components/superadmin/ClinicalReferenceCardsManager';
 import SuperAdminRevenueAnalytics from './components/superadmin/RevenueAnalytics';
 import SuperAdminELibraryManager from './components/superadmin/ELibraryManager';
-import SuperAdminAiGenerator from './pages/admin/AiGenerator';
 
 
 const STUDENT_LINKS = [
@@ -111,6 +116,7 @@ const STUDENT_LINKS = [
       { to: '/student/mock-prep-tests', label: 'Mock Prep Tests', icon: 'exam' },
       { to: '/student/kenya-case-studies', label: 'Kenya EMS Cases', icon: 'cases' },
       { to: '/student/case-studies', label: 'Kenya EMS Cases', icon: 'cases' },
+      { to: '/student/medprohub/cases', label: 'MedProHub EMS Cases', icon: 'cases' },
       { to: '/student/research', label: 'Research', icon: 'document' },
     ],
   },
@@ -123,6 +129,7 @@ const TEACHER_LINKS = [
   { to: '/teacher/question-bank', label: 'Question Bank' },
   { to: '/teacher/ai-generator', label: 'AI Assignment Generator' },
   { to: '/teacher/content-customizer', label: 'Content Customizer' },
+  { to: '/teacher/medprohub/bank', label: 'EMS Bank' },
   { to: '/teacher/marking-queue', label: 'Marking Queue' },
   { to: '/teacher/student-performance', label: 'Student Performance' },
   { to: '/teacher/simulation-performance', label: 'Simulation Performance' },
@@ -179,8 +186,12 @@ const SUPERADMIN_LINKS = [
         label: 'Upload Content',
       },
       {
-        to: '/superadmin/ai-generator',
+        to: '/superadmin/medprohub/generator',
         label: 'Master AI Generator',
+      },
+      {
+        to: '/superadmin/medprohub/bank',
+        label: 'EMS Bank',
       },
       {
         to: '/superadmin/elibrary',
@@ -285,6 +296,8 @@ function AppRoutes() {
           <Route path="/student/clinical-library" element={<StudentClinicalReferenceCards />} />
           <Route path="/student/learn/kenya-ems" element={<StudentKenyaEmsCases />} />
           <Route path="/student/learn/kenya-ems/:caseNumber" element={<StudentKenyaEmsCases />} />
+          <Route path="/student/medprohub/cases" element={<MedProhubEmsAssignments />} />
+          <Route path="/student/medprohub/cases/:id" element={<MedProhubEmsPlayer />} />
           {/* Old case_studies-UUID-based paths from the previous architecture --
               kept as redirects to the new case-number dashboard so old
               bookmarks/links don't dead-end. Deep-linking straight to a specific
@@ -343,6 +356,8 @@ function AppRoutes() {
           <Route path="/teacher/question-bank" element={<TeacherQuestionBank />} />
           <Route path="/teacher/ai-generator" element={<TeacherAiAssignmentGenerator />} />
           <Route path="/teacher/content-customizer" element={<TeacherContentCustomizer />} />
+          <Route path="/teacher/medprohub/bank" element={<MedProhubEmsBrowser />} />
+          <Route path="/teacher/medprohub/customize/:id" element={<MedProhubEmsCustomizer />} />
           <Route path="/teacher/marking-queue" element={<TeacherMarkingQueue />} />
           <Route path="/teacher/student-performance" element={<TeacherStudentPerformance />} />
           <Route path="/teacher/simulation-performance" element={<TeacherSimulationPerformance />} />
@@ -378,7 +393,9 @@ function AppRoutes() {
           <Route path="/superadmin/institutions" element={<SuperAdminInstitutions />} />
           <Route path="/superadmin/users" element={<AdminUsers />} />
           <Route path="/superadmin/content" element={<SuperAdminContentUpload />} />
-          <Route path="/superadmin/ai-generator" element={<SuperAdminAiGenerator />} />
+          <Route path="/superadmin/ai-generator" element={<MedProhubEmsCaseGenerator />} />
+          <Route path="/superadmin/medprohub/generator" element={<MedProhubEmsCaseGenerator />} />
+          <Route path="/superadmin/medprohub/bank" element={<MedProhubEmsBankManager />} />
           <Route path="/superadmin/elibrary" element={<SuperAdminELibraryManager />} />
           <Route path="/superadmin/reference-cards" element={<SuperAdminClinicalReferenceCardsManager />} />
           <Route path="/superadmin/revenue" element={<SuperAdminRevenueAnalytics />} />

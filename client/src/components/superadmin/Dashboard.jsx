@@ -30,9 +30,9 @@ export default function SuperAdminDashboard() {
           Open the generator to draft cases, refine content, and hand edited content to students.
         </p>
         <div className="logbook-actions">
-          <Link className="primary" to="/superadmin/ai-generator">Open generator</Link>
+          <Link className="primary" to="/superadmin/medprohub/generator">Open generator</Link>
           <Link className="ghost" to="/superadmin/content">Open uploader</Link>
-          <Link className="ghost" to="/admin/content-bank">Open content bank</Link>
+          <Link className="ghost" to="/superadmin/medprohub/bank">Open content bank</Link>
         </div>
       </div>
 

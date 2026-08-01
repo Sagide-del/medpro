@@ -115,6 +115,50 @@ export default function AiGenerator() {
     return !!sourceText.trim();
   }, [sourceMode, sourceFile, sourceUrl, sourceText]);
 
+  const enabledQuestionTypes = useMemo(
+    () => QUESTION_TYPES.filter((item) => questionTypes[item.key]).map((item) => item.label),
+    [questionTypes]
+  );
+
+  const previewChecklist = useMemo(() => {
+    if (contentType === 'case_study') {
+      return [
+        'Case title and destination fit EMS content structure',
+        'Incident background is readable before publishing',
+        'Dispatch information stays in sequence',
+        'Response fields and answer key are ready for review',
+        'Scoring layout matches the Kenya EMS case workflow',
+      ];
+    }
+    if (contentType === 'simulation') {
+      return [
+        'Scenario introduction appears before activity steps',
+        'Task flow is clear for mobile learners',
+        'Marking criteria are attached to the activity block',
+        'Simulation preview keeps the clinical sequence intact',
+      ];
+    }
+    if (contentType === 'assignment') {
+      return [
+        'Instructions are concise and task focused',
+        'Questions and answers are grouped clearly',
+        'Submission layout matches the assignment bank',
+      ];
+    }
+    if (contentType === 'exam') {
+      return [
+        'MCQ order respects the selected question mix',
+        'Answer keys stay behind the review layer',
+        'Exam destination is correctly routed',
+      ];
+    }
+    return [
+      'Script structure is readable before publishing',
+      'Cue points and learner prompts are clear',
+      'Video workflow is ready for student submission',
+    ];
+  }, [contentType]);
+
   async function generateDraft() {
     setBusy(true);
     setStatus('');

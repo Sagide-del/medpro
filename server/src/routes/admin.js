@@ -1,6 +1,9 @@
 import { Router } from 'express';
 import { dashboardOverview, auditLog, listInstitutionsAdmin } from '../controllers/adminController.js';
 import { listCases, uploadCase, updateCase, deleteCase } from '../controllers/caseContentController.js';
+import adminUsersRoutes from './adminUsers.js';
+import adminCommunicationRoutes from './adminCommunication.js';
+import adminRemindersRoutes from './adminReminders.js';
 import { authenticate } from '../middleware/auth.js';
 import { requireRole } from '../middleware/roleCheck.js';
 
@@ -14,5 +17,8 @@ router.get('/cases', requireRole('super_admin'), listCases);
 router.post('/cases/upload', requireRole('super_admin'), uploadCase);
 router.put('/cases/:id', requireRole('super_admin'), updateCase);
 router.delete('/cases/:id', requireRole('super_admin'), deleteCase);
+router.use('/users', adminUsersRoutes);
+router.use('/communication', adminCommunicationRoutes);
+router.use('/reminders', adminRemindersRoutes);
 
 export default router;

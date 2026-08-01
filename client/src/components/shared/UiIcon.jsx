@@ -156,6 +156,49 @@ const ICONS = {
       <path d="M8 16h6" />
     </svg>
   ),
+  mail: (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <rect x="4" y="5" width="16" height="14" rx="2" />
+      <path d="m5.5 7.5 6.5 5 6.5-5" />
+      <path d="M5.5 17.5 10 13" />
+      <path d="M18.5 17.5 14 13" />
+    </svg>
+  ),
+  sms: (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M5 5.5h14a1.5 1.5 0 0 1 1.5 1.5v8a1.5 1.5 0 0 1-1.5 1.5H12l-4.5 3v-3H5A1.5 1.5 0 0 1 3.5 15V7A1.5 1.5 0 0 1 5 5.5Z" />
+      <path d="M8 9h8" />
+      <path d="M8 12h5" />
+    </svg>
+  ),
+  trash: (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M4.5 6h15" />
+      <path d="M9 6V4.5h6V6" />
+      <path d="M7.5 6.5 8.5 19h7L16.5 6.5" />
+      <path d="M10 10v5" />
+      <path d="M14 10v5" />
+    </svg>
+  ),
+  history: (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M5 12a7 7 0 1 0 2.2-5" />
+      <path d="M5 5v4h4" />
+      <path d="M12 8v4l3 2" />
+    </svg>
+  ),
+  settings: (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <circle cx="12" cy="12" r="3" />
+      <path d="M19 12a7 7 0 0 0-.1-1.2l2-1.5-2-3.4-2.4 1a7 7 0 0 0-2.1-1.2l-.4-2.6H9l-.4 2.6a7 7 0 0 0-2.1 1.2l-2.4-1-2 3.4 2 1.5A7 7 0 0 0 4 12c0 .4 0 .8.1 1.2l-2 1.5 2 3.4 2.4-1a7 7 0 0 0 2.1 1.2l.4 2.6h4.8l.4-2.6a7 7 0 0 0 2.1-1.2l2.4 1 2-3.4-2-1.5c.1-.4.1-.8.1-1.2Z" />
+    </svg>
+  ),
+  send: (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M4.5 12 19 4.5 15.5 19l-4-5L4.5 12Z" />
+      <path d="M11.5 14.5 19 4.5" />
+    </svg>
+  ),
 };
 
 export default function UiIcon({ name, className = '', title }) {

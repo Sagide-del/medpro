@@ -26,13 +26,11 @@ export default function SuperAdminDashboard() {
 
       <div className="card" style={{ marginBottom: 18, borderLeft: '4px solid var(--accent-red)' }}>
         <h2 style={{ marginTop: 0 }}>Master AI Generator</h2>
-        <p className="sub" style={{ marginTop: 0, marginBottom: 14 }}>
-          Open the generator to draft cases, refine content, and hand edited content to students.
-        </p>
         <div className="logbook-actions">
           <Link className="primary" to="/superadmin/ai-generator">Open generator</Link>
           <Link className="ghost" to="/superadmin/content">Open uploader</Link>
-          <Link className="ghost" to="/admin/content-bank">Open content bank</Link>
+          <Link className="ghost" to="/superadmin/users">Users</Link>
+          <Link className="ghost" to="/superadmin/communications">Communication center</Link>
         </div>
       </div>
 

@@ -70,6 +70,7 @@ import SuperAdminClinicalReferenceCardsManager from './components/superadmin/Cli
 import SuperAdminRevenueAnalytics from './components/superadmin/RevenueAnalytics';
 import SuperAdminELibraryManager from './components/superadmin/ELibraryManager';
 import SuperAdminAiGenerator from './components/superadmin/AiGenerator';
+import SuperAdminUserCommunications from './components/superadmin/UserCommunications';
 
 
 const STUDENT_LINKS = [
@@ -161,6 +162,7 @@ const SUPERADMIN_LINKS = [
         to: '/superadmin/dashboard',
         label: 'Dashboard',
         end: true,
+        icon: 'dashboard',
       },
     ],
   },
@@ -171,10 +173,17 @@ const SUPERADMIN_LINKS = [
       {
         to: '/superadmin/institutions',
         label: 'Institutions',
+        icon: 'dashboard',
       },
       {
         to: '/superadmin/users',
         label: 'Users',
+        icon: 'shield',
+      },
+      {
+        to: '/superadmin/communications',
+        label: 'Communication Center',
+        icon: 'mail',
       },
     ],
   },
@@ -185,6 +194,7 @@ const SUPERADMIN_LINKS = [
       {
         to: '/superadmin/content',
         label: 'Upload Content',
+        icon: 'document',
       },
       {
         to: '/superadmin/ai-generator',
@@ -394,7 +404,8 @@ function AppRoutes() {
           <Route path="/superadmin" element={<Navigate to="/superadmin/dashboard" replace />} />
           <Route path="/superadmin/dashboard" element={<SuperAdminDashboard />} />
           <Route path="/superadmin/institutions" element={<SuperAdminInstitutions />} />
-          <Route path="/superadmin/users" element={<AdminUsers />} />
+          <Route path="/superadmin/users" element={<SuperAdminUserCommunications defaultTab="users" />} />
+          <Route path="/superadmin/communications" element={<SuperAdminUserCommunications defaultTab="communications" />} />
           <Route path="/superadmin/content" element={<SuperAdminContentUpload />} />
           <Route path="/superadmin/ai-generator" element={<SuperAdminAiGenerator />} />
           <Route path="/superadmin/medprohub/generator" element={<MedProhubEmsCaseGenerator />} />

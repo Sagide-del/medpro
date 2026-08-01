@@ -46,6 +46,7 @@ const files = [
   'migration_018_kenya_ems_case_progress.sql',
   'migration_019_logbook_pdf_upload.sql',
   'migration_020_medprohub_ems_generator.sql',
+  'migration_021_user_communications_admin.sql',
 ];
 
 if (!process.env.DATABASE_URL) {

@@ -25,6 +25,7 @@ const AUDIENCES = [
   { value: 'emt-intermediate', label: 'EMT-Intermediate' },
   { value: 'emt-paramedic', label: 'EMT-Paramedic' },
   { value: 'fire-fighter', label: 'Fire Fighter' },
+  { value: 'all-levels', label: 'All Levels' },
 ];
 
 const DIFFICULTIES = ['Basic', 'Intermediate', 'Advanced'];
@@ -41,15 +42,27 @@ const BROWSER_OPTIONS = [
   { value: 'selected', label: 'Select Specific Schools' },
 ];
 
+const OUTPUT_DESTINATIONS = [
+  { value: 'question_bank', label: 'Question Bank', icon: 'question', note: 'Teacher library', tint: '#fef2f2' },
+  { value: 'independent_student', label: 'Independent Student', icon: 'learn', note: 'Direct learner access', tint: '#ecfeff' },
+  { value: 'ems_cases', label: 'EMS Cases', icon: 'cases', note: 'Case study library', tint: '#eff6ff' },
+  { value: 'exam_mcq', label: 'Exam Center - MCQ', icon: 'exam', note: 'Formative assessment', tint: '#fdf2dc' },
+  { value: 'exam_mock', label: 'Exam Center - Mock', icon: 'result', note: 'Summative assessment', tint: '#ecfdf5' },
+  { value: 'simulation', label: 'Simulation', icon: 'simulation', note: 'Interactive practice', tint: '#f5f3ff' },
+];
+
 export default function AiGenerator() {
   const [searchParams, setSearchParams] = useSearchParams();
   const pdfInputRef = useRef(null);
   const [cases, setCases] = useState(null);
   const [sourceMode, setSourceMode] = useState('article');
   const [sourceFile, setSourceFile] = useState(null);
+  const [sourceFileMeta, setSourceFileMeta] = useState(null);
   const [sourceText, setSourceText] = useState('');
   const [sourceUrl, setSourceUrl] = useState('');
   const [sourceTitle, setSourceTitle] = useState('');
+  const [sourceOrigin, setSourceOrigin] = useState('');
+  const [sourceDate, setSourceDate] = useState('');
   const [title, setTitle] = useState('MedPro AI Draft');
   const [contentType, setContentType] = useState('case_study');
   const [audience, setAudience] = useState('emt-basic');
@@ -73,6 +86,9 @@ export default function AiGenerator() {
   const [job, setJob] = useState(null);
   const [status, setStatus] = useState('');
   const [busy, setBusy] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
+  const [generationStartedAt, setGenerationStartedAt] = useState(null);
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
 
   const contentId = searchParams.get('contentId') || '';
 
@@ -159,15 +175,141 @@ export default function AiGenerator() {
     ];
   }, [contentType]);
 
+  const activeAudienceLabel = useMemo(
+    () => AUDIENCES.find((item) => item.value === audience)?.label || audience,
+    [audience]
+  );
+
+  const activeQuestionTypes = useMemo(
+    () => QUESTION_TYPES.filter((item) => questionTypes[item.key]),
+    [questionTypes]
+  );
+
+  const sourceWordCount = useMemo(() => {
+    const text = sourceText.trim();
+    if (!text) return 0;
+    return text.split(/\s+/).filter(Boolean).length;
+  }, [sourceText]);
+
+  const sourceStructureHint = useMemo(() => {
+    const text = sourceText.trim();
+    if (!text) return 'Paste text to detect headings, questions, and table structure.';
+    const lines = text.split(/\n+/).filter(Boolean).length;
+    if (/^\s*\d+[.)]/m.test(text) || /part\s+\d+/i.test(text)) return 'Structured worksheet / multi-phase content detected.';
+    if (lines > 20) return 'Long-form article or incident brief detected.';
+    return 'Short briefing detected.';
+  }, [sourceText]);
+
+  const destinationSummary = useMemo(
+    () => OUTPUT_DESTINATIONS.find((item) => item.value === publishDestination) || OUTPUT_DESTINATIONS[0],
+    [publishDestination]
+  );
+
+  const generatedQuestionBreakdown = useMemo(() => {
+    const types = activeQuestionTypes.length ? activeQuestionTypes : QUESTION_TYPES.slice(0, 1);
+    const base = Math.floor(questionCount / types.length);
+    const remainder = questionCount % types.length;
+    return types.map((item, index) => ({
+      label: item.label,
+      value: base + (index < remainder ? 1 : 0),
+      accent: item.accent,
+    }));
+  }, [activeQuestionTypes, questionCount]);
+
+  const previewQuestions = useMemo(() => {
+    const topicLabel = topic || contentMeta.label;
+    const basePreview = [
+      {
+        type: 'multipleChoice',
+        prompt: `What should be prioritised first when generating ${topicLabel.toLowerCase()} content?`,
+        answer: 'Use the most clinically relevant, destination-specific workflow.',
+        feedback: 'Keep the structure aligned to the selected destination and audience.',
+      },
+      {
+        type: 'trueFalse',
+        prompt: 'The hidden answer key must remain visible to super admins and teachers only.',
+        answer: 'True',
+        feedback: 'Students should only see answers after submission.',
+      },
+      {
+        type: 'shortAnswer',
+        prompt: 'Briefly explain how this draft should be reviewed before publishing.',
+        answer: 'Check structure, destination, difficulty, and answer key placement.',
+        feedback: 'Review should match the school and content destination.',
+      },
+    ];
+    return basePreview.slice(0, Math.min(3, activeQuestionTypes.length || 3));
+  }, [activeQuestionTypes.length, contentMeta.label, topic]);
+
+  useEffect(() => {
+    const inProgress = !!job && job.status !== 'completed' && job.status !== 'failed';
+    if (!generationStartedAt || !inProgress) {
+      setElapsedSeconds(0);
+      return undefined;
+    }
+    const timer = setInterval(() => {
+      setElapsedSeconds(Math.max(0, Math.floor((Date.now() - generationStartedAt) / 1000)));
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [job, generationStartedAt]);
+
+  function formatBytes(bytes = 0) {
+    if (!bytes) return '0 KB';
+    const units = ['B', 'KB', 'MB', 'GB'];
+    let value = bytes;
+    let unit = 0;
+    while (value >= 1024 && unit < units.length - 1) {
+      value /= 1024;
+      unit += 1;
+    }
+    return `${value >= 10 || unit === 0 ? Math.round(value) : value.toFixed(1)} ${units[unit]}`;
+  }
+
+  async function inspectPdf(file) {
+    if (!file) return null;
+    const arrayBuffer = await file.arrayBuffer();
+    const sample = new TextDecoder('latin1').decode(arrayBuffer.slice(0, 2_000_000));
+    const pages = sample.match(/\/Type\s*\/Page\b/g)?.length || null;
+    return {
+      name: file.name,
+      size: file.size,
+      sizeLabel: formatBytes(file.size),
+      pageCount: pages,
+    };
+  }
+
+  async function handlePdfSelection(file) {
+    if (!file) {
+      setSourceFile(null);
+      setSourceFileMeta(null);
+      return;
+    }
+    if (file.size > 50 * 1024 * 1024) {
+      setStatus('PDF files must be 50MB or smaller.');
+      return;
+    }
+    setStatus('');
+    setSourceFile(file);
+    try {
+      setSourceFileMeta(await inspectPdf(file));
+    } catch {
+      setSourceFileMeta({ name: file.name, size: file.size, sizeLabel: formatBytes(file.size), pageCount: null });
+    }
+  }
+
   async function generateDraft() {
     setBusy(true);
     setStatus('');
+    setGenerationStartedAt(Date.now());
+    setElapsedSeconds(0);
     try {
       const payload = new FormData();
       payload.set('title', title);
       payload.set('contentType', contentType);
       payload.set('sourceType', sourceMode);
       payload.set('sourceTitle', sourceTitle);
+      payload.set('sourceOrigin', sourceOrigin);
+      payload.set('sourceDate', sourceDate);
       payload.set('sourceText', sourceText);
       payload.set('sourceUrl', sourceUrl);
       payload.set('audience', audience);
@@ -253,59 +395,95 @@ export default function AiGenerator() {
           </div>
 
           <div className="field">
-            <label>Source title</label>
+            <label>{sourceMode === 'article' ? 'Article title' : 'Source title'}</label>
             <input
               value={sourceTitle}
               onChange={(event) => setSourceTitle(event.target.value)}
-              placeholder="Optional source title or report name"
+              placeholder={sourceMode === 'article' ? 'Article title or report name' : 'Optional source title or report name'}
             />
           </div>
 
           {sourceMode === 'pdf' ? (
             <div className="field">
               <label>PDF upload</label>
-              <div className="upload-picker">
+              <div
+                className={`upload-dropzone${isDragging ? ' is-dragging' : ''}`}
+                role="button"
+                tabIndex={0}
+                onClick={() => pdfInputRef.current?.click()}
+                onDragOver={(event) => {
+                  event.preventDefault();
+                  setIsDragging(true);
+                }}
+                onDragLeave={() => setIsDragging(false)}
+                onDrop={(event) => {
+                  event.preventDefault();
+                  setIsDragging(false);
+                  handlePdfSelection(event.dataTransfer.files?.[0] || null);
+                }}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter' || event.key === ' ') pdfInputRef.current?.click();
+                }}
+              >
                 <input
                   ref={pdfInputRef}
                   type="file"
-                  accept="application/pdf"
+                  accept=".pdf,application/pdf"
                   className="sr-only"
-                  onChange={(event) => setSourceFile(event.target.files?.[0] || null)}
+                  onChange={(event) => handlePdfSelection(event.target.files?.[0] || null)}
                 />
-                <button
-                  type="button"
-                  className="ghost upload-trigger"
-                  onClick={() => pdfInputRef.current?.click()}
-                >
-                  {sourceFile ? 'Change PDF' : 'Upload PDF'}
-                </button>
-                <small className="sub">
-                  {sourceFile ? `Selected: ${sourceFile.name}` : 'Tap to choose a PDF from your device.'}
-                </small>
+                <UiIcon name="document" />
+                <strong>{sourceFile ? sourceFile.name : 'Drop your PDF here or click to upload'}</strong>
+                <small className="sub">Supported: PDF files up to 50MB.</small>
+                <div className="upload-dropzone-meta">
+                  <span>{sourceFileMeta?.sizeLabel || (sourceFile ? formatBytes(sourceFile.size) : 'No file selected')}</span>
+                  <span>{sourceFileMeta?.pageCount ? `${sourceFileMeta.pageCount} pages` : 'Page count after upload'}</span>
+                </div>
               </div>
+              {sourceFileMeta ? (
+                <div className="upload-file-chip-row">
+                  <span className="upload-file-chip">File: {sourceFileMeta.name}</span>
+                  <span className="upload-file-chip">Size: {sourceFileMeta.sizeLabel}</span>
+                  <span className="upload-file-chip">{sourceFileMeta.pageCount ? `${sourceFileMeta.pageCount} pages` : 'Pages detected after upload'}</span>
+                </div>
+              ) : null}
             </div>
           ) : null}
 
           {sourceMode === 'article' ? (
             <div className="field">
-              <label>Article text</label>
+              <label>Article source</label>
+              <div className="form-grid" style={{ marginBottom: 12 }}>
+                <input value={sourceOrigin} onChange={(event) => setSourceOrigin(event.target.value)} placeholder="Source / publication / institution" />
+                <input type="date" value={sourceDate} onChange={(event) => setSourceDate(event.target.value)} />
+              </div>
               <textarea
-                rows={7}
+                rows={8}
                 value={sourceText}
                 onChange={(event) => setSourceText(event.target.value)}
                 placeholder="Paste the article, report, protocol, or training text here."
               />
+              <div className="inline-metrics">
+                <span className="metric-pill">Words: {sourceWordCount}</span>
+                <span className="metric-pill">{sourceStructureHint}</span>
+              </div>
             </div>
           ) : null}
 
           {sourceMode === 'url' ? (
             <div className="field">
               <label>Source URL</label>
-              <input
-                value={sourceUrl}
-                onChange={(event) => setSourceUrl(event.target.value)}
-                placeholder="https://..."
-              />
+              <input value={sourceUrl} onChange={(event) => setSourceUrl(event.target.value)} placeholder="https://..." />
+              <div className="card" style={{ marginTop: 12, background: '#f8f9fb' }}>
+                <div className="section-head" style={{ marginBottom: 8 }}>
+                  <div>
+                    <h3 style={{ margin: 0 }}>Extraction preview</h3>
+                  </div>
+                </div>
+                <p className="sub" style={{ margin: 0, whiteSpace: 'pre-wrap' }}>
+                  {sourceUrl.trim() ? 'Main article content will be extracted on generation and previewed here.' : 'Paste a URL to load the article preview.'}
+                </p>
+              </div>
             </div>
           ) : null}
 
@@ -317,11 +495,11 @@ export default function AiGenerator() {
             </div>
             <p className="sub" style={{ margin: 0, whiteSpace: 'pre-wrap' }}>
               {sourceMode === 'pdf' && sourceFile
-                ? `PDF: ${sourceFile.name}`
-                : sourceMode === 'url' && sourceUrl
-                  ? sourceUrl
-                  : sourceText.trim()
-                    ? sourceText.slice(0, 240)
+                ? `PDF ready: ${sourceFile.name}`
+                : sourceMode === 'article' && sourceText.trim()
+                  ? sourceText.slice(0, 240)
+                  : sourceMode === 'url' && sourceUrl.trim()
+                    ? sourceUrl
                     : 'No source selected yet.'}
             </p>
           </div>
@@ -440,16 +618,34 @@ export default function AiGenerator() {
           </div>
 
           <div className="form-grid">
-            <div className="field">
+            <div className="field" style={{ gridColumn: '1 / -1' }}>
               <label>Output destination</label>
-              <select value={publishDestination} onChange={(event) => setPublishDestination(event.target.value)}>
-                <option value="question_bank">Question Bank</option>
-                <option value="independent_student">Independent Student</option>
-                <option value="ems_cases">EMS Cases</option>
-                <option value="exam_mcq">Exam Center - MCQ</option>
-                <option value="exam_mock">Exam Center - Mock</option>
-                <option value="simulation">Simulation</option>
-              </select>
+              <div className="destination-grid">
+                {OUTPUT_DESTINATIONS.map((destination) => {
+                  const active = publishDestination === destination.value;
+                  return (
+                    <button
+                      key={destination.value}
+                      type="button"
+                      className={`card destination-card${active ? ' is-active' : ''}`}
+                      onClick={() => setPublishDestination(destination.value)}
+                      style={{
+                        '--tab-accent': active ? 'var(--red)' : '#d1d5db',
+                        '--tab-tint': destination.tint,
+                      }}
+                    >
+                      <div className="source-mode-top">
+                        <span className="source-mode-icon"><UiIcon name={destination.icon} /></span>
+                        <span className="source-mode-badge" style={{ color: active ? 'var(--red)' : 'var(--ink-soft)', background: active ? '#fee2e2' : destination.tint }}>
+                          {active ? 'Selected' : 'Route'}
+                        </span>
+                      </div>
+                      <h3 style={{ margin: '10px 0 6px' }}>{destination.label}</h3>
+                      <p className="sub" style={{ margin: 0 }}>{destination.note}</p>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
             <div className="field">
               <label>School access</label>
@@ -476,6 +672,8 @@ export default function AiGenerator() {
               onClick={() => {
                 setJob(null);
                 setStatus('');
+                setGenerationStartedAt(null);
+                setElapsedSeconds(0);
               }}
               disabled={!job}
             >
@@ -492,6 +690,11 @@ export default function AiGenerator() {
                 </p>
               </div>
               <span className="badge active">{contentMeta.destination}</span>
+            </div>
+
+            <div className="generation-preview-item" style={{ marginBottom: 12 }}>
+              <div className="generation-preview-label">Summary</div>
+              <div className="generation-preview-value">{destinationSummary.note} · Audience: {activeAudienceLabel}</div>
             </div>
 
             <div className="generation-preview-grid">
@@ -522,6 +725,68 @@ export default function AiGenerator() {
               ))}
             </div>
 
+            <div className="generation-preview-section">
+              <div className="section-head" style={{ marginBottom: 8 }}>
+                <div>
+                  <h3 style={{ margin: 0 }}>Question preview</h3>
+                  <p className="sub" style={{ margin: '4px 0 0' }}>Sample structure based on your selected settings.</p>
+                </div>
+              </div>
+              <div className="preview-question-list">
+                {previewQuestions.map((item) => (
+                  <article key={item.prompt} className="preview-question-card">
+                    <div className="preview-question-top">
+                      <span className="badge active">{item.type.replace('_', ' ')}</span>
+                      <span className="badge draft">Preview</span>
+                    </div>
+                    <h4>{item.prompt}</h4>
+                    <div className="preview-answer">
+                      <span className="preview-answer-label">Answer</span>
+                      <p>{item.answer}</p>
+                    </div>
+                    <div className="preview-feedback">
+                      <span className="preview-feedback-label">Feedback</span>
+                      <p>{item.feedback}</p>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            </div>
+
+            <div className="generation-preview-section">
+              <div className="section-head" style={{ marginBottom: 8 }}>
+                <div>
+                  <h3 style={{ margin: 0 }}>Content statistics</h3>
+                  <p className="sub" style={{ margin: '4px 0 0' }}>The selected mix is distributed automatically.</p>
+                </div>
+              </div>
+              <div className="generation-preview-grid">
+                <div className="generation-preview-item">
+                  <div className="generation-preview-label">Total questions</div>
+                  <div className="generation-preview-value">{questionCount}</div>
+                </div>
+                <div className="generation-preview-item">
+                  <div className="generation-preview-label">Difficulty</div>
+                  <div className="generation-preview-value">{difficulty}</div>
+                </div>
+                <div className="generation-preview-item">
+                  <div className="generation-preview-label">Bloom priority</div>
+                  <div className="generation-preview-value">{bloomPriority ? 'Higher-order thinking' : 'Standard mix'}</div>
+                </div>
+                <div className="generation-preview-item">
+                  <div className="generation-preview-label">Answer key</div>
+                  <div className="generation-preview-value">{includeAnswerKey ? 'Visible to staff' : 'Hidden'}</div>
+                </div>
+              </div>
+              <div className="generation-breakdown-row">
+                {generatedQuestionBreakdown.map((item) => (
+                  <span key={item.label} className="metric-pill" style={{ borderColor: item.accent }}>
+                    {item.label}: {item.value}
+                  </span>
+                ))}
+              </div>
+            </div>
+
             {job?.result ? (
               <div className="generation-preview-result">
                 <div className="generation-preview-label">Latest draft</div>
@@ -544,6 +809,41 @@ export default function AiGenerator() {
 
             {status ? <div className="ok-note" style={{ marginTop: 12 }}>{status}</div> : null}
           </div>
+
+          {(busy || (job && job.status !== 'completed' && job.status !== 'failed')) ? (
+            <div className="generation-modal">
+              <div className="generation-modal-card card">
+                <div className="section-head">
+                  <div>
+                    <h3 style={{ margin: 0 }}>Generation progress</h3>
+                    <p className="sub" style={{ margin: '4px 0 0' }}>
+                      DeepSeek API Status: {busy ? 'Active' : 'Running'} | Elapsed: {elapsedSeconds}s | ETA: {job?.etaSeconds || 8}s
+                    </p>
+                  </div>
+                  <span className="badge active">{job?.status || 'queued'}</span>
+                </div>
+                <div className="generation-progress-list">
+                  {[
+                    { label: 'Source content extracted', done: !!sourceReady },
+                    { label: 'Content analyzed', done: (job?.progress || 0) >= 20 },
+                    { label: `Generating ${activeQuestionTypes[0]?.label || 'Multiple Choice'} questions`, done: (job?.progress || 0) >= 40 },
+                    { label: 'Generating answer key', done: (job?.progress || 0) >= 70 },
+                    { label: 'Generating feedback explanations', done: (job?.progress || 0) >= 90 },
+                  ].map((step) => (
+                    <div key={step.label} className={`generation-progress-step${step.done ? ' is-done' : ''}`}>
+                      <UiIcon name={step.done ? 'result' : 'activity'} />
+                      <span>{step.label}</span>
+                    </div>
+                  ))}
+                </div>
+                <ProgressBar
+                  label="Generation progress"
+                  status={job?.status || 'queued'}
+                  value={job?.progress || 0}
+                />
+              </div>
+            </div>
+          ) : null}
         </section>
       </div>
 

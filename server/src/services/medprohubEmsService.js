@@ -23,6 +23,21 @@ function toUuidArray(value) {
   return [];
 }
 
+function toIntArray(value) {
+  if (Array.isArray(value)) {
+    return value
+      .map((item) => Number.parseInt(item, 10))
+      .filter((item) => Number.isInteger(item));
+  }
+  if (typeof value === 'string') {
+    return value
+      .split(',')
+      .map((item) => Number.parseInt(cleanText(item), 10))
+      .filter((item) => Number.isInteger(item));
+  }
+  return [];
+}
+
 function toTextArray(value) {
   if (Array.isArray(value)) return value.map((item) => cleanText(item)).filter(Boolean);
   if (typeof value === 'string') {
@@ -93,9 +108,9 @@ async function ensureMedprohubSchema() {
           image_urls TEXT[] NOT NULL DEFAULT '{}'::text[],
           status TEXT NOT NULL DEFAULT 'draft',
           created_by UUID REFERENCES users(user_id) ON DELETE SET NULL,
-          school_id UUID REFERENCES institutions(institution_id) ON DELETE SET NULL,
-          published_to UUID[] NOT NULL DEFAULT '{}'::uuid[],
-          published_to_schools UUID[] NOT NULL DEFAULT '{}'::uuid[],
+          school_id INTEGER REFERENCES institutions(institution_id) ON DELETE SET NULL,
+          published_to INTEGER[] NOT NULL DEFAULT '{}'::integer[],
+          published_to_schools INTEGER[] NOT NULL DEFAULT '{}'::integer[],
           tags TEXT[] NOT NULL DEFAULT '{}'::text[],
           usage_count INTEGER NOT NULL DEFAULT 0,
           source_file_url TEXT,
@@ -112,7 +127,7 @@ async function ensureMedprohubSchema() {
           id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
           master_id UUID NOT NULL REFERENCES master_question_bank(id) ON DELETE CASCADE,
           teacher_id UUID NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
-          school_id UUID NOT NULL REFERENCES institutions(institution_id) ON DELETE CASCADE,
+          school_id INTEGER NOT NULL REFERENCES institutions(institution_id) ON DELETE CASCADE,
           custom_title TEXT,
           custom_description TEXT,
           selected_questions JSONB NOT NULL DEFAULT '[]'::jsonb,
@@ -120,7 +135,7 @@ async function ensureMedprohubSchema() {
           added_images TEXT[] NOT NULL DEFAULT '{}'::text[],
           school_logo TEXT,
           status TEXT NOT NULL DEFAULT 'draft',
-          published_to UUID[] NOT NULL DEFAULT '{}'::uuid[],
+          published_to INTEGER[] NOT NULL DEFAULT '{}'::integer[],
           due_date TIMESTAMP WITH TIME ZONE,
           created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
           updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
@@ -623,7 +638,7 @@ function normalizeGeneratedPayload(input, generated = null) {
     created_by: input.createdBy || null,
     school_id: input.schoolId || null,
     published_to: Array.isArray(input.publishedTo) ? input.publishedTo : [],
-    published_to_schools: Array.isArray(input.publishedToSchools) ? input.publishedToSchools : [],
+    published_to_schools: Array.isArray(input.publishedToSchools) ? toIntArray(input.publishedToSchools) : [],
     tags: Array.isArray(source.tags) ? source.tags : fallback.tags,
     usage_count: 0,
     source_file_url: input.sourceFileUrl || null,
@@ -850,7 +865,7 @@ async function loadAnyAssignmentById(id) {
 function contentFilterClause({ studentId, institutionId, sourceAlias = 'mb' }) {
   const clauses = [`$1::uuid = ANY(COALESCE(${sourceAlias}.published_to, '{}'::uuid[]))`];
   if (institutionId) {
-    clauses.push(`$2::uuid = ANY(COALESCE(${sourceAlias}.published_to_schools, '{}'::uuid[]))`);
+    clauses.push(`$2::int = ANY(COALESCE(${sourceAlias}.published_to_schools, '{}'::integer[]))`);
   }
   return clauses.join(' OR ');
 }
@@ -912,7 +927,7 @@ export const MedProhubEmsService = {
          source_file_name
        )
        VALUES (
-         $1,$2,$3,$4,$5,$6,$7::timestamptz,$8,$9,$10,$11::jsonb,$12::jsonb,$13::jsonb,$14::text[],$15::jsonb,$16::text[],$17,$18::uuid,$19::uuid[],$20::uuid[],$21::uuid[],$22::text[],$23,$24,$25
+         $1,$2,$3,$4,$5,$6,$7::timestamptz,$8,$9,$10,$11::jsonb,$12::jsonb,$13::jsonb,$14::text[],$15::jsonb,$16::text[],$17,$18::uuid,$19::int,$20::int[],$21::int[],$22::text[],$23,$24,$25
        )
        RETURNING *`,
       [
@@ -934,7 +949,7 @@ export const MedProhubEmsService = {
         payload.image_urls,
         payload.status,
         payload.created_by,
-        payload.school_id,
+        payload.school_id ? Number(payload.school_id) : null,
         payload.published_to,
         payload.published_to_schools,
         payload.tags,
@@ -991,7 +1006,7 @@ export const MedProhubEmsService = {
       status: cleanText(input.status ?? current.status) || current.status,
       school_id: input.school_id ?? current.school_id,
       published_to: Array.isArray(input.published_to) ? input.published_to : current.published_to,
-      published_to_schools: Array.isArray(input.published_to_schools) ? input.published_to_schools : current.published_to_schools,
+      published_to_schools: Array.isArray(input.published_to_schools) ? toIntArray(input.published_to_schools) : current.published_to_schools,
       tags: Array.isArray(input.tags) ? input.tags : current.tags,
       source_file_url: input.source_file_url ?? current.source_file_url,
       source_file_name: input.source_file_name ?? current.source_file_name,
@@ -1015,9 +1030,9 @@ export const MedProhubEmsService = {
            questions = $14::jsonb,
            image_urls = $15::text[],
            status = $16,
-           school_id = $17::uuid,
+           school_id = $17::int,
            published_to = $18::uuid[],
-           published_to_schools = $19::uuid[],
+           published_to_schools = $19::int[],
            tags = $20::text[],
            source_file_url = $21,
            source_file_name = $22,
@@ -1041,7 +1056,7 @@ export const MedProhubEmsService = {
         JSON.stringify(next.questions || {}),
         next.image_urls,
         next.status,
-        next.school_id,
+        next.school_id == null || next.school_id === '' ? null : Number(next.school_id),
         next.published_to,
         next.published_to_schools,
         next.tags,
@@ -1074,11 +1089,11 @@ export const MedProhubEmsService = {
 
     const target = cleanText(input.publishTarget || input.target || 'selected_schools');
     let publishedTo = toUuidArray(input.studentIds || input.publishedTo);
-    let publishedToSchools = toUuidArray(input.schoolIds || input.publishedToSchools);
+    let publishedToSchools = toIntArray(input.schoolIds || input.publishedToSchools);
 
     if (target === 'all_schools') {
       const { rows: schoolRows } = await query(`SELECT institution_id FROM institutions`);
-      publishedToSchools = schoolRows.map((row) => row.institution_id);
+      publishedToSchools = schoolRows.map((row) => Number(row.institution_id)).filter(Number.isFinite);
     }
 
     const updated = await MedProhubEmsService.updateMasterCase(id, {
@@ -1156,7 +1171,7 @@ export const MedProhubEmsService = {
          published_to,
          due_date
        )
-       VALUES ($1, $2, $3, $4, $5, $6::jsonb, $7::jsonb, $8::text[], $9, $10, $11::uuid[], $12::timestamptz)
+       VALUES ($1, $2, $3, $4, $5, $6::jsonb, $7::jsonb, $8::text[], $9, $10, $11::int[], $12::timestamptz)
        ON CONFLICT (master_id, teacher_id, school_id)
        DO UPDATE SET
          custom_title = EXCLUDED.custom_title,
@@ -1181,7 +1196,7 @@ export const MedProhubEmsService = {
         addedImages,
         input.schoolLogo || input.school_logo || null,
         cleanText(input.status || 'draft') || 'draft',
-        toUuidArray(input.publishedTo || input.published_to),
+        toIntArray(input.publishedTo || input.published_to),
         normalizeDate(input.dueDate || input.due_date),
       ]
     );
@@ -1198,7 +1213,7 @@ export const MedProhubEmsService = {
        INNER JOIN master_question_bank mb ON mb.id = tc.master_id
        LEFT JOIN users creator ON creator.user_id = mb.created_by
        WHERE ($1::uuid IS NULL OR tc.teacher_id = $1::uuid)
-         AND ($2::uuid IS NULL OR tc.school_id = $2::uuid)
+         AND ($2::int IS NULL OR tc.school_id = $2::int)
        ORDER BY tc.updated_at DESC`,
       params
     );
@@ -1217,7 +1232,7 @@ export const MedProhubEmsService = {
       `UPDATE teacher_content
        SET status = 'published',
            published_to = $2::uuid[],
-           school_id = COALESCE($3::uuid, school_id),
+           school_id = COALESCE($3::int, school_id),
            updated_at = now()
        WHERE id = $1
        RETURNING *`,
@@ -1231,11 +1246,11 @@ export const MedProhubEmsService = {
     await ensureMedprohubSchema();
     const masterClauses = [`mb.status = 'published'`, `$1::uuid = ANY(COALESCE(mb.published_to, '{}'::uuid[]))`];
     if (institutionId) {
-      masterClauses.push(`$2::uuid = ANY(COALESCE(mb.published_to_schools, '{}'::uuid[]))`);
+      masterClauses.push(`$2::int = ANY(COALESCE(mb.published_to_schools, '{}'::integer[]))`);
     }
     const teacherClauses = [`tc.status = 'published'`, `$1::uuid = ANY(COALESCE(tc.published_to, '{}'::uuid[]))`];
     if (institutionId) {
-      teacherClauses.push(`tc.school_id = $2::uuid`);
+      teacherClauses.push(`tc.school_id = $2::int`);
     }
 
     const [master, teacher, progress] = await Promise.all([

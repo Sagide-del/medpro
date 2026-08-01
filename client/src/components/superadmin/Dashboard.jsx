@@ -24,24 +24,23 @@ export default function SuperAdminDashboard() {
     <>
       <div className="page-head"><div><h1>System overview</h1><div className="sub">Live vitals across all institutions</div></div></div>
 
+      <div className="card" style={{ marginBottom: 18, borderLeft: '4px solid var(--accent-red)' }}>
+        <h2 style={{ marginTop: 0 }}>Master AI Generator</h2>
+        <p className="sub" style={{ marginTop: 0, marginBottom: 14 }}>
+          Open the generator to draft cases, refine content, and hand edited content to students.
+        </p>
+        <div className="logbook-actions">
+          <Link className="primary" to="/superadmin/ai-generator">Open generator</Link>
+          <Link className="ghost" to="/superadmin/content">Open uploader</Link>
+          <Link className="ghost" to="/admin/content-bank">Open content bank</Link>
+        </div>
+      </div>
+
       <div className="vitals">
         <Vital label="Students" value={roleCount('student')} />
         <Vital label="Teachers" value={roleCount('teacher')} />
         <Vital label="Institution admins" value={roleCount('institution_admin')} />
         <Vital label="Total revenue" value={kesShort(data.revenue.total)} money />
-      </div>
-
-      <div className="grid-auto" style={{ marginTop: 18 }}>
-        <div className="card">
-          <h2 style={{ marginTop: 0 }}>Master AI Generator</h2>
-          <p className="sub" style={{ marginTop: 0 }}>
-            Generate drafts, refine cases, and open the content customizer from one place.
-          </p>
-          <div className="logbook-actions">
-            <Link className="primary" to="/superadmin/ai-generator">Open generator</Link>
-            <Link className="ghost" to="/superadmin/content">Open uploader</Link>
-          </div>
-        </div>
       </div>
 
       {expiring.length > 0 && (

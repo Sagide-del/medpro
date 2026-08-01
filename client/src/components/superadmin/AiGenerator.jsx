@@ -241,6 +241,14 @@ export default function AiGenerator() {
     return basePreview.slice(0, Math.min(3, activeQuestionTypes.length || 3));
   }, [activeQuestionTypes.length, contentMeta.label, topic]);
 
+  const livePreviewQuestions = useMemo(() => {
+    const generated = job?.result?.previewQuestions;
+    return Array.isArray(generated) && generated.length ? generated : previewQuestions;
+  }, [job?.result?.previewQuestions, previewQuestions]);
+
+  const liveSummary = job?.result?.summary || job?.result?.draft || '';
+  const liveAnalysis = job?.result?.analysis || null;
+
   useEffect(() => {
     const inProgress = !!job && job.status !== 'completed' && job.status !== 'failed';
     if (!generationStartedAt || !inProgress) {
@@ -363,7 +371,6 @@ export default function AiGenerator() {
           <div className="section-head">
             <div>
               <h2>Source studio</h2>
-              <p className="sub">Upload a PDF, paste an article, or attach a URL. Keep the source focused and the output clean.</p>
             </div>
           </div>
 
@@ -508,8 +515,7 @@ export default function AiGenerator() {
         <section className="card">
           <div className="section-head">
             <div>
-              <h2>Generation brief</h2>
-              <p className="sub">Choose what the AI should build, then send it to the right MedProHub library.</p>
+              <h2>Generation settings</h2>
             </div>
           </div>
 
@@ -694,7 +700,9 @@ export default function AiGenerator() {
 
             <div className="generation-preview-item" style={{ marginBottom: 12 }}>
               <div className="generation-preview-label">Summary</div>
-              <div className="generation-preview-value">{destinationSummary.note} · Audience: {activeAudienceLabel}</div>
+              <div className="generation-preview-value">
+                {destinationSummary.note} · Audience: {activeAudienceLabel}
+              </div>
             </div>
 
             <div className="generation-preview-grid">
@@ -729,17 +737,16 @@ export default function AiGenerator() {
               <div className="section-head" style={{ marginBottom: 8 }}>
                 <div>
                   <h3 style={{ margin: 0 }}>Question preview</h3>
-                  <p className="sub" style={{ margin: '4px 0 0' }}>Sample structure based on your selected settings.</p>
                 </div>
               </div>
               <div className="preview-question-list">
-                {previewQuestions.map((item) => (
-                  <article key={item.prompt} className="preview-question-card">
+                {livePreviewQuestions.map((item, index) => (
+                  <article key={item.question || item.prompt || `${item.type || 'question'}-${index}`} className="preview-question-card">
                     <div className="preview-question-top">
-                      <span className="badge active">{item.type.replace('_', ' ')}</span>
+                      <span className="badge active">{String(item.type || 'question').replace('_', ' ')}</span>
                       <span className="badge draft">Preview</span>
                     </div>
-                    <h4>{item.prompt}</h4>
+                    <h4>{item.question || item.prompt}</h4>
                     <div className="preview-answer">
                       <span className="preview-answer-label">Answer</span>
                       <p>{item.answer}</p>
@@ -757,7 +764,6 @@ export default function AiGenerator() {
               <div className="section-head" style={{ marginBottom: 8 }}>
                 <div>
                   <h3 style={{ margin: 0 }}>Content statistics</h3>
-                  <p className="sub" style={{ margin: '4px 0 0' }}>The selected mix is distributed automatically.</p>
                 </div>
               </div>
               <div className="generation-preview-grid">
@@ -785,6 +791,17 @@ export default function AiGenerator() {
                   </span>
                 ))}
               </div>
+              {liveAnalysis ? (
+                <div className="generation-preview-result" style={{ marginTop: 14 }}>
+                  <div className="generation-preview-label">Source analysis</div>
+                  <div className="generation-preview-value">
+                    {liveAnalysis.incident_type || 'Unknown'} · {liveAnalysis.location || 'Not stated in source'}
+                  </div>
+                  <p className="sub" style={{ margin: '8px 0 0', whiteSpace: 'pre-wrap' }}>
+                    {(Array.isArray(liveAnalysis.key_facts) ? liveAnalysis.key_facts : []).slice(0, 5).join(' • ') || 'Analysis will appear after generation completes.'}
+                  </p>
+                </div>
+              ) : null}
             </div>
 
             {job?.result ? (
@@ -792,7 +809,7 @@ export default function AiGenerator() {
                 <div className="generation-preview-label">Latest draft</div>
                 <div className="generation-preview-value">{job.result.title || title}</div>
                 <p className="sub" style={{ margin: '8px 0 0', whiteSpace: 'pre-wrap' }}>
-                  {job.result.draft || job.result.sourceExcerpt || 'Preview will appear here after generation starts.'}
+                  {liveSummary || job.result.sourceExcerpt || 'Preview will appear here after generation starts.'}
                 </p>
               </div>
             ) : (

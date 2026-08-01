@@ -2,10 +2,12 @@ import { query, withTransaction } from '../config/database.js';
 import { asyncHandler } from '../utils/helpers.js';
 import {
   createGenerationJob,
+  failGenerationJob,
   finishGenerationJob,
   getGenerationJob,
   updateGenerationJob,
 } from '../services/masterAiGeneratorService.js';
+import { getSignedPdfUrl } from '../services/storage.js';
 
 const CONTENT_DESTINATIONS = {
   case_study: 'Question Bank',
@@ -46,6 +48,71 @@ function stripHtml(input = '') {
     .trim();
 }
 
+function stripCodeFence(input = '') {
+  return String(input)
+    .replace(/```json\s*/gi, '```')
+    .replace(/^```[\w-]*\s*/m, '')
+    .replace(/\s*```$/m, '')
+    .trim();
+}
+
+function safeJsonParse(value, fallback = null) {
+  if (!value) return fallback;
+  try {
+    return JSON.parse(value);
+  } catch {
+    return fallback;
+  }
+}
+
+async function callDeepSeek(messages, { model = 'deepseek-v4-pro', temperature = 0.2 } = {}) {
+  const apiKey = process.env.DEEPSEEK_API_KEY;
+  if (!apiKey) {
+    throw new Error('DEEPSEEK_API_KEY is not configured.');
+  }
+
+  const baseUrl = process.env.DEEPSEEK_BASE_URL || 'https://api.deepseek.com';
+  const response = await fetch(`${baseUrl.replace(/\/$/, '')}/chat/completions`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      model,
+      messages,
+      temperature,
+      stream: false,
+      reasoning_effort: 'high',
+      extra_body: { thinking: { type: 'enabled' } },
+    }),
+  });
+
+  if (!response.ok) {
+    const text = await response.text().catch(() => '');
+    throw new Error(`DeepSeek request failed (${response.status}): ${text.slice(0, 300)}`);
+  }
+
+  const data = await response.json();
+  return data?.choices?.[0]?.message?.content || '';
+}
+
+async function extractPdfTextFromUrl(fileUrl) {
+  if (!fileUrl) return '';
+  try {
+    const signedUrl = await getSignedPdfUrl(fileUrl, 3600);
+    const response = await fetch(signedUrl, { redirect: 'follow' });
+    if (!response.ok) return '';
+    const bytes = Buffer.from(await response.arrayBuffer());
+    const pdfModule = await import('pdf-parse');
+    const pdfParse = pdfModule.default || pdfModule;
+    const parsed = await pdfParse(bytes);
+    return cleanText(parsed?.text || '').slice(0, 12000);
+  } catch {
+    return '';
+  }
+}
+
 async function loadUrlExcerpt(url) {
   if (!url) return '';
   try {
@@ -60,6 +127,153 @@ async function loadUrlExcerpt(url) {
   } catch {
     return '';
   }
+}
+
+async function extractSourceMaterial({ sourceType, sourceText, sourceUrl, sourceFileUrl, sourceTitle, sourceOrigin, sourceDate }) {
+  const title = cleanText(sourceTitle);
+  const origin = cleanText(sourceOrigin);
+  const date = cleanText(sourceDate);
+  const text = cleanText(sourceText);
+  if (text) {
+    return {
+      sourceText: text.slice(0, 12000),
+      sourceTitle: title,
+      sourceOrigin: origin,
+      sourceDate: date,
+      sourceNote: 'Text pasted by user.',
+    };
+  }
+
+  if (sourceType === 'pdf' && sourceFileUrl) {
+    const pdfText = await extractPdfTextFromUrl(sourceFileUrl);
+    if (pdfText) {
+      return {
+        sourceText: pdfText,
+        sourceTitle: title || 'Uploaded PDF',
+        sourceOrigin: origin,
+        sourceDate: date,
+        sourceNote: 'PDF text extracted from upload.',
+      };
+    }
+  }
+
+  if (sourceType === 'url' && sourceUrl) {
+    const urlText = await loadUrlExcerpt(sourceUrl);
+    if (urlText) {
+      return {
+        sourceText: urlText.slice(0, 12000),
+        sourceTitle: title || cleanText(sourceUrl),
+        sourceOrigin: origin,
+        sourceDate: date,
+        sourceNote: 'Web content extracted from URL.',
+      };
+    }
+  }
+
+  return {
+    sourceText: cleanText(title || sourceUrl || sourceFileUrl || ''),
+    sourceTitle: title,
+    sourceOrigin: origin,
+    sourceDate: date,
+    sourceNote: 'No extractable source text found.',
+  };
+}
+
+async function analyzeSourceContent({ sourceType, sourceText, sourceTitle, sourceOrigin, sourceDate, sourceUrl, contentType, audience, topic, difficulty }) {
+  const prompt = [
+    'Analyze the source material for MedProHub content generation.',
+    'Use only the supplied source text. Do not invent facts.',
+    `Content type: ${contentType}`,
+    `Target audience: ${audience}`,
+    `Topic hint: ${topic || 'Not provided'}`,
+    `Difficulty: ${difficulty}`,
+    `Source title: ${sourceTitle || 'Not provided'}`,
+    `Source origin: ${sourceOrigin || 'Not provided'}`,
+    `Source date: ${sourceDate || 'Not provided'}`,
+    `Source URL: ${sourceUrl || 'Not provided'}`,
+    `Source type: ${sourceType}`,
+    '',
+    'SOURCE MATERIAL:',
+    sourceText.slice(0, 12000) || 'No source text available.',
+    '',
+    'Return strict JSON with keys:',
+    '{',
+    '  "incident_type": string,',
+    '  "location": string,',
+    '  "date": string,',
+    '  "key_facts": string[],',
+    '  "patient_population": string,',
+    '  "education_focus": string[],',
+    '  "recommended_tags": string[],',
+    '  "structure_notes": string,',
+    '  "warnings": string[]',
+    '}',
+  ].join('\n');
+
+  const raw = await callDeepSeek([
+    {
+      role: 'system',
+      content: 'You are an expert EMS curriculum developer for Kenya. Respond only in strict JSON.',
+    },
+    { role: 'user', content: prompt },
+  ]);
+  return safeJsonParse(stripCodeFence(raw), {});
+}
+
+async function generateSourceDrivenDraft({ contentType, title, sourceText, analysis, audience, topic, difficulty, questionCount, includeAnswerKey, includeFeedback, bloomPriority, sourceTitle, sourceOrigin, sourceDate, sourceUrl }) {
+  const prompt = [
+    'Generate source-driven educational content for MedProHub.',
+    'Use ONLY the source material and analysis below. Do not invent facts or generic placeholders.',
+    'If the source does not specify something, use "Not stated in source."',
+    `Content type: ${contentType}`,
+    `Draft title: ${title}`,
+    `Audience: ${audience}`,
+    `Topic hint: ${topic || 'Not provided'}`,
+    `Difficulty: ${difficulty}`,
+    `Question count: ${questionCount}`,
+    `Include answer key: ${includeAnswerKey ? 'yes' : 'no'}`,
+    `Include feedback: ${includeFeedback ? 'yes' : 'no'}`,
+    `Prioritize higher-order thinking: ${bloomPriority ? 'yes' : 'no'}`,
+    `Source title: ${sourceTitle || 'Not provided'}`,
+    `Source origin: ${sourceOrigin || 'Not provided'}`,
+    `Source date: ${sourceDate || 'Not provided'}`,
+    `Source URL: ${sourceUrl || 'Not provided'}`,
+    '',
+    'ANALYSIS JSON:',
+    JSON.stringify(analysis || {}, null, 2),
+    '',
+    'SOURCE MATERIAL:',
+    sourceText.slice(0, 12000) || 'No source text available.',
+    '',
+    'Return strict JSON with keys:',
+    '{',
+    '  "title": string,',
+    '  "summary": string,',
+    '  "source_alignment": string,',
+    '  "preview_questions": [',
+    '    {',
+    '      "type": "multiple_choice" | "true_false" | "short_answer" | "scenario_step",',
+    '      "question": string,',
+    '      "options": string[] | null,',
+    '      "answer": string,',
+    '      "feedback": string,',
+    '      "bloom_level": string,',
+    '      "difficulty": string',
+    '    }',
+    '  ],',
+    '  "answer_key": object,',
+    '  "content_notes": string[]',
+    '}',
+  ].join('\n');
+
+  const raw = await callDeepSeek([
+    {
+      role: 'system',
+      content: 'You are an expert EMS curriculum developer. Generate only source-based educational content in strict JSON.',
+    },
+    { role: 'user', content: prompt },
+  ]);
+  return safeJsonParse(stripCodeFence(raw), {});
 }
 
 function buildSourceSummary({ sourceType, sourceTitle, sourceText, sourceUrl, sourceFileName, prompt, contentType }) {
@@ -208,6 +422,8 @@ export const startGeneration = asyncHandler(async (req, res) => {
   const prompt = cleanText(body.prompt || body.instructions || '');
   const sourceUrl = cleanText(body.sourceUrl || body.source_url || '');
   const sourceTitle = cleanText(body.sourceTitle || body.source_title || '');
+  const sourceOrigin = cleanText(body.sourceOrigin || body.source_origin || '');
+  const sourceDate = cleanText(body.sourceDate || body.source_date || '');
   const sourceText = cleanText(body.sourceText || body.source_text || '');
   const sourceFileUrl = req.file?.location || req.file?.url || req.file?.path || null;
   const sourceFileName = req.file?.originalname || null;
@@ -225,8 +441,16 @@ export const startGeneration = asyncHandler(async (req, res) => {
   const selectedSchoolIds = splitIds(body.selectedSchoolIds || body.schoolIds || []);
   const parsedQuestionTypes = parseQuestionTypes(body.questionTypes || body.question_types);
   const destination = CONTENT_DESTINATIONS[contentType] || 'Question Bank';
-  const extractedExcerpt = sourceType === 'url' ? await loadUrlExcerpt(sourceUrl) : '';
-  const sourceExcerpt = (sourceText || extractedExcerpt || (sourceFileName ? `Uploaded file: ${sourceFileName}` : '')).slice(0, 5000);
+  const extractedSource = await extractSourceMaterial({
+    sourceType,
+    sourceText,
+    sourceUrl,
+    sourceFileUrl,
+    sourceTitle,
+    sourceOrigin,
+    sourceDate,
+  });
+  const sourceExcerpt = cleanText(extractedSource.sourceText || sourceText || sourceUrl || sourceFileName || title).slice(0, 12000);
   const summary = buildSourceSummary({
     sourceType,
     sourceTitle,
@@ -257,38 +481,119 @@ export const startGeneration = asyncHandler(async (req, res) => {
     title,
     description: summary || prompt || title,
     etaSeconds: 8,
-    result: {
-      title,
-      contentType,
-      destination,
-      generationProfile,
-      sourceType,
-      sourceUrl: sourceUrl || null,
-      sourceTitle: sourceTitle || null,
-      sourceFileUrl,
-      sourceFileName,
-      prompt,
+      result: {
+        title,
+        contentType,
+        destination,
+        generationProfile,
+        sourceType,
+        sourceUrl: sourceUrl || null,
+        sourceTitle: sourceTitle || null,
+        sourceOrigin: sourceOrigin || null,
+        sourceDate: sourceDate || null,
+        sourceFileUrl,
+        sourceFileName,
+        prompt,
+      sourceExcerpt,
+      sourceNote: extractedSource.sourceNote,
+      previewQuestions: [],
+      answerKey: {},
     },
   });
 
-  updateGenerationJob(job.jobId, { status: 'running', progress: 20 });
+  updateGenerationJob(job.jobId, {
+    status: 'running',
+    progress: 15,
+    description: 'Source content extracted',
+  });
 
-  setTimeout(() => {
-    finishGenerationJob(job.jobId, {
-      title,
-      contentType,
-      destination,
-      generationProfile,
-      sourceType,
-      sourceUrl: sourceUrl || null,
-      sourceTitle: sourceTitle || null,
-      sourceFileUrl,
-      sourceFileName,
-      prompt,
-      sourceExcerpt,
-      draft: prompt || sourceExcerpt || `${title} draft generated successfully.`,
-    });
-  }, 1200);
+  setTimeout(async () => {
+    try {
+      updateGenerationJob(job.jobId, {
+        status: 'running',
+        progress: 40,
+        description: 'Analyzing source material',
+      });
+
+      const analysis = await analyzeSourceContent({
+        sourceType,
+        sourceText: sourceExcerpt,
+        sourceTitle,
+        sourceOrigin,
+        sourceDate,
+        sourceUrl,
+        contentType,
+        audience,
+        topic,
+        difficulty,
+      });
+
+      updateGenerationJob(job.jobId, {
+        status: 'running',
+        progress: 70,
+        description: 'Generating source-based content',
+      });
+
+      const generated = await generateSourceDrivenDraft({
+        contentType,
+        title,
+        sourceText: sourceExcerpt,
+        analysis,
+        audience,
+        topic,
+        difficulty,
+        questionCount,
+        includeAnswerKey,
+        includeFeedback,
+        bloomPriority,
+      });
+
+      const previewQuestions = Array.isArray(generated.preview_questions)
+        ? generated.preview_questions.map((question, index) => ({
+          id: `${job.jobId}-preview-${index + 1}`,
+          type: cleanText(question.type || 'short_answer'),
+          question: cleanText(question.question || question.prompt || ''),
+          options: Array.isArray(question.options) ? question.options : [],
+          answer: cleanText(question.answer || question.correct_answer || ''),
+          feedback: cleanText(question.feedback || question.explanation || ''),
+          bloom_level: cleanText(question.bloom_level || question.bloomLevel || ''),
+          difficulty: cleanText(question.difficulty || difficulty),
+        }))
+        : [];
+
+      const answerKey = generated.answer_key && typeof generated.answer_key === 'object' ? generated.answer_key : {};
+      const contentNotes = Array.isArray(generated.content_notes) ? generated.content_notes : [];
+      const previewDraft = cleanText(generated.summary || generated.source_alignment || `${title} draft generated from source material.`);
+
+      finishGenerationJob(job.jobId, {
+        title: cleanText(generated.title || title),
+        contentType,
+        destination,
+        generationProfile,
+        sourceType,
+        sourceUrl: sourceUrl || null,
+        sourceTitle: sourceTitle || null,
+        sourceOrigin: sourceOrigin || null,
+        sourceDate: sourceDate || null,
+        sourceFileUrl,
+        sourceFileName,
+        prompt,
+        sourceExcerpt,
+        sourceNote: extractedSource.sourceNote,
+        analysis,
+        previewQuestions,
+        answerKey,
+        contentNotes,
+        draft: previewDraft,
+      });
+    } catch (error) {
+      failGenerationJob(job.jobId, error.message);
+      updateGenerationJob(job.jobId, {
+        status: 'failed',
+        description: error.message,
+      });
+    }
+  }, 0);
 
   res.status(201).json({
     jobId: job.jobId,
@@ -305,6 +610,9 @@ export const startGeneration = asyncHandler(async (req, res) => {
       sourceFileUrl,
       sourceFileName,
       sourceExcerpt,
+      sourceNote: extractedSource.sourceNote,
+      previewQuestions: [],
+      answerKey: {},
     },
   });
 });

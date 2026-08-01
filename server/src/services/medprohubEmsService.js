@@ -564,9 +564,10 @@ async function callDeepSeekGenerate(input) {
   if (!apiKey) return null;
 
   const baseUrl = process.env.DEEPSEEK_BASE_URL || 'https://api.deepseek.com';
-  const model = process.env.DEEPSEEK_MODEL || 'deepseek-chat';
+  const model = process.env.DEEPSEEK_MODEL || 'deepseek-v4-pro';
   const prompt = [
-    'You are an expert Kenyan EMS educator. Generate a complete EMS case study.',
+    'You are an expert Kenyan EMS educator. Generate a complete EMS case study based only on the provided source material.',
+    'Do not hallucinate, do not invent incident details, and do not reuse generic template content.',
     `Event Type: ${input.eventType}`,
     `Location: ${input.location}`,
     `Date: ${input.incidentDate}`,
@@ -576,6 +577,7 @@ async function callDeepSeekGenerate(input) {
     `Difficulty: ${input.difficulty}`,
     'Return ONLY valid JSON with the keys: title, description, incident_briefing, dispatch_info, patient_table, stages, answer_key, learning_points.',
     'stages must be an array of worksheet blocks, each block containing id, type, and the appropriate properties for the MedProHub worksheet renderer.',
+    'If a detail is not present in the source, write "Not stated in source".',
   ].join('\n');
 
   const response = await fetch(`${baseUrl.replace(/\/$/, '')}/chat/completions`, {

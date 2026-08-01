@@ -16,6 +16,49 @@ function findHardcodedCase(caseNumber) {
   return kenyaEmsCaseStudies.find((c) => c.id === Number(caseNumber)) || null;
 }
 
+async function findCaseData(caseNumber) {
+  const n = Number(caseNumber);
+  const { rows } = await query(
+    `SELECT
+       id,
+       title,
+       category,
+       difficulty,
+       location,
+       incident_date,
+       description,
+       passing_percentage,
+       content_json
+     FROM case_studies
+     WHERE order_number = $1
+       AND is_active = true
+     LIMIT 1`,
+    [n]
+  );
+  const row = rows[0];
+  const fallback = findHardcodedCase(n);
+  if (!row && !fallback) return null;
+
+  const sections = Array.isArray(row?.content_json?.sections)
+    ? row.content_json.sections
+    : Array.isArray(row?.content_json?.blocks)
+      ? row.content_json.blocks
+      : fallback?.sections || [];
+
+  return {
+    id: row?.id || fallback?.id || n,
+    order_number: n,
+    title: row?.title || fallback?.title || `Case ${n}`,
+    category: row?.category || fallback?.category || null,
+    difficulty: row?.difficulty || fallback?.difficulty || null,
+    location: row?.location || fallback?.location || null,
+    incidentDate: row?.incident_date || fallback?.incidentDate || null,
+    description: row?.description || fallback?.description || null,
+    passingScore: Number(row?.passing_percentage || fallback?.passingScore || 70),
+    sections,
+  };
+}
+
 function gradableSections(caseData) {
   return (caseData?.sections || []).filter((section) => section.type === 'response' || section.type === 'reflection');
 }
@@ -91,7 +134,7 @@ export const KenyaEmsProgress = {
     const result = [];
     for (let caseNumber = 1; caseNumber <= TOTAL_CASES; caseNumber += 1) {
       const row = byNumber.get(caseNumber);
-      const caseData = findHardcodedCase(caseNumber);
+      const caseData = await findCaseData(caseNumber);
       result.push({
         case_number: caseNumber,
         title: caseData?.title || `Case ${caseNumber}`,
@@ -99,6 +142,7 @@ export const KenyaEmsProgress = {
         difficulty: caseData?.difficulty || null,
         location: caseData?.location || null,
         incident_date: caseData?.incidentDate || null,
+        sections: caseData?.sections || [],
         passing_percentage: caseData?.passingScore ?? 70,
         status: row?.status || defaultStatus(caseNumber),
         score: row?.score || 0,
@@ -112,7 +156,7 @@ export const KenyaEmsProgress = {
   async getForStudent(studentId, caseNumber) {
     const n = Number(caseNumber);
     if (!Number.isInteger(n) || n < 1 || n > TOTAL_CASES) return null;
-    const caseData = findHardcodedCase(n);
+    const caseData = await findCaseData(n);
     if (!caseData) return null;
 
     const { rows } = await query(
@@ -131,6 +175,7 @@ export const KenyaEmsProgress = {
       difficulty: caseData.difficulty,
       location: caseData.location,
       incident_date: caseData.incidentDate,
+      sections: caseData.sections || [],
       passing_percentage: caseData.passingScore,
       status: row?.status || defaultStatus(n),
       score: row?.score || 0,
@@ -143,7 +188,7 @@ export const KenyaEmsProgress = {
     return withTransaction(async (db) => {
       const n = Number(caseNumber);
       if (!Number.isInteger(n) || n < 1 || n > TOTAL_CASES) return null;
-      const caseData = findHardcodedCase(n);
+      const caseData = await findCaseData(n);
       if (!caseData) return null;
 
       const { rows: existingRows } = await db.query(
@@ -207,7 +252,7 @@ export const KenyaEmsProgress = {
             [studentId, nextNumber]
           );
         }
-        const nextCaseData = findHardcodedCase(nextNumber);
+        const nextCaseData = await findCaseData(nextNumber);
         nextCaseUnlocked = { case_number: nextNumber, title: nextCaseData?.title || `Case ${nextNumber}` };
       }
 
@@ -218,6 +263,7 @@ export const KenyaEmsProgress = {
         caseNumber: n,
         title: caseData.title,
         passingScore: caseData.passingScore,
+        sections: caseData.sections || [],
         attempt: {
           score,
           percentage,

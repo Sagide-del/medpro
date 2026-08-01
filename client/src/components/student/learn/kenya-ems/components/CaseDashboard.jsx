@@ -1,7 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import UnlockProgress from './UnlockProgress';
 import UiIcon from '../../../../shared/UiIcon';
-import { TOTAL_KENYA_EMS_CASES, findCaseEntry } from '../kenyaEmsRegistry';
+import { TOTAL_KENYA_EMS_CASES } from '../kenyaEmsRegistry';
 
 export default function CaseDashboard({ cases = [], subscription }) {
   const navigate = useNavigate();
@@ -11,7 +11,6 @@ export default function CaseDashboard({ cases = [], subscription }) {
   const avgScore = scores.length ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : 0;
   const nextCase = cases.find((c) => c.status !== 'completed' && c.status !== 'locked');
   const isCertified = total > 0 && completed === total;
-  const currentEntry = nextCase ? findCaseEntry(nextCase.case_number) : null;
 
   return (
     <header className="kems-dashboard-hero">
@@ -22,7 +21,7 @@ export default function CaseDashboard({ cases = [], subscription }) {
           </span>
           <div>
             <h1>Kenya EMS Case Simulation</h1>
-            <p>Complete the 15 real incident worksheets in order and unlock the next case as you pass.</p>
+            <p>Complete the real incident worksheets in order and unlock the next case as you pass.</p>
           </div>
         </div>
         <div className="kems-dashboard-hero-actions">
@@ -70,16 +69,16 @@ export default function CaseDashboard({ cases = [], subscription }) {
           <span className="kems-stat-icon" aria-hidden="true"><UiIcon name={isCertified ? 'result' : 'document'} /></span>
           <div className="kems-stat-value">{isCertified ? 'Certified' : 'EMT Trainee'}</div>
           <div className="kems-stat-label">Certification Status</div>
-          <div className="kems-stat-sublabel">75% average required</div>
+          <div className="kems-stat-sublabel">80% average required</div>
         </div>
         <div className="kems-stat-card red">
           <span className="kems-stat-icon" aria-hidden="true"><UiIcon name="dispatch" /></span>
           <div className="kems-stat-value">
-            {currentEntry?.meta?.shortTitle || currentEntry?.meta?.title || (isCertified ? 'All Cases Passed' : `Case ${nextCase?.case_number ?? 1}`)}
+            {nextCase?.title || (isCertified ? 'All Cases Passed' : `Case ${nextCase?.case_number ?? 1}`)}
           </div>
           <div className="kems-stat-label">Current Module</div>
           <div className="kems-stat-sublabel">
-            {currentEntry?.meta?.difficulty ? `${currentEntry.meta.difficulty} · Advanced EMT training` : 'Advanced EMT training'}
+            {nextCase?.difficulty ? `${nextCase.difficulty} · Advanced EMT training` : 'Advanced EMT training'}
           </div>
         </div>
       </div>
@@ -88,3 +87,4 @@ export default function CaseDashboard({ cases = [], subscription }) {
     </header>
   );
 }
+

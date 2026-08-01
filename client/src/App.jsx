@@ -28,13 +28,14 @@ import StudentProgressAnalytics from './components/student/ProgressAnalytics';
 import StudentResearch from './components/student/Research';
 import StudentSimulations from './components/student/Simulations';
 import StudentProctoredExams from './components/student/ProctoredExams';
-import StudentKenyaEmsCases from './components/student/learn/kenya-ems/KenyaEmsLearnPage';
+import StudentKenyaEmsCases from './pages/student/KenyaEmsCases';
 import StudentMockPreTest from './components/student/exams/mockPreTest/MockPreTestPage';
 
 import TeacherDashboard from './components/teacher/Dashboard';
 import TeacherAssignments from './components/teacher/Assignments';
 import TeacherQuestionBank from './components/teacher/QuestionBank';
 import TeacherAiAssignmentGenerator from './components/teacher/AiAssignmentGenerator';
+import TeacherContentCustomizer from './pages/teacher/ContentCustomizer';
 import TeacherMarkingQueue from './components/teacher/MarkingQueue';
 import TeacherStudentPerformance from './components/teacher/StudentPerformance';
 import TeacherSimulationPerformance from './components/teacher/SimulationPerformance';
@@ -54,6 +55,7 @@ import AdminUsers from './components/admin/Users';
 import AdminRevenue from './components/admin/Revenue';
 import AdminClinicalRotations from './components/admin/ClinicalRotations';
 import AdminKenyaEmsCasesManager from './components/admin/KenyaEmsCasesManager';
+import AdminContentBank from './pages/admin/ContentBank';
 
 import SuperAdminDashboard from './components/superadmin/Dashboard';
 import SuperAdminInstitutions from './components/superadmin/Institutions';
@@ -61,6 +63,7 @@ import SuperAdminContentUpload from './components/superadmin/ContentUpload';
 import SuperAdminClinicalReferenceCardsManager from './components/superadmin/ClinicalReferenceCardsManager';
 import SuperAdminRevenueAnalytics from './components/superadmin/RevenueAnalytics';
 import SuperAdminELibraryManager from './components/superadmin/ELibraryManager';
+import SuperAdminAiGenerator from './pages/admin/AiGenerator';
 
 
 const STUDENT_LINKS = [
@@ -119,6 +122,7 @@ const TEACHER_LINKS = [
   { to: '/teacher/assignments', label: 'Assignments' },
   { to: '/teacher/question-bank', label: 'Question Bank' },
   { to: '/teacher/ai-generator', label: 'AI Assignment Generator' },
+  { to: '/teacher/content-customizer', label: 'Content Customizer' },
   { to: '/teacher/marking-queue', label: 'Marking Queue' },
   { to: '/teacher/student-performance', label: 'Student Performance' },
   { to: '/teacher/simulation-performance', label: 'Simulation Performance' },
@@ -134,6 +138,7 @@ const TEACHER_LINKS = [
 const ADMIN_LINKS = [
   { to: '/admin/dashboard', label: 'Dashboard', end: true },
   { to: '/admin/reference-cards', label: 'Clinical Reference Cards' },
+  { to: '/admin/content-bank', label: 'Content Bank' },
   { to: '/admin/institution', label: 'Institution' },
   { to: '/admin/users', label: 'Users' },
   { to: '/admin/revenue', label: 'Revenue' },
@@ -172,6 +177,10 @@ const SUPERADMIN_LINKS = [
       {
         to: '/superadmin/content',
         label: 'Upload Content',
+      },
+      {
+        to: '/superadmin/ai-generator',
+        label: 'AI Generator',
       },
       {
         to: '/superadmin/elibrary',
@@ -333,6 +342,7 @@ function AppRoutes() {
           <Route path="/teacher/assignments" element={<TeacherAssignments />} />
           <Route path="/teacher/question-bank" element={<TeacherQuestionBank />} />
           <Route path="/teacher/ai-generator" element={<TeacherAiAssignmentGenerator />} />
+          <Route path="/teacher/content-customizer" element={<TeacherContentCustomizer />} />
           <Route path="/teacher/marking-queue" element={<TeacherMarkingQueue />} />
           <Route path="/teacher/student-performance" element={<TeacherStudentPerformance />} />
           <Route path="/teacher/simulation-performance" element={<TeacherSimulationPerformance />} />
@@ -352,6 +362,7 @@ function AppRoutes() {
           <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
           <Route path="/admin/dashboard" element={<AdminDashboard />} />
           <Route path="/admin/reference-cards" element={<AdminClinicalReferenceCardsManager />} />
+          <Route path="/admin/content-bank" element={<AdminContentBank />} />
           <Route path="/admin/kenya-ems-cases" element={<RequireRole role="super_admin"><AdminKenyaEmsCasesManager /></RequireRole>} />
           <Route path="/admin/institution" element={<AdminInstitutions />} />
           <Route path="/admin/users" element={<AdminUsers />} />
@@ -367,6 +378,7 @@ function AppRoutes() {
           <Route path="/superadmin/institutions" element={<SuperAdminInstitutions />} />
           <Route path="/superadmin/users" element={<AdminUsers />} />
           <Route path="/superadmin/content" element={<SuperAdminContentUpload />} />
+          <Route path="/superadmin/ai-generator" element={<SuperAdminAiGenerator />} />
           <Route path="/superadmin/elibrary" element={<SuperAdminELibraryManager />} />
           <Route path="/superadmin/reference-cards" element={<SuperAdminClinicalReferenceCardsManager />} />
           <Route path="/superadmin/revenue" element={<SuperAdminRevenueAnalytics />} />

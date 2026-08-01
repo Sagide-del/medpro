@@ -4,7 +4,7 @@ import { api } from '../../../../services/api';
 import CaseDashboard from './components/CaseDashboard';
 import CaseCard from './components/CaseCard';
 import ScoreCard from './components/ScoreCard';
-import { findCaseEntry } from './kenyaEmsRegistry';
+import KenyaEMSWorksheet from '../../KenyaEMSWorksheet';
 
 // Learn -> Kenya EMS. This module never depends on the `case_studies` database
 // table: all 15 cases are hard-coded React components (see ./cases/CaseN.jsx,
@@ -62,14 +62,13 @@ function KenyaEmsDashboard() {
 
       <div className="kems-case-grid">
         {cases.map((studyCase, index) => {
-          const entry = findCaseEntry(studyCase.case_number);
           const locked = studyCase.status === 'locked';
           const completed = studyCase.status === 'completed';
           const previous = cases[index - 1];
           return (
             <CaseCard
               key={studyCase.case_number}
-              meta={entry?.meta}
+              meta={studyCase}
               progress={studyCase}
               locked={locked}
               completed={completed}
@@ -108,8 +107,6 @@ function KenyaEmsCaseRunner() {
       .finally(() => setBusy(false));
   }, [caseNumber]);
 
-  const entry = findCaseEntry(caseNumber);
-
   async function submit() {
     setBusy(true);
     setError('');
@@ -125,9 +122,7 @@ function KenyaEmsCaseRunner() {
 
   if (error) return <div className="alert">{error}</div>;
   if (busy && !caseStudy) return <CaseRunnerSkeleton />;
-  if (!caseStudy || !entry) return <CaseRunnerSkeleton />;
-
-  const CaseComponent = entry.Component;
+  if (!caseStudy) return <CaseRunnerSkeleton />;
 
   if (result) {
     const scoreResult = {
@@ -166,11 +161,14 @@ function KenyaEmsCaseRunner() {
 
   return (
     <section className="kems-page">
-      <CaseComponent
+      <KenyaEMSWorksheet
+        caseStudy={caseStudy}
+        blocks={caseStudy.sections || []}
         responses={responses}
-        onChangeResponse={(activityId, value) => {
+        onChange={(activityId, value) => {
           setResponses((current) => ({ ...current, [activityId]: value }));
         }}
+        saveState="draft"
       />
 
       <div className="kems-sticky-actions">

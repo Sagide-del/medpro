@@ -92,6 +92,7 @@ export default function AiGenerator() {
   const [reviewFilter, setReviewFilter] = useState('all');
   const [reviewQueue, setReviewQueue] = useState([]);
   const [selectedReviewId, setSelectedReviewId] = useState('');
+  const [selectedReviewIds, setSelectedReviewIds] = useState([]);
   const [assignmentTitle, setAssignmentTitle] = useState('');
   const [publishBusy, setPublishBusy] = useState(false);
   const [publishConfirmation, setPublishConfirmation] = useState('');
@@ -286,9 +287,10 @@ export default function AiGenerator() {
   const reviewCounts = useMemo(() => normalizedReviewQueue.reduce((acc, item) => {
     acc.total += 1;
     acc[item.status] = (acc[item.status] || 0) + 1;
-    if (item.status === 'approved') acc.selected += 1;
     return acc;
-  }, { total: 0, needs_review: 0, approved: 0, rejected: 0, selected: 0 }), [normalizedReviewQueue]);
+  }, { total: 0, needs_review: 0, approved: 0, rejected: 0 }), [normalizedReviewQueue]);
+
+  const selectedBulkCount = selectedReviewIds.length;
 
   const canPublish = publishDestination !== 'independent_student' || assignmentTitle.trim();
   const previewReady = job?.status === 'completed' || (!!job?.result?.previewQuestions?.length && job.status !== 'running');
@@ -332,6 +334,7 @@ export default function AiGenerator() {
       });
     });
     setSelectedReviewId((current) => current || liveGeneratedQuestions[0]?.id || '');
+    setSelectedReviewIds([]);
     setReviewFilter('all');
   }, [liveGeneratedQuestions, difficulty]);
 
@@ -439,6 +442,30 @@ export default function AiGenerator() {
     setReviewQueue((current) => current.map((item) => (
       item.id === itemId ? { ...item, status: nextStatus } : item
     )));
+  }
+
+  function toggleReviewSelection(itemId) {
+    setSelectedReviewIds((current) => (
+      current.includes(itemId)
+        ? current.filter((id) => id !== itemId)
+        : [...current, itemId]
+    ));
+  }
+
+  function selectAllVisibleReviews() {
+    setSelectedReviewIds(filteredReviewQueue.map((item) => item.id));
+  }
+
+  function clearReviewSelection() {
+    setSelectedReviewIds([]);
+  }
+
+  function bulkUpdateReviewStatus(nextStatus) {
+    if (!selectedReviewIds.length) return;
+    setReviewQueue((current) => current.map((item) => (
+      selectedReviewIds.includes(item.id) ? { ...item, status: nextStatus } : item
+    )));
+    setStatus(`${selectedReviewIds.length} question${selectedReviewIds.length === 1 ? '' : 's'} ${nextStatus}.`);
   }
 
   function handlePublishSelected() {
@@ -795,7 +822,7 @@ export default function AiGenerator() {
               <div>
                 <h2>Step 3. Review & Preview</h2>
               </div>
-              <span className="badge active" style={{ fontSize: 16, paddingInline: 14 }}>{reviewCounts.selected} selected</span>
+              <span className="badge active" style={{ fontSize: 16, paddingInline: 14 }}>{selectedBulkCount} selected</span>
             </div>
 
             {!previewReady ? (
@@ -841,11 +868,11 @@ export default function AiGenerator() {
                       <h3 style={{ margin: 0 }}>Review queue</h3>
                       <p className="sub" style={{ margin: '4px 0 0' }}>Approve or reject questions before publishing.</p>
                     </div>
-                    <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-                      <span className="badge draft">{reviewCounts.total} total</span>
-                      <span className="badge active" style={{ fontSize: 16, paddingInline: 14 }}>{reviewCounts.selected} selected</span>
-                    </div>
-                  </div>
+                <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                  <span className="badge draft">{reviewCounts.total} total</span>
+                  <span className="badge active" style={{ fontSize: 16, paddingInline: 14 }}>{selectedBulkCount} selected</span>
+                </div>
+              </div>
 
                   <div className="review-tabs review-pills" role="tablist" aria-label="Review queue filters">
                     {reviewTabs.map((tab) => (
@@ -857,11 +884,31 @@ export default function AiGenerator() {
                       >
                         {tab.label}
                       </button>
-                    ))}
-                  </div>
+                  ))}
+                </div>
 
-                  <div className="review-queue-layout">
-                    <div className="review-queue-list">
+                <div className="review-bulk-bar">
+                  <div className="review-bulk-count">
+                    {selectedBulkCount ? `${selectedBulkCount} question${selectedBulkCount === 1 ? '' : 's'} selected` : 'Select questions to bulk review'}
+                  </div>
+                  <div className="review-actions">
+                    <button type="button" className="ghost" onClick={selectAllVisibleReviews} disabled={!filteredReviewQueue.length}>
+                      Select all visible
+                    </button>
+                    <button type="button" className="ghost" onClick={clearReviewSelection} disabled={!selectedBulkCount}>
+                      Clear selection
+                    </button>
+                    <button type="button" className="primary" onClick={() => bulkUpdateReviewStatus('approved')} disabled={!selectedBulkCount}>
+                      Approve selected
+                    </button>
+                    <button type="button" className="ghost" onClick={() => bulkUpdateReviewStatus('rejected')} disabled={!selectedBulkCount}>
+                      Reject selected
+                    </button>
+                  </div>
+                </div>
+
+                <div className="review-queue-layout">
+                  <div className="review-queue-list">
                       {filteredReviewQueue.length ? filteredReviewQueue.map((item) => (
                         <button
                           key={item.id}
@@ -870,6 +917,14 @@ export default function AiGenerator() {
                           onClick={() => setSelectedReviewId(item.id)}
                         >
                           <div className="review-queue-top">
+                            <label className="review-card-check" onClick={(event) => event.stopPropagation()}>
+                              <input
+                                type="checkbox"
+                                checked={selectedReviewIds.includes(item.id)}
+                                onChange={() => toggleReviewSelection(item.id)}
+                              />
+                              <span>Select</span>
+                            </label>
                             <span className={`badge ${item.status === 'approved' ? 'approved' : item.status === 'rejected' ? 'draft' : 'active'}`}>
                               {item.status.replace('_', ' ')}
                             </span>
@@ -972,7 +1027,7 @@ export default function AiGenerator() {
               <div>
                 <h2>Step 4. Publish & Destination</h2>
               </div>
-              <span className="badge active" style={{ fontSize: 16, paddingInline: 14 }}>{reviewCounts.selected} selected</span>
+              <span className="badge active" style={{ fontSize: 16, paddingInline: 14 }}>{selectedBulkCount} selected</span>
             </div>
 
             <div className="card" style={{ marginTop: 14, background: '#f8f9fb' }}>
@@ -1037,7 +1092,7 @@ export default function AiGenerator() {
                   <h3 style={{ margin: 0 }}>Publish to Independent Students</h3>
                   <p className="sub" style={{ margin: '4px 0 0' }}>Keep it clean and publish only when the title is ready.</p>
                 </div>
-                <span className="badge active" style={{ fontSize: 16, paddingInline: 14 }}>{reviewCounts.selected} selected</span>
+                <span className="badge active" style={{ fontSize: 16, paddingInline: 14 }}>{selectedBulkCount} selected</span>
               </div>
 
               <div className="publish-panel">
@@ -1056,7 +1111,7 @@ export default function AiGenerator() {
                 <div className="generation-preview-grid">
                   <div className="generation-preview-item">
                     <div className="generation-preview-label">Selected questions</div>
-                    <div className="generation-preview-value">{reviewCounts.selected}</div>
+                    <div className="generation-preview-value">{selectedBulkCount}</div>
                   </div>
                   <div className="generation-preview-item">
                     <div className="generation-preview-label">Ready to publish</div>

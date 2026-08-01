@@ -680,6 +680,35 @@ input:focus, select:focus, textarea:focus, button:focus-visible, a:focus-visible
   margin-bottom: 10px;
   flex-wrap: wrap;
 }
+.review-bulk-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid color-mix(in srgb, var(--red) 14%, var(--line));
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--red) 4%, #fff);
+}
+.review-bulk-count {
+  font-weight: 700;
+  color: var(--black);
+  line-height: 1.4;
+}
+.review-card-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink-soft);
+  flex-shrink: 0;
+}
+.review-card-check input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--red);
+}
 .review-preview-card {
   border: 1px solid var(--line);
   border-radius: 16px;
@@ -4157,6 +4186,16 @@ button:disabled { opacity: 0.5; cursor: default; }
   }
   .review-queue-card {
     padding: 12px;
+  }
+  .review-bulk-bar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .review-bulk-bar .review-actions {
+    width: 100%;
+  }
+  .review-bulk-bar .review-actions button {
+    flex: 1 1 0;
   }
   .publish-panel,
   .review-preview-card,

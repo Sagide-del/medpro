@@ -115,22 +115,6 @@ export default function AiGenerator() {
     return !!sourceText.trim();
   }, [sourceMode, sourceFile, sourceUrl, sourceText]);
 
-  const generationSummary = useMemo(() => {
-    const bits = [
-      `${contentMeta.label} -> ${contentMeta.destination}`,
-      `Source: ${SOURCE_MODES.find((item) => item.id === sourceMode)?.label || 'Article Paste'}`,
-      `Audience: ${AUDIENCES.find((item) => item.value === audience)?.label || audience}`,
-      topic ? `Topic: ${topic}` : '',
-      `Difficulty: ${difficulty}`,
-      `Questions: ${questionCount}`,
-      `Output: ${publishDestination.replaceAll('_', ' ')}`,
-      sourceTitle ? `Title: ${sourceTitle}` : '',
-      sourceMode === 'pdf' && sourceFile ? `File: ${sourceFile.name}` : '',
-      sourceMode === 'url' && sourceUrl ? `URL: ${sourceUrl}` : '',
-    ].filter(Boolean);
-    return bits.join(' | ');
-  }, [contentMeta, sourceMode, sourceTitle, sourceFile, sourceUrl, audience, topic, difficulty, questionCount, publishDestination]);
-
   async function generateDraft() {
     setBusy(true);
     setStatus('');
@@ -455,69 +439,67 @@ export default function AiGenerator() {
             </button>
           </div>
 
-          {generationSummary ? (
-            <p className="sub" style={{ marginTop: 12, marginBottom: 0 }}>
-              {generationSummary}
-            </p>
-          ) : null}
-
-          {job ? (
-            <div style={{ marginTop: 14 }}>
-              <ProgressBar label={job.title} status={job.status} value={job.progress} />
+          <div className="card generation-preview-card" style={{ marginTop: 16, background: '#f8f9fb' }}>
+            <div className="section-head" style={{ marginBottom: 10 }}>
+              <div>
+                <h3 style={{ margin: 0 }}>Destination preview</h3>
+                <p className="sub" style={{ margin: '4px 0 0' }}>
+                  Review the output path and structure before the generator publishes the draft.
+                </p>
+              </div>
+              <span className="badge active">{contentMeta.destination}</span>
             </div>
-          ) : null}
 
-          {status ? <div className="ok-note" style={{ marginTop: 12 }}>{status}</div> : null}
-        </section>
-      </div>
-
-      <div className="grid-auto">
-        <section className="card">
-          <div className="section-head">
-            <div>
-              <h2>Recent content</h2>
-              <p className="sub">Open a case to refine it or keep the draft moving.</p>
+            <div className="generation-preview-grid">
+              <div className="generation-preview-item">
+                <div className="generation-preview-label">Content type</div>
+                <div className="generation-preview-value">{contentMeta.label}</div>
+              </div>
+              <div className="generation-preview-item">
+                <div className="generation-preview-label">Destination tab</div>
+                <div className="generation-preview-value">{publishDestination.replaceAll('_', ' ')}</div>
+              </div>
+              <div className="generation-preview-item">
+                <div className="generation-preview-label">Question count</div>
+                <div className="generation-preview-value">{questionCount}</div>
+              </div>
+              <div className="generation-preview-item">
+                <div className="generation-preview-label">Question types</div>
+                <div className="generation-preview-value">{enabledQuestionTypes.length ? enabledQuestionTypes.join(', ') : 'None selected'}</div>
+              </div>
             </div>
-          </div>
-          <div className="grid-auto">
-            {cases.slice(0, 6).map((item) => (
-              <article key={item.id} className="card" style={{ margin: 0 }}>
-                <h3 style={{ marginTop: 0 }}>{item.title}</h3>
-                <p className="sub" style={{ marginTop: 0 }}>{item.category} · {item.difficulty || '—'}</p>
-                <div className="logbook-actions">
-                  <button
-                    type="button"
-                    className="primary"
-                    onClick={() => setSearchParams({ contentId: item.id, contentType: 'case_study' })}
-                  >
-                    Customize
-                  </button>
+
+            <div className="generation-preview-list">
+              {previewChecklist.map((item) => (
+                <div key={item} className="generation-preview-check">
+                  <UiIcon name="result" />
+                  <span>{item}</span>
                 </div>
-              </article>
-            ))}
-          </div>
-        </section>
+              ))}
+            </div>
 
-        <section className="card">
-          <div className="section-head">
-            <div>
-              <h2>Preview handoff</h2>
-              <p className="sub">Review the selected content before posting it to students.</p>
-            </div>
+            {job?.result ? (
+              <div className="generation-preview-result">
+                <div className="generation-preview-label">Latest draft</div>
+                <div className="generation-preview-value">{job.result.title || title}</div>
+                <p className="sub" style={{ margin: '8px 0 0', whiteSpace: 'pre-wrap' }}>
+                  {job.result.draft || job.result.sourceExcerpt || 'Preview will appear here after generation starts.'}
+                </p>
+              </div>
+            ) : (
+              <div className="ok-note" style={{ marginTop: 14 }}>
+                Start generation to preview the drafted output and answer key placement.
+              </div>
+            )}
+
+            {job ? (
+              <div style={{ marginTop: 14 }}>
+                <ProgressBar label={job.title} status={job.status} value={job.progress} />
+              </div>
+            ) : null}
+
+            {status ? <div className="ok-note" style={{ marginTop: 12 }}>{status}</div> : null}
           </div>
-          {selectedCase ? (
-            <div className="card" style={{ margin: 0, background: '#f8f9fb' }}>
-              <h3 style={{ marginTop: 0 }}>{selectedCase.title}</h3>
-              <p className="sub" style={{ marginTop: 0 }}>{selectedCase.category} · {selectedCase.difficulty || '—'}</p>
-              <ProgressBar
-                label="Editable blocks"
-                status={`${Array.isArray(selectedCase.content_json?.sections) ? selectedCase.content_json.sections.length : 0} sections`}
-                value={Math.min(100, (Array.isArray(selectedCase.content_json?.sections) ? selectedCase.content_json.sections.length : 0) * 5)}
-              />
-            </div>
-          ) : (
-            <div className="ok-note">Select a content item to open the customizer.</div>
-          )}
         </section>
       </div>
 

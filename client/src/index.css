@@ -436,6 +436,65 @@ input:focus, select:focus, textarea:focus, button:focus-visible, a:focus-visible
   width: 18px;
   height: 18px;
 }
+.generation-preview-card {
+  border: 1px solid color-mix(in srgb, var(--red) 14%, var(--line));
+  background: linear-gradient(180deg, #fff 0%, #f8f9fb 100%);
+}
+.generation-preview-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 10px;
+}
+.generation-preview-item {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #fff;
+  padding: 12px 14px;
+}
+.generation-preview-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+.generation-preview-value {
+  margin-top: 6px;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--black);
+  line-height: 1.35;
+}
+.generation-preview-list {
+  display: grid;
+  gap: 8px;
+  margin-top: 14px;
+}
+.generation-preview-check {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 13px;
+  color: var(--ink);
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 10px 12px;
+}
+.generation-preview-check svg {
+  width: 18px;
+  height: 18px;
+  color: var(--success);
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+.generation-preview-result {
+  margin-top: 14px;
+  padding: 14px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: #fff;
+}
 .upload-picker {
   display: grid;
   gap: 8px;
@@ -3803,6 +3862,9 @@ button:disabled { opacity: 0.5; cursor: default; }
 
 @media (max-width: 720px) {
   .source-mode-grid {
+    grid-template-columns: 1fr;
+  }
+  .generation-preview-grid {
     grid-template-columns: 1fr;
   }
 

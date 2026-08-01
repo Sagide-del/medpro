@@ -89,6 +89,12 @@ export default function AiGenerator() {
   const [isDragging, setIsDragging] = useState(false);
   const [generationStartedAt, setGenerationStartedAt] = useState(null);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
+  const [reviewFilter, setReviewFilter] = useState('all');
+  const [reviewQueue, setReviewQueue] = useState([]);
+  const [selectedReviewId, setSelectedReviewId] = useState('');
+  const [assignmentTitle, setAssignmentTitle] = useState('');
+  const [publishBusy, setPublishBusy] = useState(false);
+  const [publishConfirmation, setPublishConfirmation] = useState('');
 
   const contentId = searchParams.get('contentId') || '';
 
@@ -248,6 +254,41 @@ export default function AiGenerator() {
 
   const liveSummary = job?.result?.summary || job?.result?.draft || '';
   const liveAnalysis = job?.result?.analysis || null;
+  const liveGeneratedQuestions = useMemo(() => {
+    const generated = job?.result?.previewQuestions;
+    return Array.isArray(generated) ? generated : [];
+  }, [job?.result?.previewQuestions]);
+
+  const reviewTabs = useMemo(() => ([
+    { key: 'all', label: 'All' },
+    { key: 'needs_review', label: 'Needs Review' },
+    { key: 'approved', label: 'Approved' },
+    { key: 'rejected', label: 'Rejected' },
+  ]), []);
+
+  const normalizedReviewQueue = useMemo(() => reviewQueue.map((item) => ({
+    ...item,
+    status: item.status || 'needs_review',
+  })), [reviewQueue]);
+
+  const filteredReviewQueue = useMemo(() => {
+    if (reviewFilter === 'all') return normalizedReviewQueue;
+    return normalizedReviewQueue.filter((item) => item.status === reviewFilter);
+  }, [normalizedReviewQueue, reviewFilter]);
+
+  const selectedReviewItem = useMemo(
+    () => normalizedReviewQueue.find((item) => item.id === selectedReviewId) || normalizedReviewQueue[0] || null,
+    [normalizedReviewQueue, selectedReviewId]
+  );
+
+  const reviewCounts = useMemo(() => normalizedReviewQueue.reduce((acc, item) => {
+    acc.total += 1;
+    acc[item.status] = (acc[item.status] || 0) + 1;
+    if (item.status === 'approved') acc.selected += 1;
+    return acc;
+  }, { total: 0, needs_review: 0, approved: 0, rejected: 0, selected: 0 }), [normalizedReviewQueue]);
+
+  const canPublish = publishDestination !== 'independent_student' || assignmentTitle.trim();
 
   useEffect(() => {
     const inProgress = !!job && job.status !== 'completed' && job.status !== 'failed';
@@ -260,6 +301,30 @@ export default function AiGenerator() {
     }, 1000);
     return () => clearInterval(timer);
   }, [job, generationStartedAt]);
+
+  useEffect(() => {
+    if (!liveGeneratedQuestions.length) return;
+    setReviewQueue((current) => {
+      const existingById = new Map(current.map((item) => [item.id, item]));
+      return liveGeneratedQuestions.map((question, index) => {
+        const id = question.id || `generated-${index + 1}`;
+        const currentItem = existingById.get(id);
+        return {
+          id,
+          status: currentItem?.status || 'needs_review',
+          question: question.question || question.prompt || `Question ${index + 1}`,
+          answer: question.answer || '',
+          feedback: question.feedback || '',
+          type: question.type || 'short_answer',
+          options: Array.isArray(question.options) ? question.options : [],
+          bloom_level: question.bloom_level || '',
+          difficulty: question.difficulty || difficulty,
+        };
+      });
+    });
+    setSelectedReviewId((current) => current || liveGeneratedQuestions[0]?.id || '');
+    setReviewFilter('all');
+  }, [liveGeneratedQuestions, difficulty]);
 
   function formatBytes(bytes = 0) {
     if (!bytes) return '0 KB';
@@ -305,9 +370,10 @@ export default function AiGenerator() {
     }
   }
 
-  async function generateDraft() {
+  async function generateDraft(mode = 'draft') {
     setBusy(true);
     setStatus('');
+    setPublishConfirmation('');
     setGenerationStartedAt(Date.now());
     setElapsedSeconds(0);
     try {
@@ -334,6 +400,8 @@ export default function AiGenerator() {
       payload.set('selectedSchoolIds', selectedSchoolIds);
       payload.set('questionTypes', JSON.stringify(questionTypes));
       payload.set('targetLibrary', contentMeta.destination);
+      payload.set('generationMode', mode);
+      payload.set('assignmentTitle', assignmentTitle);
       if (sourceFile) payload.append('sourceFile', sourceFile);
 
       const response = await api('/ai/generate', {
@@ -349,6 +417,45 @@ export default function AiGenerator() {
     } finally {
       setBusy(false);
     }
+  }
+
+  function updateReviewStatus(itemId, nextStatus) {
+    setReviewQueue((current) => current.map((item) => (
+      item.id === itemId ? { ...item, status: nextStatus } : item
+    )));
+  }
+
+  function handlePublishSelected() {
+    if (publishDestination === 'independent_student' && !assignmentTitle.trim()) {
+      setStatus('Assignment title is required before publishing to independent students.');
+      return;
+    }
+    if (!reviewQueue.some((item) => item.status === 'approved')) {
+      setStatus('Approve at least one question before publishing.');
+      return;
+    }
+
+    setPublishBusy(true);
+    setStatus('');
+    setTimeout(() => {
+      setPublishBusy(false);
+      setPublishConfirmation(
+        publishDestination === 'independent_student'
+          ? `Published "${assignmentTitle.trim()}" to independent students.`
+          : `Published ${reviewCounts.approved} approved question${reviewCounts.approved === 1 ? '' : 's'} to ${destinationSummary.label}.`
+      );
+    }, 650);
+  }
+
+  function cancelGeneration() {
+    setBusy(false);
+    setJob(null);
+    setStatus('');
+    setGenerationStartedAt(null);
+    setElapsedSeconds(0);
+    setReviewQueue([]);
+    setSelectedReviewId('');
+    setPublishConfirmation('');
   }
 
   if (!cases) return <Loading label="Loading AI generator..." />;
@@ -600,27 +707,56 @@ export default function AiGenerator() {
             </div>
           </div>
 
-          <div className="form-grid">
-            <label className="field checkbox-field">
-              <input type="checkbox" checked={bloomPriority} onChange={(event) => setBloomPriority(event.target.checked)} />
-              <span>Prioritize higher-order thinking</span>
-            </label>
-            <label className="field checkbox-field">
-              <input type="checkbox" checked={includeAnswerKey} onChange={(event) => setIncludeAnswerKey(event.target.checked)} />
-              <span>Include answer key</span>
-            </label>
-            <label className="field checkbox-field">
-              <input type="checkbox" checked={includeFeedback} onChange={(event) => setIncludeFeedback(event.target.checked)} />
-              <span>Include feedback explanations</span>
-            </label>
-            <label className="field checkbox-field">
-              <input type="checkbox" checked={suggestDiagramPlaceholders} onChange={(event) => setSuggestDiagramPlaceholders(event.target.checked)} />
-              <span>Suggest diagram placeholders</span>
-            </label>
-            <label className="field checkbox-field">
-              <input type="checkbox" checked={autoTagByTopic} onChange={(event) => setAutoTagByTopic(event.target.checked)} />
-              <span>Auto-tag by topic</span>
-            </label>
+          <div className="generator-feature-grid">
+            <section className="generator-feature-card">
+              <div className="section-head" style={{ marginBottom: 12 }}>
+                <div>
+                  <h3 style={{ margin: 0 }}>Bloom&apos;s Taxonomy</h3>
+                  <p className="sub" style={{ margin: '4px 0 0' }}>Shape the cognitive depth of the draft.</p>
+                </div>
+              </div>
+              <label className="checkbox-field checkbox-feature-row">
+                <input type="checkbox" checked={bloomPriority} onChange={(event) => setBloomPriority(event.target.checked)} />
+                <span>
+                  <strong>Higher-order thinking</strong>
+                  <small>Prioritize analysis, evaluation, and decision-making.</small>
+                </span>
+              </label>
+              <div className="feature-chip-row">
+                {['Remember', 'Understand', 'Apply', 'Analyze', 'Evaluate', 'Create'].map((level) => (
+                  <span key={level} className={`metric-pill${bloomPriority && ['Analyze', 'Evaluate', 'Create'].includes(level) ? ' is-emphasis' : ''}`}>
+                    {level}
+                  </span>
+                ))}
+              </div>
+            </section>
+
+            <section className="generator-feature-card">
+              <div className="section-head" style={{ marginBottom: 12 }}>
+                <div>
+                  <h3 style={{ margin: 0 }}>Additional options</h3>
+                  <p className="sub" style={{ margin: '4px 0 0' }}>Publishing controls and review helpers.</p>
+                </div>
+              </div>
+              <div className="feature-toggle-grid">
+                <label className="checkbox-field">
+                  <input type="checkbox" checked={includeAnswerKey} onChange={(event) => setIncludeAnswerKey(event.target.checked)} />
+                  <span>Answer key</span>
+                </label>
+                <label className="checkbox-field">
+                  <input type="checkbox" checked={includeFeedback} onChange={(event) => setIncludeFeedback(event.target.checked)} />
+                  <span>Feedback</span>
+                </label>
+                <label className="checkbox-field">
+                  <input type="checkbox" checked={suggestDiagramPlaceholders} onChange={(event) => setSuggestDiagramPlaceholders(event.target.checked)} />
+                  <span>Diagrams</span>
+                </label>
+                <label className="checkbox-field">
+                  <input type="checkbox" checked={autoTagByTopic} onChange={(event) => setAutoTagByTopic(event.target.checked)} />
+                  <span>Auto-tag</span>
+                </label>
+              </div>
+            </section>
           </div>
 
           <div className="form-grid">
@@ -668,22 +804,15 @@ export default function AiGenerator() {
             </div>
           ) : null}
 
-          <div className="logbook-actions">
-            <button type="button" className="primary" onClick={generateDraft} disabled={busy || !sourceReady}>
-              {busy ? 'Generating...' : 'Start generation'}
+          <div className="generator-action-row">
+            <button type="button" className="primary" onClick={() => generateDraft('upload')} disabled={busy || !sourceReady}>
+              {busy ? 'Generating...' : (sourceMode === 'pdf' ? 'Upload & Generate' : 'Generate Draft')}
             </button>
-            <button
-              type="button"
-              className="ghost"
-              onClick={() => {
-                setJob(null);
-                setStatus('');
-                setGenerationStartedAt(null);
-                setElapsedSeconds(0);
-              }}
-              disabled={!job}
-            >
-              Reset progress
+            <button type="button" className="ghost" onClick={() => generateDraft('draft')} disabled={busy || !sourceReady}>
+              Generate Draft
+            </button>
+            <button type="button" className="ghost" onClick={cancelGeneration} disabled={busy && !job && !reviewQueue.length}>
+              Cancel
             </button>
           </div>
 
@@ -759,6 +888,147 @@ export default function AiGenerator() {
                 ))}
               </div>
             </div>
+
+            <div className="generation-preview-section">
+              <div className="section-head" style={{ marginBottom: 8 }}>
+                <div>
+                  <h3 style={{ margin: 0 }}>Review queue</h3>
+                  <p className="sub" style={{ margin: '4px 0 0' }}>
+                    Review generated questions before publishing.
+                  </p>
+                </div>
+                <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                  <span className="badge draft">{reviewCounts.total} total</span>
+                  <span className="badge active">{reviewCounts.selected} selected</span>
+                </div>
+              </div>
+
+              <div className="review-tabs" role="tablist" aria-label="Review queue filters">
+                {reviewTabs.map((tab) => (
+                  <button
+                    key={tab.key}
+                    type="button"
+                    className={`review-tab${reviewFilter === tab.key ? ' is-active' : ''}`}
+                    onClick={() => setReviewFilter(tab.key)}
+                  >
+                    {tab.label}
+                  </button>
+                ))}
+              </div>
+
+              <div className="review-queue-layout">
+                <div className="review-queue-list">
+                  {filteredReviewQueue.length ? filteredReviewQueue.map((item) => (
+                    <button
+                      key={item.id}
+                      type="button"
+                      className={`review-queue-card${selectedReviewItem?.id === item.id ? ' is-selected' : ''}`}
+                      onClick={() => setSelectedReviewId(item.id)}
+                    >
+                      <div className="review-queue-top">
+                        <span className={`badge ${item.status === 'approved' ? 'approved' : item.status === 'rejected' ? 'draft' : 'active'}`}>
+                          {item.status.replace('_', ' ')}
+                        </span>
+                        <span className="badge draft">{String(item.type || 'question').replace('_', ' ')}</span>
+                      </div>
+                      <h4>{item.question}</h4>
+                      <p>{item.answer || 'Answer hidden until review.'}</p>
+                    </button>
+                  )) : (
+                    <div className="generation-preview-result">
+                      <div className="generation-preview-value">No questions in this filter yet.</div>
+                      <p className="sub" style={{ margin: '8px 0 0' }}>Generate a draft to populate the review queue.</p>
+                    </div>
+                  )}
+                </div>
+
+                <div className="review-preview-card">
+                  <div className="review-preview-head">
+                    <div>
+                      <div className="generation-preview-label">Preview</div>
+                      <div className="generation-preview-value">{selectedReviewItem?.question || 'Select a question to preview it here.'}</div>
+                    </div>
+                    {selectedReviewItem ? (
+                      <span className={`badge ${selectedReviewItem.status === 'approved' ? 'approved' : selectedReviewItem.status === 'rejected' ? 'draft' : 'active'}`}>
+                        {selectedReviewItem.status.replace('_', ' ')}
+                      </span>
+                    ) : null}
+                  </div>
+                  {selectedReviewItem ? (
+                    <>
+                      <div className="preview-answer">
+                        <span className="preview-answer-label">Suggested answer</span>
+                        <p>{selectedReviewItem.answer || 'No suggested answer yet.'}</p>
+                      </div>
+                      <div className="preview-feedback">
+                        <span className="preview-feedback-label">Feedback</span>
+                        <p>{selectedReviewItem.feedback || 'No feedback attached.'}</p>
+                      </div>
+                      <div className="review-actions">
+                        <button type="button" className="primary" onClick={() => updateReviewStatus(selectedReviewItem.id, 'approved')}>Approve</button>
+                        <button type="button" className="ghost" onClick={() => updateReviewStatus(selectedReviewItem.id, 'rejected')}>Reject</button>
+                      </div>
+                    </>
+                  ) : null}
+                </div>
+              </div>
+            </div>
+
+            <div className="generation-preview-section">
+              <div className="section-head" style={{ marginBottom: 8 }}>
+                <div>
+                  <h3 style={{ margin: 0 }}>Publish to independent students</h3>
+                  <p className="sub" style={{ margin: '4px 0 0' }}>
+                    Lock in the assignment title before publishing approved questions.
+                  </p>
+                </div>
+                <span className="badge active">{reviewCounts.selected} selected</span>
+              </div>
+
+              <div className="publish-panel">
+                {publishDestination === 'independent_student' ? (
+                  <div className="field">
+                    <label>Assignment Title</label>
+                    <input
+                      value={assignmentTitle}
+                      onChange={(event) => setAssignmentTitle(event.target.value)}
+                      placeholder="Cardiac Assessment Assignment"
+                      required
+                    />
+                  </div>
+                ) : null}
+
+                <div className="generation-preview-grid">
+                  <div className="generation-preview-item">
+                    <div className="generation-preview-label">Destination</div>
+                    <div className="generation-preview-value">{destinationSummary.label}</div>
+                  </div>
+                  <div className="generation-preview-item">
+                    <div className="generation-preview-label">Selected questions</div>
+                    <div className="generation-preview-value">{reviewCounts.selected}</div>
+                  </div>
+                  <div className="generation-preview-item">
+                    <div className="generation-preview-label">Ready to publish</div>
+                    <div className="generation-preview-value">{canPublish ? 'Yes' : 'Title required'}</div>
+                  </div>
+                </div>
+
+                <div className="review-actions" style={{ marginTop: 14 }}>
+                  <button type="button" className="primary" onClick={handlePublishSelected} disabled={publishBusy || !canPublish}>
+                    {publishBusy ? 'Publishing...' : (publishDestination === 'independent_student' ? 'Publish to Independent Students' : 'Publish Selected')}
+                  </button>
+                  <button type="button" className="ghost" onClick={() => setAssignmentTitle('')} disabled={publishBusy}>
+                    Clear title
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {publishConfirmation ? (
+              <div className="ok-note" style={{ marginTop: 14 }}>
+                {publishConfirmation}
+              </div>
+            ) : null}
 
             <div className="generation-preview-section">
               <div className="section-head" style={{ marginBottom: 8 }}>

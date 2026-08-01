@@ -180,7 +180,7 @@ const SUPERADMIN_LINKS = [
       },
       {
         to: '/superadmin/ai-generator',
-        label: 'AI Generator',
+        label: 'Master AI Generator',
       },
       {
         to: '/superadmin/elibrary',

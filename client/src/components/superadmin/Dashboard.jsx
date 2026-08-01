@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { api } from '../../services/api';
 import Vital from '../Vital';
 import { kesShort, timeAgo } from '../format';
@@ -28,6 +29,19 @@ export default function SuperAdminDashboard() {
         <Vital label="Teachers" value={roleCount('teacher')} />
         <Vital label="Institution admins" value={roleCount('institution_admin')} />
         <Vital label="Total revenue" value={kesShort(data.revenue.total)} money />
+      </div>
+
+      <div className="grid-auto" style={{ marginTop: 18 }}>
+        <div className="card">
+          <h2 style={{ marginTop: 0 }}>Master AI Generator</h2>
+          <p className="sub" style={{ marginTop: 0 }}>
+            Generate drafts, refine cases, and open the content customizer from one place.
+          </p>
+          <div className="logbook-actions">
+            <Link className="primary" to="/superadmin/ai-generator">Open generator</Link>
+            <Link className="ghost" to="/superadmin/content">Open uploader</Link>
+          </div>
+        </div>
       </div>
 
       {expiring.length > 0 && (

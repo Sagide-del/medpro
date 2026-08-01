@@ -68,8 +68,8 @@ export default function AiGenerator() {
     <section className="page-stack">
       <div className="page-head">
         <div>
-          <h1>AI Generator</h1>
-          <div className="sub">Create a draft, monitor generation progress, then refine a case with the content customizer.</div>
+          <h1>Master AI Generator</h1>
+          <div className="sub">Create drafts, monitor progress, then refine a case with the content customizer.</div>
         </div>
         <div className="logbook-actions">
           <Link className="ghost" to="/superadmin/content">Uploader</Link>
@@ -142,4 +142,3 @@ export default function AiGenerator() {
     </section>
   );
 }
-

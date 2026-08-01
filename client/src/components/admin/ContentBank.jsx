@@ -81,7 +81,7 @@ export default function ContentBank() {
         </div>
         <div className="logbook-actions">
           <Link className="ghost" to="/superadmin/content">Open uploader</Link>
-          <Link className="primary" to="/superadmin/ai-generator">Open AI Generator</Link>
+          <Link className="primary" to="/superadmin/ai-generator">Open Master AI Generator</Link>
         </div>
       </div>
 
@@ -150,4 +150,3 @@ export default function ContentBank() {
     </section>
   );
 }
-

@@ -65,6 +65,51 @@ function safeJsonParse(value, fallback = null) {
   }
 }
 
+function normalizeTopic(value) {
+  return cleanText(value || 'General') || 'General';
+}
+
+function arrangePreviewQuestions(previewQuestions = [], { contentType, publishDestination } = {}) {
+  const questions = Array.isArray(previewQuestions) ? [...previewQuestions] : [];
+  const topicBuckets = new Map();
+
+  for (const question of questions) {
+    const topic = normalizeTopic(question.topic || question.topic_hint || 'General');
+    if (!topicBuckets.has(topic)) topicBuckets.set(topic, []);
+    topicBuckets.get(topic).push({ ...question, topic });
+  }
+
+  const sortByDifficulty = (a, b) => {
+    const order = { basic: 0, beginner: 0, intermediate: 1, advanced: 2 };
+    return (order[String(a.difficulty || '').toLowerCase()] ?? 99) - (order[String(b.difficulty || '').toLowerCase()] ?? 99);
+  };
+
+  for (const bucket of topicBuckets.values()) {
+    bucket.sort(sortByDifficulty);
+  }
+
+  const topicNames = [...topicBuckets.keys()].sort((left, right) => left.localeCompare(right));
+  const isMock = contentType === 'exam' && publishDestination === 'exam_mock';
+
+  if (isMock) {
+    const mixed = [];
+    let remaining = true;
+    while (remaining) {
+      remaining = false;
+      for (const topic of topicNames) {
+        const bucket = topicBuckets.get(topic) || [];
+        if (bucket.length) {
+          mixed.push(bucket.shift());
+          remaining = true;
+        }
+      }
+    }
+    return mixed;
+  }
+
+  return topicNames.flatMap((topic) => topicBuckets.get(topic) || []);
+}
+
 async function callDeepSeek(messages, { model = 'deepseek-v4-pro', temperature = 0.2 } = {}) {
   const apiKey = process.env.DEEPSEEK_API_KEY;
   if (!apiKey) {
@@ -253,6 +298,7 @@ async function generateSourceDrivenDraft({ contentType, title, sourceText, analy
     '  "preview_questions": [',
     '    {',
     '      "type": "multiple_choice" | "true_false" | "short_answer" | "scenario_step",',
+    '      "topic": string,',
     '      "question": string,',
     '      "options": string[] | null,',
     '      "answer": string,',
@@ -548,18 +594,22 @@ export const startGeneration = asyncHandler(async (req, res) => {
         bloomPriority,
       });
 
-      const previewQuestions = Array.isArray(generated.preview_questions)
-        ? generated.preview_questions.map((question, index) => ({
-          id: `${job.jobId}-preview-${index + 1}`,
-          type: cleanText(question.type || 'short_answer'),
-          question: cleanText(question.question || question.prompt || ''),
-          options: Array.isArray(question.options) ? question.options : [],
-          answer: cleanText(question.answer || question.correct_answer || ''),
-          feedback: cleanText(question.feedback || question.explanation || ''),
-          bloom_level: cleanText(question.bloom_level || question.bloomLevel || ''),
-          difficulty: cleanText(question.difficulty || difficulty),
-        }))
-        : [];
+      const previewQuestions = arrangePreviewQuestions(
+        Array.isArray(generated.preview_questions)
+          ? generated.preview_questions.map((question, index) => ({
+            id: `${job.jobId}-preview-${index + 1}`,
+            type: cleanText(question.type || 'short_answer'),
+            topic: cleanText(question.topic || topic || 'General'),
+            question: cleanText(question.question || question.prompt || ''),
+            options: Array.isArray(question.options) ? question.options : [],
+            answer: cleanText(question.answer || question.correct_answer || ''),
+            feedback: cleanText(question.feedback || question.explanation || ''),
+            bloom_level: cleanText(question.bloom_level || question.bloomLevel || ''),
+            difficulty: cleanText(question.difficulty || difficulty),
+          }))
+          : [],
+        { contentType, publishDestination }
+      );
 
       const answerKey = generated.answer_key && typeof generated.answer_key === 'object' ? generated.answer_key : {};
       const contentNotes = Array.isArray(generated.content_notes) ? generated.content_notes : [];

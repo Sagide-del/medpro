@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import {
+  listSimulationCatalog,
   completeSimulationAttempt,
   myLatestSimulationResult,
   mySimulationResults,
@@ -13,6 +14,7 @@ import { requirePremiumAccess } from '../middleware/subscriptionAccess.js';
 const router = Router();
 
 router.use(authenticate);
+router.get('/catalog', requireRole('student'), requirePremiumAccess('clinical_simulations'), listSimulationCatalog);
 router.post('/attempts', requireRole('student'), requirePremiumAccess('clinical_simulations'), startSimulationAttempt);
 router.post('/attempts/:id/complete', requireRole('student'), requirePremiumAccess('clinical_simulations'), completeSimulationAttempt);
 router.get('/my-results', requireRole('student'), requirePremiumAccess('clinical_simulations'), mySimulationResults);

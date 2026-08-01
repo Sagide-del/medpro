@@ -11,8 +11,37 @@ function categoryFromScenario(scenario) {
   return 'Medical Emergencies';
 }
 
+export const listSimulationCatalog = asyncHandler(async (req, res) => {
+  const catalog = await SimulationEngine.listCatalog();
+  res.json({ catalog });
+});
+
 export const startSimulationAttempt = asyncHandler(async (req, res) => {
-  const scenario = req.body.scenario;
+  const { simulationId, scenario } = req.body || {};
+
+  if (simulationId) {
+    const attempt = await SimulationEngine.startAttempt({
+      simulationId,
+      studentId: req.user.sub,
+      institutionId: req.user.institutionId,
+    });
+
+    if (!attempt) {
+      return res.status(404).json({ error: 'Simulation not found.' });
+    }
+
+    const catalog = await SimulationEngine.listCatalog();
+    const simulation = catalog.find((item) => item.simulation_id === attempt.simulation_id) || null;
+    const actions = (await SimulationEngine.stepsForSimulation(attempt.simulation_id)).map((step) => ({
+      id: step.step_key,
+      label: step.label,
+      critical: !!step.is_critical,
+      correct: !!step.is_correct,
+      harmful: !!step.is_harmful,
+    }));
+    return res.status(201).json({ attempt, simulation, actions });
+  }
+
   if (!scenario?.id || !scenario?.skill || !Array.isArray(scenario.actions)) {
     return res.status(400).json({ error: 'Scenario metadata is required to start a simulation.' });
   }
@@ -34,7 +63,14 @@ export const startSimulationAttempt = asyncHandler(async (req, res) => {
     institutionId: req.user.institutionId,
   });
 
-  res.status(201).json({ attempt, simulation });
+  const actions = (await SimulationEngine.stepsForSimulation(simulation.simulation_id)).map((step) => ({
+    id: step.step_key,
+    label: step.label,
+    critical: !!step.is_critical,
+    correct: !!step.is_correct,
+    harmful: !!step.is_harmful,
+  }));
+  res.status(201).json({ attempt, simulation, actions });
 });
 
 export const completeSimulationAttempt = asyncHandler(async (req, res) => {

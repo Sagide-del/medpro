@@ -16,6 +16,28 @@ function recommendationForScore(score, scenarioMeta, criticalErrors) {
 }
 
 export const SimulationEngine = {
+  async listCatalog() {
+    const { rows } = await query(
+      `SELECT s.simulation_id,
+              s.external_scenario_id,
+              s.title,
+              s.category,
+              s.scenario_type,
+              s.skill,
+              s.instructions,
+              s.dispatch,
+              s.created_at,
+              COALESCE(COUNT(st.simulation_step_id), 0)::int AS step_count,
+              COALESCE(SUM(CASE WHEN st.is_critical THEN 1 ELSE 0 END), 0)::int AS critical_count
+       FROM simulations s
+       LEFT JOIN simulation_steps st ON st.simulation_id = s.simulation_id
+       WHERE s.status = 'published'
+       GROUP BY s.simulation_id, s.external_scenario_id, s.title, s.category, s.scenario_type, s.skill, s.instructions, s.dispatch, s.created_at
+       ORDER BY s.created_at DESC, s.title ASC`
+    );
+    return rows;
+  },
+
   async upsertSimulation({ externalScenarioId, title, category, scenarioType, skill, instructions, dispatch, actions = [] }) {
     return withTransaction(async (tx) => {
       const { rows } = await tx.query(
@@ -48,11 +70,20 @@ export const SimulationEngine = {
   },
 
   async startAttempt({ simulationId, studentId, institutionId }) {
+    const { rows: simulationRows } = await query(
+      `SELECT simulation_id, external_scenario_id, title, category, scenario_type, skill, instructions, dispatch
+       FROM simulations
+       WHERE simulation_id = $1
+       LIMIT 1`,
+      [simulationId]
+    );
+    if (!simulationRows[0]) return null;
+
     const { rows } = await query(
       `INSERT INTO simulation_attempts (simulation_id, student_id, institution_id)
        VALUES ($1,$2,$3)
        RETURNING *`,
-      [simulationId, studentId, institutionId || null]
+      [simulationRows[0].simulation_id, studentId, institutionId || null]
     );
     return rows[0];
   },

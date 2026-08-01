@@ -1,20 +1,9 @@
 import { useEffect, useState } from 'react';
-import { SKILL_GROUPS, SCENARIO_TYPES, findScenarios } from '../../data/simulationScenarios';
 import { speak, stopSpeaking, speechSupported } from '../../utils/speech';
 import { ResponderAvatar, PatientAvatar, SimScene } from './simulation/Characters';
 import { api } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import SubscriptionPrompt from './SubscriptionPrompt';
-
-function simulationCategoryForScenario(scenario) {
-  const skill = String(scenario.skill || '').toLowerCase();
-  if (skill.includes('airway') || skill.includes('ventilation') || skill.includes('oxygen')) return 'Airway';
-  if (skill.includes('trauma') || skill.includes('bleeding') || skill.includes('spinal')) return 'Trauma';
-  if (skill.includes('cardiac') || skill.includes('stemi') || skill.includes('chest pain')) return 'Cardiology';
-  if (skill.includes('ob') || skill.includes('childbirth')) return 'Obstetrics';
-  if (skill.includes('mass casualty') || skill.includes('operations') || skill.includes('behavioral')) return 'Operations';
-  return 'Medical Emergencies';
-}
 
 function SpeakButton({ text, label = 'Read aloud' }) {
   if (!speechSupported()) return null;
@@ -45,15 +34,28 @@ function VitalsGrid({ vitals }) {
   );
 }
 
-function SkillPicker({ onGenerate, latestResult }) {
+function SkillPicker({ catalog, onGenerate, latestResult }) {
   const [type, setType] = useState('');
   const [skills, setSkills] = useState([]);
+
+  const scenarioTypes = Array.from(new Set((catalog || []).map((item) => item.scenario_type).filter(Boolean)));
+  const skillGroups = Array.from(
+    (catalog || []).reduce((map, item) => {
+      const category = item.category || 'General';
+      if (!map.has(category)) map.set(category, new Set());
+      if (item.skill) map.get(category).add(item.skill);
+      return map;
+    }, new Map()).entries()
+  ).map(([label, values]) => ({ label, skills: Array.from(values).sort() }));
 
   function toggleSkill(skill) {
     setSkills((current) => (current.includes(skill) ? current.filter((item) => item !== skill) : [...current, skill]));
   }
 
-  const matchCount = findScenarios({ type: type || null, skills }).length;
+  const matchCount = (catalog || []).filter((item) => (
+    (!type || item.scenario_type === type)
+    && (!skills.length || skills.includes(item.skill))
+  )).length;
 
   return (
     <>
@@ -83,8 +85,8 @@ function SkillPicker({ onGenerate, latestResult }) {
 
       <div className="card">
         <h2>Scenario type</h2>
-        <div style={{ display: 'flex', gap: 10 }}>
-          {SCENARIO_TYPES.map((scenarioType) => (
+        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+          {scenarioTypes.map((scenarioType) => (
             <button key={scenarioType} type="button" className={type === scenarioType ? '' : 'ghost'} onClick={() => setType(type === scenarioType ? '' : scenarioType)}>
               {scenarioType}
             </button>
@@ -92,12 +94,9 @@ function SkillPicker({ onGenerate, latestResult }) {
         </div>
       </div>
 
-      {Object.entries(SKILL_GROUPS).map(([key, group]) => (
-        <div className="card" key={key}>
+      {skillGroups.map((group) => (
+        <div className="card" key={group.label}>
           <h2>{group.label}</h2>
-          {group.sourceNote && (
-            <p style={{ fontSize: 11.5, color: 'var(--ink-soft)', marginBottom: 12, fontFamily: 'var(--font-mono)' }}>{group.sourceNote}</p>
-          )}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 8 }}>
             {group.skills.map((skill) => (
               <label key={skill} style={{ display: 'flex', alignItems: 'center', gap: 8, fontWeight: 400, fontSize: 13.5, marginBottom: 0 }}>
@@ -113,7 +112,7 @@ function SkillPicker({ onGenerate, latestResult }) {
         <p style={{ fontSize: 12.5, color: 'var(--ink-soft)', marginBottom: 12 }}>
           {type || skills.length > 0
             ? `${matchCount} scenario${matchCount === 1 ? '' : 's'} match your selection.`
-            : 'Leave everything unselected to draw from every scenario.'}
+            : 'Leave everything unselected to draw from every published simulation.'}
         </p>
         <button className="primary" disabled={matchCount === 0} onClick={() => onGenerate({ type: type || null, skills })}>
           Generate Scenario
@@ -175,7 +174,8 @@ function Brief({ scenario, onBegin }) {
 
 function Assess({ scenario, onSubmit }) {
   const [selected, setSelected] = useState([]);
-  const findingsText = scenario.findings.join('. ');
+  const findings = Array.isArray(scenario.findings) ? scenario.findings : [];
+  const findingsText = findings.length ? findings.join('. ') : `${scenario.title || scenario.skill || 'Simulation'} actions review`;
 
   function toggle(id) {
     setSelected((current) => (current.includes(id) ? current.filter((item) => item !== id) : [...current, id]));
@@ -190,20 +190,24 @@ function Assess({ scenario, onSubmit }) {
 
       <SimScene>
         <ResponderAvatar pose="assessing" label="Assessing" />
-        <PatientAvatar status="distress" label={scenario.initialVitals.skin} />
+        {scenario.initialVitals ? <PatientAvatar status="distress" label={scenario.initialVitals.skin} /> : <ResponderAvatar pose="radio" label="Scenario loaded" />}
       </SimScene>
 
-      <div className="card">
-        <h2>Pertinent Information / Findings</h2>
-        <ul style={{ paddingLeft: 18, lineHeight: 1.8 }}>
-          {scenario.findings.map((finding, index) => <li key={index}>{finding}</li>)}
-        </ul>
-      </div>
+      {findings.length > 0 && (
+        <div className="card">
+          <h2>Pertinent Information / Findings</h2>
+          <ul style={{ paddingLeft: 18, lineHeight: 1.8 }}>
+            {findings.map((finding, index) => <li key={index}>{finding}</li>)}
+          </ul>
+        </div>
+      )}
 
-      <div className="card">
-        <h2>Initial Vital Signs</h2>
-        <VitalsGrid vitals={scenario.initialVitals} />
-      </div>
+      {scenario.initialVitals && (
+        <div className="card">
+          <h2>Initial Vital Signs</h2>
+          <VitalsGrid vitals={scenario.initialVitals} />
+        </div>
+      )}
 
       <div className="card">
         <h2>What do you do?</h2>
@@ -214,7 +218,7 @@ function Assess({ scenario, onSubmit }) {
           {scenario.actions.map((action) => (
             <label key={action.id} style={{ display: 'flex', alignItems: 'center', gap: 8, fontWeight: 400, fontSize: 13.5, marginBottom: 0 }}>
               <input type="checkbox" style={{ width: 'auto' }} checked={selected.includes(action.id)} onChange={() => toggle(action.id)} />
-              {action.label}
+              {action.label || action.step_key}
             </label>
           ))}
         </div>
@@ -231,7 +235,9 @@ function Outcome({ scenario, selected, onContinue }) {
   const criticalHit = criticalActions.filter((action) => selected.includes(action.id)).length;
   const harmfulHit = scenario.actions.some((action) => action.harmful && selected.includes(action.id));
   const passed = criticalActions.length > 0 && criticalHit / criticalActions.length >= 0.7 && !harmfulHit;
-  const outcome = passed ? scenario.correct : scenario.incorrect;
+  const outcome = passed
+    ? (scenario.correct || { narrative: 'You selected the recommended actions. The patient stabilizes.', vitals: null })
+    : (scenario.incorrect || { narrative: 'Key actions were missed. The patient deteriorates.', vitals: null });
 
   return (
     <>
@@ -249,7 +255,7 @@ function Outcome({ scenario, selected, onContinue }) {
       </SimScene>
 
       <div className={`alert ${passed ? 'success' : ''}`}>{outcome.narrative}</div>
-      <div className="card"><h2>Second Set of Vital Signs</h2><VitalsGrid vitals={outcome.vitals} /></div>
+      {outcome.vitals && <div className="card"><h2>Second Set of Vital Signs</h2><VitalsGrid vitals={outcome.vitals} /></div>}
       <div className="card">
         <h2>Action review</h2>
         {scenario.actions.map((action) => {
@@ -272,11 +278,13 @@ function Outcome({ scenario, selected, onContinue }) {
 
 function Reassessment({ scenario, onDone }) {
   const [answered, setAnswered] = useState(null);
+  const question = scenario.reassessment?.question || 'Would you like to proceed to the debrief and scoring summary?';
+  const ifYes = scenario.reassessment?.ifYes || 'Review the selected actions, then continue to the debrief.';
   return (
     <>
       <div className="page-head"><div><h1>Additional information</h1></div></div>
       <div className="card">
-        <p style={{ marginBottom: 14 }}>{scenario.reassessment.question}</p>
+        <p style={{ marginBottom: 14 }}>{question}</p>
         {answered === null ? (
           <div style={{ display: 'flex', gap: 8 }}>
             <button onClick={() => setAnswered(true)}>Yes</button>
@@ -284,8 +292,10 @@ function Reassessment({ scenario, onDone }) {
           </div>
         ) : (
           <>
-            {answered && <p style={{ marginBottom: 14, color: 'var(--ink-soft)' }}>{scenario.reassessment.ifYes}</p>}
-            <p style={{ fontSize: 12.5, color: 'var(--ink-soft)', marginBottom: 14 }}>Transport time to the receiving facility: {scenario.transportTime}.</p>
+            {answered && <p style={{ marginBottom: 14, color: 'var(--ink-soft)' }}>{ifYes}</p>}
+            <p style={{ fontSize: 12.5, color: 'var(--ink-soft)', marginBottom: 14 }}>
+              Transport time to the receiving facility: {scenario.transportTime || 'Not specified'}.
+            </p>
             <button className="primary" onClick={onDone}>See debrief</button>
           </>
         )}
@@ -355,6 +365,7 @@ function Debrief({ scenario, selected, savedResult, saving, saveError, onRestart
 export default function Simulations() {
   const { user } = useAuth();
   const [stage, setStage] = useState('select');
+  const [catalog, setCatalog] = useState([]);
   const [scenario, setScenario] = useState(null);
   const [selectedActions, setSelectedActions] = useState([]);
   const [busy, setBusy] = useState(false);
@@ -365,6 +376,15 @@ export default function Simulations() {
   const [latestResult, setLatestResult] = useState(null);
   const [subscription, setSubscription] = useState(null);
 
+  function loadCatalog() {
+    api('/simulations/catalog')
+      .then((data) => setCatalog(Array.isArray(data.catalog) ? data.catalog : []))
+      .catch((err) => {
+        if (err.code === 'SUBSCRIPTION_REQUIRED') setSubscription(err.subscription);
+        setCatalog([]);
+      });
+  }
+
   function loadLatestResult() {
     api('/simulations/my-results/latest')
       .then((data) => setLatestResult(data.result))
@@ -373,7 +393,10 @@ export default function Simulations() {
       });
   }
 
-  useEffect(loadLatestResult, []);
+  useEffect(() => {
+    loadLatestResult();
+    loadCatalog();
+  }, []);
 
   function reset() {
     stopSpeaking();
@@ -386,7 +409,10 @@ export default function Simulations() {
   }
 
   async function generate(filters) {
-    const matches = findScenarios(filters);
+    const matches = catalog.filter((item) => (
+      (!filters.type || item.scenario_type === filters.type)
+      && (!filters.skills?.length || filters.skills.includes(item.skill))
+    ));
     if (matches.length === 0) return;
     setBusy(true);
     stopSpeaking();
@@ -395,14 +421,17 @@ export default function Simulations() {
       const response = await api('/simulations/attempts', {
         method: 'POST',
         body: {
-          scenario: {
-            ...pick,
-            category: simulationCategoryForScenario(pick),
-          },
+          simulationId: pick.simulation_id,
         },
       });
       setAttemptId(response.attempt.simulation_attempt_id);
-      setScenario(pick);
+      setScenario({
+        ...pick,
+        type: pick.scenario_type || pick.type || 'Medical',
+        actions: response.actions || [],
+        instructions: pick.instructions || '',
+        dispatch: pick.dispatch || '',
+      });
       setSelectedActions([]);
       setSavedResult(null);
       setStage('brief');
@@ -460,7 +489,7 @@ export default function Simulations() {
   }
 
   if (stage === 'select' || !scenario) {
-    return <SkillPicker onGenerate={generate} latestResult={latestResult} />;
+    return <SkillPicker catalog={catalog} onGenerate={generate} latestResult={latestResult} />;
   }
 
   if (stage === 'brief') return <Brief scenario={scenario} onBegin={() => setStage('assess')} />;

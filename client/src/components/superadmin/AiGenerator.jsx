@@ -7,9 +7,9 @@ import UiIcon from '../shared/UiIcon';
 import Loading from '../shared/Loading';
 
 const SOURCE_MODES = [
-  { id: 'pdf', label: 'PDF Upload', hint: 'Reports, manuals, protocols.', icon: 'document' },
-  { id: 'article', label: 'Article Paste', hint: 'News, incident writeups, research.', icon: 'activity' },
-  { id: 'url', label: 'URL / Link', hint: 'Web pages and official resources.', icon: 'dispatch' },
+  { id: 'pdf', label: 'PDF Upload', hint: 'Reports, manuals, protocols.', icon: 'document', accent: '#e63935', tint: '#fef2f2' },
+  { id: 'article', label: 'Article Paste', hint: 'News, incident writeups, research.', icon: 'activity', accent: '#0f766e', tint: '#ecfeff' },
+  { id: 'url', label: 'URL / Link', hint: 'Web pages and official resources.', icon: 'dispatch', accent: '#2563eb', tint: '#eff6ff' },
 ];
 
 const CONTENT_TYPES = [
@@ -30,10 +30,10 @@ const AUDIENCES = [
 const DIFFICULTIES = ['Basic', 'Intermediate', 'Advanced'];
 
 const QUESTION_TYPES = [
-  { key: 'multipleChoice', label: 'Multiple Choice' },
-  { key: 'trueFalse', label: 'True / False' },
-  { key: 'numeric', label: 'Numeric' },
-  { key: 'shortAnswer', label: 'Short Answer' },
+  { key: 'multipleChoice', label: 'Multiple Choice', icon: 'question', accent: '#e63935', tint: '#fef2f2' },
+  { key: 'trueFalse', label: 'True / False', icon: 'result', accent: '#0f766e', tint: '#ecfdf5' },
+  { key: 'numeric', label: 'Numeric', icon: 'activity', accent: '#2563eb', tint: '#eff6ff' },
+  { key: 'shortAnswer', label: 'Short Answer', icon: 'document', accent: '#b3790a', tint: '#fdf2dc' },
 ];
 
 const BROWSER_OPTIONS = [
@@ -50,7 +50,6 @@ export default function AiGenerator() {
   const [sourceText, setSourceText] = useState('');
   const [sourceUrl, setSourceUrl] = useState('');
   const [sourceTitle, setSourceTitle] = useState('');
-  const [prompt, setPrompt] = useState('');
   const [title, setTitle] = useState('MedPro AI Draft');
   const [contentType, setContentType] = useState('case_study');
   const [audience, setAudience] = useState('emt-basic');
@@ -128,10 +127,9 @@ export default function AiGenerator() {
       sourceTitle ? `Title: ${sourceTitle}` : '',
       sourceMode === 'pdf' && sourceFile ? `File: ${sourceFile.name}` : '',
       sourceMode === 'url' && sourceUrl ? `URL: ${sourceUrl}` : '',
-      prompt ? `Brief: ${prompt}` : '',
     ].filter(Boolean);
     return bits.join(' | ');
-  }, [contentMeta, sourceMode, sourceTitle, sourceFile, sourceUrl, prompt]);
+  }, [contentMeta, sourceMode, sourceTitle, sourceFile, sourceUrl, audience, topic, difficulty, questionCount, publishDestination]);
 
   async function generateDraft() {
     setBusy(true);
@@ -140,7 +138,6 @@ export default function AiGenerator() {
       const payload = new FormData();
       payload.set('title', title);
       payload.set('contentType', contentType);
-      payload.set('prompt', prompt);
       payload.set('sourceType', sourceMode);
       payload.set('sourceTitle', sourceTitle);
       payload.set('sourceText', sourceText);
@@ -207,18 +204,19 @@ export default function AiGenerator() {
                 <button
                   key={mode.id}
                   type="button"
-                  className="card"
+                  className={`card source-mode-card${active ? ' is-active' : ''}`}
                   onClick={() => setSourceMode(mode.id)}
                   style={{
-                    textAlign: 'left',
-                    border: active ? '1px solid var(--accent-red)' : '1px solid var(--border)',
-                    boxShadow: active ? '0 0 0 2px rgba(230,57,53,.08)' : 'none',
-                    cursor: 'pointer',
-                    margin: 0,
-                    background: active ? '#fff8f7' : 'white',
+                    '--tab-accent': mode.accent,
+                    '--tab-tint': mode.tint,
                   }}
                 >
-                  <UiIcon name={mode.icon} />
+                  <div className="source-mode-top">
+                    <span className="source-mode-icon"><UiIcon name={mode.icon} /></span>
+                    <span className="source-mode-badge" style={{ color: mode.accent, background: mode.tint }}>
+                      {active ? 'Selected' : 'Source'}
+                    </span>
+                  </div>
                   <h3 style={{ margin: '10px 0 6px' }}>{mode.label}</h3>
                   <p className="sub" style={{ margin: 0 }}>{mode.hint}</p>
                 </button>
@@ -361,16 +359,6 @@ export default function AiGenerator() {
             </div>
           </div>
 
-          <div className="field" style={{ marginTop: 14 }}>
-            <label>Generation prompt</label>
-            <textarea
-              rows={5}
-              value={prompt}
-              onChange={(event) => setPrompt(event.target.value)}
-              placeholder="Describe the learning output, tone, difficulty, and any required structure."
-            />
-          </div>
-
           <div className="field">
             <label>Question types</label>
             <div className="source-mode-grid" style={{ marginBottom: 0 }}>
@@ -380,19 +368,19 @@ export default function AiGenerator() {
                   <button
                     key={item.key}
                     type="button"
-                    className="card"
+                    className={`card source-mode-card question-type-card${active ? ' is-active' : ''}`}
                     onClick={() => setQuestionTypes((current) => ({ ...current, [item.key]: !current[item.key] }))}
                     style={{
-                      textAlign: 'left',
-                      border: active ? '1px solid var(--accent-red)' : '1px solid var(--border)',
-                      boxShadow: active ? '0 0 0 2px rgba(230,57,53,.08)' : 'none',
-                      cursor: 'pointer',
-                      margin: 0,
-                      background: active ? '#fff8f7' : 'white',
-                      minHeight: 'auto',
+                      '--tab-accent': item.accent,
+                      '--tab-tint': item.tint,
                     }}
                   >
-                    <UiIcon name={active ? 'unlock' : 'lock'} />
+                    <div className="source-mode-top">
+                      <span className="source-mode-icon"><UiIcon name={item.icon} /></span>
+                      <span className="source-mode-badge" style={{ color: active ? item.accent : 'var(--ink-soft)', background: active ? item.tint : 'var(--paper)' }}>
+                        {active ? 'Enabled' : 'Optional'}
+                      </span>
+                    </div>
                     <h3 style={{ margin: '10px 0 6px' }}>{item.label}</h3>
                   </button>
                 );
@@ -451,7 +439,7 @@ export default function AiGenerator() {
           ) : null}
 
           <div className="logbook-actions">
-            <button type="button" className="primary" onClick={generateDraft} disabled={busy || (!sourceReady && !prompt.trim())}>
+            <button type="button" className="primary" onClick={generateDraft} disabled={busy || !sourceReady}>
               {busy ? 'Generating...' : 'Start generation'}
             </button>
             <button

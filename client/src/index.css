@@ -427,6 +427,75 @@ input:focus, select:focus, textarea:focus, button:focus-visible, a:focus-visible
   width: 18px;
   height: 18px;
 }
+.wizard-stepper {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  margin: 0 0 14px;
+}
+.wizard-step {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid var(--line);
+  background: #fff;
+  border-radius: 16px;
+  padding: 12px 14px;
+  min-height: 56px;
+  cursor: pointer;
+  text-align: left;
+}
+.wizard-step.is-active {
+  border-color: var(--red);
+  box-shadow: 0 10px 24px rgba(230, 57, 53, 0.12);
+}
+.wizard-step.is-complete {
+  border-color: color-mix(in srgb, var(--success) 30%, var(--line));
+}
+.wizard-step-index {
+  width: 32px;
+  height: 32px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  color: var(--black);
+  background: var(--paper);
+  flex-shrink: 0;
+}
+.wizard-step.is-active .wizard-step-index {
+  background: var(--red);
+  color: #fff;
+}
+.wizard-step.is-complete .wizard-step-index {
+  background: var(--success);
+  color: #fff;
+}
+.wizard-step-label {
+  font-weight: 700;
+  color: var(--black);
+  line-height: 1.2;
+}
+.wizard-nav {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+.wizard-nav-spacer {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ink-soft);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.review-pills .review-tab {
+  border-radius: 999px;
+  min-height: 36px;
+  padding-inline: 12px;
+}
 .generator-feature-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
@@ -4064,6 +4133,17 @@ button:disabled { opacity: 0.5; cursor: default; }
   .review-actions {
     flex-direction: column;
     align-items: stretch;
+  }
+  .wizard-stepper {
+    grid-template-columns: 1fr;
+  }
+  .wizard-nav {
+    flex-wrap: wrap;
+  }
+  .wizard-nav-spacer {
+    width: 100%;
+    text-align: center;
+    order: -1;
   }
   .generator-action-row .primary,
   .generator-action-row .ghost,

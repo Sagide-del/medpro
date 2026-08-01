@@ -95,6 +95,8 @@ export default function AiGenerator() {
   const [assignmentTitle, setAssignmentTitle] = useState('');
   const [publishBusy, setPublishBusy] = useState(false);
   const [publishConfirmation, setPublishConfirmation] = useState('');
+  const [currentStep, setCurrentStep] = useState(1);
+  const [showQuestionPreview, setShowQuestionPreview] = useState(false);
 
   const contentId = searchParams.get('contentId') || '';
 
@@ -289,6 +291,13 @@ export default function AiGenerator() {
   }, { total: 0, needs_review: 0, approved: 0, rejected: 0, selected: 0 }), [normalizedReviewQueue]);
 
   const canPublish = publishDestination !== 'independent_student' || assignmentTitle.trim();
+  const previewReady = job?.status === 'completed' || (!!job?.result?.previewQuestions?.length && job.status !== 'running');
+  const wizardSteps = [
+    { step: 1, label: 'Source Input' },
+    { step: 2, label: 'Generation Settings' },
+    { step: 3, label: 'Review & Preview' },
+    { step: 4, label: 'Publish & Destination' },
+  ];
 
   useEffect(() => {
     const inProgress = !!job && job.status !== 'completed' && job.status !== 'failed';
@@ -325,6 +334,12 @@ export default function AiGenerator() {
     setSelectedReviewId((current) => current || liveGeneratedQuestions[0]?.id || '');
     setReviewFilter('all');
   }, [liveGeneratedQuestions, difficulty]);
+
+  useEffect(() => {
+    if (job?.status === 'completed' && currentStep < 3) {
+      setCurrentStep(3);
+    }
+  }, [job?.status, currentStep]);
 
   function formatBytes(bytes = 0) {
     if (!bytes) return '0 KB';
@@ -374,6 +389,7 @@ export default function AiGenerator() {
     setBusy(true);
     setStatus('');
     setPublishConfirmation('');
+    setCurrentStep(2);
     setGenerationStartedAt(Date.now());
     setElapsedSeconds(0);
     try {
@@ -439,6 +455,7 @@ export default function AiGenerator() {
     setStatus('');
     setTimeout(() => {
       setPublishBusy(false);
+      setCurrentStep(4);
       setPublishConfirmation(
         publishDestination === 'independent_student'
           ? `Published "${assignmentTitle.trim()}" to independent students.`
@@ -456,6 +473,8 @@ export default function AiGenerator() {
     setReviewQueue([]);
     setSelectedReviewId('');
     setPublishConfirmation('');
+    setCurrentStep(1);
+    setShowQuestionPreview(false);
   }
 
   if (!cases) return <Loading label="Loading AI generator..." />;
@@ -467,299 +486,505 @@ export default function AiGenerator() {
           <h1>Master AI Generator</h1>
           <div className="sub">Multi-source drafting for EMS cases, simulations, assignments, exams, and video scripts.</div>
         </div>
-        <div className="logbook-actions">
-          <Link className="ghost" to="/superadmin/content">Uploader</Link>
-          <Link className="ghost" to="/admin/content-bank">Content Bank</Link>
-        </div>
+      </div>
+
+      <div className="wizard-stepper" role="list" aria-label="Generator steps">
+        {wizardSteps.map((item) => (
+          <button
+            key={item.step}
+            type="button"
+            className={`wizard-step${currentStep === item.step ? ' is-active' : ''}${currentStep > item.step ? ' is-complete' : ''}`}
+            onClick={() => setCurrentStep(item.step)}
+          >
+            <span className="wizard-step-index">{item.step}</span>
+            <span className="wizard-step-label">{item.label}</span>
+          </button>
+        ))}
       </div>
 
       <div className="grid-auto">
-        <section className="card">
-          <div className="section-head">
-            <div>
-              <h2>Source studio</h2>
-            </div>
-          </div>
-
-          <div className="source-mode-grid">
-            {SOURCE_MODES.map((mode) => {
-              const active = sourceMode === mode.id;
-              return (
-                <button
-                  key={mode.id}
-                  type="button"
-                  className={`card source-mode-card${active ? ' is-active' : ''}`}
-                  onClick={() => setSourceMode(mode.id)}
-                  style={{
-                    '--tab-accent': mode.accent,
-                    '--tab-tint': mode.tint,
-                  }}
-                >
-                  <div className="source-mode-top">
-                    <span className="source-mode-icon"><UiIcon name={mode.icon} /></span>
-                    <span className="source-mode-badge" style={{ color: mode.accent, background: mode.tint }}>
-                      {active ? 'Selected' : 'Source'}
-                    </span>
-                  </div>
-                  <h3 style={{ margin: '10px 0 6px' }}>{mode.label}</h3>
-                  <p className="sub" style={{ margin: 0 }}>{mode.hint}</p>
-                </button>
-              );
-            })}
-          </div>
-
-          <div className="field">
-            <label>{sourceMode === 'article' ? 'Article title' : 'Source title'}</label>
-            <input
-              value={sourceTitle}
-              onChange={(event) => setSourceTitle(event.target.value)}
-              placeholder={sourceMode === 'article' ? 'Article title or report name' : 'Optional source title or report name'}
-            />
-          </div>
-
-          {sourceMode === 'pdf' ? (
-            <div className="field">
-              <label>PDF upload</label>
-              <div
-                className={`upload-dropzone${isDragging ? ' is-dragging' : ''}`}
-                role="button"
-                tabIndex={0}
-                onClick={() => pdfInputRef.current?.click()}
-                onDragOver={(event) => {
-                  event.preventDefault();
-                  setIsDragging(true);
-                }}
-                onDragLeave={() => setIsDragging(false)}
-                onDrop={(event) => {
-                  event.preventDefault();
-                  setIsDragging(false);
-                  handlePdfSelection(event.dataTransfer.files?.[0] || null);
-                }}
-                onKeyDown={(event) => {
-                  if (event.key === 'Enter' || event.key === ' ') pdfInputRef.current?.click();
-                }}
-              >
-                <input
-                  ref={pdfInputRef}
-                  type="file"
-                  accept=".pdf,application/pdf"
-                  className="sr-only"
-                  onChange={(event) => handlePdfSelection(event.target.files?.[0] || null)}
-                />
-                <UiIcon name="document" />
-                <strong>{sourceFile ? sourceFile.name : 'Drop your PDF here or click to upload'}</strong>
-                <small className="sub">Supported: PDF files up to 50MB.</small>
-                <div className="upload-dropzone-meta">
-                  <span>{sourceFileMeta?.sizeLabel || (sourceFile ? formatBytes(sourceFile.size) : 'No file selected')}</span>
-                  <span>{sourceFileMeta?.pageCount ? `${sourceFileMeta.pageCount} pages` : 'Page count after upload'}</span>
-                </div>
-              </div>
-              {sourceFileMeta ? (
-                <div className="upload-file-chip-row">
-                  <span className="upload-file-chip">File: {sourceFileMeta.name}</span>
-                  <span className="upload-file-chip">Size: {sourceFileMeta.sizeLabel}</span>
-                  <span className="upload-file-chip">{sourceFileMeta.pageCount ? `${sourceFileMeta.pageCount} pages` : 'Pages detected after upload'}</span>
-                </div>
-              ) : null}
-            </div>
-          ) : null}
-
-          {sourceMode === 'article' ? (
-            <div className="field">
-              <label>Article source</label>
-              <div className="form-grid" style={{ marginBottom: 12 }}>
-                <input value={sourceOrigin} onChange={(event) => setSourceOrigin(event.target.value)} placeholder="Source / publication / institution" />
-                <input type="date" value={sourceDate} onChange={(event) => setSourceDate(event.target.value)} />
-              </div>
-              <textarea
-                rows={8}
-                value={sourceText}
-                onChange={(event) => setSourceText(event.target.value)}
-                placeholder="Paste the article, report, protocol, or training text here."
-              />
-              <div className="inline-metrics">
-                <span className="metric-pill">Words: {sourceWordCount}</span>
-                <span className="metric-pill">{sourceStructureHint}</span>
-              </div>
-            </div>
-          ) : null}
-
-          {sourceMode === 'url' ? (
-            <div className="field">
-              <label>Source URL</label>
-              <input value={sourceUrl} onChange={(event) => setSourceUrl(event.target.value)} placeholder="https://..." />
-              <div className="card" style={{ marginTop: 12, background: '#f8f9fb' }}>
-                <div className="section-head" style={{ marginBottom: 8 }}>
-                  <div>
-                    <h3 style={{ margin: 0 }}>Extraction preview</h3>
-                  </div>
-                </div>
-                <p className="sub" style={{ margin: 0, whiteSpace: 'pre-wrap' }}>
-                  {sourceUrl.trim() ? 'Main article content will be extracted on generation and previewed here.' : 'Paste a URL to load the article preview.'}
-                </p>
-              </div>
-            </div>
-          ) : null}
-
-          <div className="card" style={{ marginTop: 14, background: '#f8f9fb' }}>
-            <div className="section-head" style={{ marginBottom: 8 }}>
+        {currentStep === 1 ? (
+          <section className="card">
+            <div className="section-head">
               <div>
-                <h3 style={{ margin: 0 }}>Source preview</h3>
+                <h2>Step 1. Source Input</h2>
               </div>
             </div>
-            <p className="sub" style={{ margin: 0, whiteSpace: 'pre-wrap' }}>
-              {sourceMode === 'pdf' && sourceFile
-                ? `PDF ready: ${sourceFile.name}`
-                : sourceMode === 'article' && sourceText.trim()
-                  ? sourceText.slice(0, 240)
-                  : sourceMode === 'url' && sourceUrl.trim()
-                    ? sourceUrl
-                    : 'No source selected yet.'}
-            </p>
-          </div>
-        </section>
 
-        <section className="card">
-          <div className="section-head">
-            <div>
-              <h2>Generation settings</h2>
-            </div>
-          </div>
-
-          <div className="form-grid">
-            <div className="field">
-              <label>Draft title</label>
-              <input value={title} onChange={(event) => setTitle(event.target.value)} />
-            </div>
-            <div className="field">
-              <label>Content type</label>
-              <select value={contentType} onChange={(event) => setContentType(event.target.value)}>
-                {CONTENT_TYPES.map((item) => (
-                  <option key={item.value} value={item.value}>{item.label}</option>
-                ))}
-              </select>
-            </div>
-            <div className="field">
-              <label>Target audience</label>
-              <select value={audience} onChange={(event) => setAudience(event.target.value)}>
-                {AUDIENCES.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
-              </select>
-            </div>
-            <div className="field">
-              <label>Topic</label>
-              <input value={topic} onChange={(event) => setTopic(event.target.value)} placeholder="Airway management, trauma, cardiology..." />
-            </div>
-            <div className="field">
-              <label>Difficulty level</label>
-              <select value={difficulty} onChange={(event) => setDifficulty(event.target.value)}>
-                {DIFFICULTIES.map((item) => <option key={item}>{item}</option>)}
-              </select>
-            </div>
-            <div className="field">
-              <label>Question count: {questionCount}</label>
-              <input
-                type="range"
-                min="10"
-                max="100"
-                step="5"
-                value={questionCount}
-                onChange={(event) => setQuestionCount(Number(event.target.value))}
-              />
-            </div>
-          </div>
-
-          <div className="card" style={{ marginTop: 14, background: '#f8f9fb' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <UiIcon name={contentMeta.icon} />
-              <div>
-                <div style={{ fontWeight: 700 }}>{contentMeta.label}</div>
-                <div className="sub">Publishes to {contentMeta.destination}</div>
-              </div>
-            </div>
-          </div>
-
-          <div className="field">
-            <label>Question types</label>
-            <div className="source-mode-grid" style={{ marginBottom: 0 }}>
-              {QUESTION_TYPES.map((item) => {
-                const active = !!questionTypes[item.key];
+            <div className="source-mode-grid">
+              {SOURCE_MODES.map((mode) => {
+                const active = sourceMode === mode.id;
                 return (
                   <button
-                    key={item.key}
+                    key={mode.id}
                     type="button"
-                    className={`card source-mode-card question-type-card${active ? ' is-active' : ''}`}
-                    onClick={() => setQuestionTypes((current) => ({ ...current, [item.key]: !current[item.key] }))}
+                    className={`card source-mode-card${active ? ' is-active' : ''}`}
+                    onClick={() => setSourceMode(mode.id)}
                     style={{
-                      '--tab-accent': item.accent,
-                      '--tab-tint': item.tint,
+                      '--tab-accent': mode.accent,
+                      '--tab-tint': mode.tint,
                     }}
                   >
                     <div className="source-mode-top">
-                      <span className="source-mode-icon"><UiIcon name={item.icon} /></span>
-                      <span className="source-mode-badge" style={{ color: active ? item.accent : 'var(--ink-soft)', background: active ? item.tint : 'var(--paper)' }}>
-                        {active ? 'Enabled' : 'Optional'}
+                      <span className="source-mode-icon"><UiIcon name={mode.icon} /></span>
+                      <span className="source-mode-badge" style={{ color: mode.accent, background: mode.tint }}>
+                        {active ? 'Selected' : 'Source'}
                       </span>
                     </div>
-                    <h3 style={{ margin: '10px 0 6px' }}>{item.label}</h3>
+                    <h3 style={{ margin: '10px 0 6px' }}>{mode.label}</h3>
+                    <p className="sub" style={{ margin: 0 }}>{mode.hint}</p>
                   </button>
                 );
               })}
             </div>
-          </div>
 
-          <div className="generator-feature-grid">
-            <section className="generator-feature-card">
-              <div className="section-head" style={{ marginBottom: 12 }}>
-                <div>
-                  <h3 style={{ margin: 0 }}>Bloom&apos;s Taxonomy</h3>
-                  <p className="sub" style={{ margin: '4px 0 0' }}>Shape the cognitive depth of the draft.</p>
+            <div className="field">
+              <label>{sourceMode === 'article' ? 'Article title' : 'Source title'}</label>
+              <input
+                value={sourceTitle}
+                onChange={(event) => setSourceTitle(event.target.value)}
+                placeholder={sourceMode === 'article' ? 'Article title or report name' : 'Optional source title or report name'}
+              />
+            </div>
+
+            {sourceMode === 'pdf' ? (
+              <div className="field">
+                <label>PDF upload</label>
+                <div
+                  className={`upload-dropzone${isDragging ? ' is-dragging' : ''}`}
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => pdfInputRef.current?.click()}
+                  onDragOver={(event) => {
+                    event.preventDefault();
+                    setIsDragging(true);
+                  }}
+                  onDragLeave={() => setIsDragging(false)}
+                  onDrop={(event) => {
+                    event.preventDefault();
+                    setIsDragging(false);
+                    handlePdfSelection(event.dataTransfer.files?.[0] || null);
+                  }}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter' || event.key === ' ') pdfInputRef.current?.click();
+                  }}
+                >
+                  <input
+                    ref={pdfInputRef}
+                    type="file"
+                    accept=".pdf,application/pdf"
+                    className="sr-only"
+                    onChange={(event) => handlePdfSelection(event.target.files?.[0] || null)}
+                  />
+                  <UiIcon name="document" />
+                  <strong>{sourceFile ? sourceFile.name : 'Drop your PDF here or click to upload'}</strong>
+                  <small className="sub">Supported: PDF files up to 50MB.</small>
+                  <div className="upload-dropzone-meta">
+                    <span>{sourceFileMeta?.sizeLabel || (sourceFile ? formatBytes(sourceFile.size) : 'No file selected')}</span>
+                    <span>{sourceFileMeta?.pageCount ? `${sourceFileMeta.pageCount} pages` : 'Page count after upload'}</span>
+                  </div>
+                </div>
+                {sourceFileMeta ? (
+                  <div className="upload-file-chip-row">
+                    <span className="upload-file-chip">File: {sourceFileMeta.name}</span>
+                    <span className="upload-file-chip">Size: {sourceFileMeta.sizeLabel}</span>
+                    <span className="upload-file-chip">{sourceFileMeta.pageCount ? `${sourceFileMeta.pageCount} pages` : 'Pages detected after upload'}</span>
+                  </div>
+                ) : null}
+              </div>
+            ) : null}
+
+            {sourceMode === 'article' ? (
+              <div className="field">
+                <label>Article source</label>
+                <div className="form-grid" style={{ marginBottom: 12 }}>
+                  <input value={sourceOrigin} onChange={(event) => setSourceOrigin(event.target.value)} placeholder="Source / publication / institution" />
+                  <input type="date" value={sourceDate} onChange={(event) => setSourceDate(event.target.value)} />
+                </div>
+                <textarea
+                  rows={8}
+                  value={sourceText}
+                  onChange={(event) => setSourceText(event.target.value)}
+                  placeholder="Paste the article, report, protocol, or training text here."
+                />
+                <div className="inline-metrics">
+                  <span className="metric-pill">Words: {sourceWordCount}</span>
+                  <span className="metric-pill">{sourceStructureHint}</span>
                 </div>
               </div>
-              <label className="checkbox-field checkbox-feature-row">
-                <input type="checkbox" checked={bloomPriority} onChange={(event) => setBloomPriority(event.target.checked)} />
-                <span>
-                  <strong>Higher-order thinking</strong>
-                  <small>Prioritize analysis, evaluation, and decision-making.</small>
-                </span>
-              </label>
-              <div className="feature-chip-row">
-                {['Remember', 'Understand', 'Apply', 'Analyze', 'Evaluate', 'Create'].map((level) => (
-                  <span key={level} className={`metric-pill${bloomPriority && ['Analyze', 'Evaluate', 'Create'].includes(level) ? ' is-emphasis' : ''}`}>
-                    {level}
+            ) : null}
+
+            {sourceMode === 'url' ? (
+              <div className="field">
+                <label>Source URL</label>
+                <input value={sourceUrl} onChange={(event) => setSourceUrl(event.target.value)} placeholder="https://..." />
+                <div className="card" style={{ marginTop: 12, background: '#f8f9fb' }}>
+                  <div className="section-head" style={{ marginBottom: 8 }}>
+                    <div>
+                      <h3 style={{ margin: 0 }}>Extraction preview</h3>
+                    </div>
+                  </div>
+                  <p className="sub" style={{ margin: 0, whiteSpace: 'pre-wrap' }}>
+                    {sourceUrl.trim() ? 'Main article content will be extracted on generation and previewed here.' : 'Paste a URL to load the article preview.'}
+                  </p>
+                </div>
+              </div>
+            ) : null}
+
+            <div className="card" style={{ marginTop: 14, background: '#f8f9fb' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <UiIcon name={contentMeta.icon} />
+                <div>
+                  <div style={{ fontWeight: 700 }}>{contentMeta.label}</div>
+                  <div className="sub">Source input will be sent through the DeepSeek pipeline.</div>
+                </div>
+              </div>
+            </div>
+          </section>
+        ) : null}
+
+        {currentStep === 2 ? (
+          <section className="card">
+            <div className="section-head">
+              <div>
+                <h2>Step 2. Generation Settings</h2>
+              </div>
+            </div>
+
+            <div className="form-grid">
+              <div className="field">
+                <label>Draft title</label>
+                <input value={title} onChange={(event) => setTitle(event.target.value)} />
+              </div>
+              <div className="field">
+                <label>Content type</label>
+                <select value={contentType} onChange={(event) => setContentType(event.target.value)}>
+                  {CONTENT_TYPES.map((item) => (
+                    <option key={item.value} value={item.value}>{item.label}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="field">
+                <label>Target audience</label>
+                <select value={audience} onChange={(event) => setAudience(event.target.value)}>
+                  {AUDIENCES.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
+                </select>
+              </div>
+              <div className="field">
+                <label>Topic</label>
+                <input value={topic} onChange={(event) => setTopic(event.target.value)} placeholder="Airway management, trauma, cardiology..." />
+              </div>
+              <div className="field">
+                <label>Difficulty level</label>
+                <select value={difficulty} onChange={(event) => setDifficulty(event.target.value)}>
+                  {DIFFICULTIES.map((item) => <option key={item}>{item}</option>)}
+                </select>
+              </div>
+              <div className="field">
+                <label>Question count: {questionCount}</label>
+                <input type="range" min="10" max="100" step="5" value={questionCount} onChange={(event) => setQuestionCount(Number(event.target.value))} />
+              </div>
+            </div>
+
+            <div className="field">
+              <label>Question types</label>
+              <div className="source-mode-grid" style={{ marginBottom: 0 }}>
+                {QUESTION_TYPES.map((item) => {
+                  const active = !!questionTypes[item.key];
+                  return (
+                    <button
+                      key={item.key}
+                      type="button"
+                      className={`card source-mode-card question-type-card${active ? ' is-active' : ''}`}
+                      onClick={() => setQuestionTypes((current) => ({ ...current, [item.key]: !current[item.key] }))}
+                      style={{
+                        '--tab-accent': item.accent,
+                        '--tab-tint': item.tint,
+                      }}
+                    >
+                      <div className="source-mode-top">
+                        <span className="source-mode-icon"><UiIcon name={item.icon} /></span>
+                        <span className="source-mode-badge" style={{ color: active ? item.accent : 'var(--ink-soft)', background: active ? item.tint : 'var(--paper)' }}>
+                          {active ? 'Enabled' : 'Optional'}
+                        </span>
+                      </div>
+                      <h3 style={{ margin: '10px 0 6px' }}>{item.label}</h3>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="generator-feature-grid">
+              <section className="generator-feature-card">
+                <div className="section-head" style={{ marginBottom: 12 }}>
+                  <div>
+                    <h3 style={{ margin: 0 }}>Bloom&apos;s Taxonomy</h3>
+                    <p className="sub" style={{ margin: '4px 0 0' }}>Shape the cognitive depth of the draft.</p>
+                  </div>
+                </div>
+                <label className="checkbox-field checkbox-feature-row">
+                  <input type="checkbox" checked={bloomPriority} onChange={(event) => setBloomPriority(event.target.checked)} />
+                  <span>
+                    <strong>Higher-order thinking</strong>
+                    <small>Prioritize analysis, evaluation, and decision-making.</small>
                   </span>
-                ))}
-              </div>
-            </section>
+                </label>
+                <div className="feature-chip-row">
+                  {['Remember', 'Understand', 'Apply', 'Analyze', 'Evaluate', 'Create'].map((level) => (
+                    <span key={level} className={`metric-pill${bloomPriority && ['Analyze', 'Evaluate', 'Create'].includes(level) ? ' is-emphasis' : ''}`}>
+                      {level}
+                    </span>
+                  ))}
+                </div>
+              </section>
 
-            <section className="generator-feature-card">
-              <div className="section-head" style={{ marginBottom: 12 }}>
+              <section className="generator-feature-card">
+                <div className="section-head" style={{ marginBottom: 12 }}>
+                  <div>
+                    <h3 style={{ margin: 0 }}>Additional options</h3>
+                    <p className="sub" style={{ margin: '4px 0 0' }}>Publishing controls and review helpers.</p>
+                  </div>
+                </div>
+                <div className="feature-toggle-grid">
+                  <label className="checkbox-field">
+                    <input type="checkbox" checked={includeAnswerKey} onChange={(event) => setIncludeAnswerKey(event.target.checked)} />
+                    <span>Answer key</span>
+                  </label>
+                  <label className="checkbox-field">
+                    <input type="checkbox" checked={includeFeedback} onChange={(event) => setIncludeFeedback(event.target.checked)} />
+                    <span>Feedback</span>
+                  </label>
+                  <label className="checkbox-field">
+                    <input type="checkbox" checked={suggestDiagramPlaceholders} onChange={(event) => setSuggestDiagramPlaceholders(event.target.checked)} />
+                    <span>Diagrams</span>
+                  </label>
+                  <label className="checkbox-field">
+                    <input type="checkbox" checked={autoTagByTopic} onChange={(event) => setAutoTagByTopic(event.target.checked)} />
+                    <span>Auto-tag</span>
+                  </label>
+                </div>
+              </section>
+            </div>
+
+            <div className="generator-action-row" style={{ marginTop: 14 }}>
+              <button type="button" className="primary" onClick={() => generateDraft('upload')} disabled={busy || !sourceReady}>
+                {busy ? 'Generating...' : (sourceMode === 'pdf' ? 'Upload & Generate' : 'Generate Draft')}
+              </button>
+              <button type="button" className="ghost" onClick={() => generateDraft('draft')} disabled={busy || !sourceReady}>
+                Generate Draft
+              </button>
+              <button type="button" className="ghost" onClick={cancelGeneration} disabled={busy && !job && !reviewQueue.length}>
+                Cancel
+              </button>
+            </div>
+
+            {job && job.status !== 'completed' && job.status !== 'failed' ? (
+              <div style={{ marginTop: 14 }}>
+                <ProgressBar label={job.title} status={job.status} value={job.progress} />
+              </div>
+            ) : null}
+
+            {status ? <div className="ok-note" style={{ marginTop: 12 }}>{status}</div> : null}
+          </section>
+        ) : null}
+
+        {currentStep === 3 ? (
+          <section className="card">
+            <div className="section-head">
+              <div>
+                <h2>Step 3. Review & Preview</h2>
+              </div>
+              <span className="badge active" style={{ fontSize: 16, paddingInline: 14 }}>{reviewCounts.selected} selected</span>
+            </div>
+
+            {!previewReady ? (
+              <div className="ok-note">Generate a draft first to open the preview and review queue.</div>
+            ) : (
+              <>
+                <button type="button" className="ghost" onClick={() => setShowQuestionPreview((current) => !current)} style={{ marginBottom: 14 }}>
+                  {showQuestionPreview ? 'Hide question preview' : 'Show question preview'}
+                </button>
+
+                {showQuestionPreview ? (
+                  <div className="generation-preview-section">
+                    <div className="section-head" style={{ marginBottom: 8 }}>
+                      <div>
+                        <h3 style={{ margin: 0 }}>Question preview</h3>
+                      </div>
+                    </div>
+                    <div className="preview-question-list">
+                      {livePreviewQuestions.map((item, index) => (
+                        <article key={item.question || item.prompt || `${item.type || 'question'}-${index}`} className="preview-question-card">
+                          <div className="preview-question-top">
+                            <span className="badge active">{String(item.type || 'question').replace('_', ' ')}</span>
+                            <span className="badge draft">Preview</span>
+                          </div>
+                          <h4>{item.question || item.prompt}</h4>
+                          <div className="preview-answer">
+                            <span className="preview-answer-label">Answer</span>
+                            <p>{item.answer}</p>
+                          </div>
+                          <div className="preview-feedback">
+                            <span className="preview-feedback-label">Feedback</span>
+                            <p>{item.feedback}</p>
+                          </div>
+                        </article>
+                      ))}
+                    </div>
+                  </div>
+                ) : null}
+
+                <div className="generation-preview-section">
+                  <div className="section-head" style={{ marginBottom: 8 }}>
+                    <div>
+                      <h3 style={{ margin: 0 }}>Review queue</h3>
+                      <p className="sub" style={{ margin: '4px 0 0' }}>Approve or reject questions before publishing.</p>
+                    </div>
+                    <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                      <span className="badge draft">{reviewCounts.total} total</span>
+                      <span className="badge active" style={{ fontSize: 16, paddingInline: 14 }}>{reviewCounts.selected} selected</span>
+                    </div>
+                  </div>
+
+                  <div className="review-tabs review-pills" role="tablist" aria-label="Review queue filters">
+                    {reviewTabs.map((tab) => (
+                      <button
+                        key={tab.key}
+                        type="button"
+                        className={`review-tab${reviewFilter === tab.key ? ' is-active' : ''}`}
+                        onClick={() => setReviewFilter(tab.key)}
+                      >
+                        {tab.label}
+                      </button>
+                    ))}
+                  </div>
+
+                  <div className="review-queue-layout">
+                    <div className="review-queue-list">
+                      {filteredReviewQueue.length ? filteredReviewQueue.map((item) => (
+                        <button
+                          key={item.id}
+                          type="button"
+                          className={`review-queue-card${selectedReviewItem?.id === item.id ? ' is-selected' : ''}`}
+                          onClick={() => setSelectedReviewId(item.id)}
+                        >
+                          <div className="review-queue-top">
+                            <span className={`badge ${item.status === 'approved' ? 'approved' : item.status === 'rejected' ? 'draft' : 'active'}`}>
+                              {item.status.replace('_', ' ')}
+                            </span>
+                            <span className="badge draft">{String(item.type || 'question').replace('_', ' ')}</span>
+                          </div>
+                          <h4>{item.question}</h4>
+                          <p>{item.answer || 'Answer hidden until review.'}</p>
+                        </button>
+                      )) : (
+                        <div className="generation-preview-result">
+                          <div className="generation-preview-value">No questions in this filter yet.</div>
+                          <p className="sub" style={{ margin: '8px 0 0' }}>Generate a draft to populate the review queue.</p>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="review-preview-card">
+                      <div className="review-preview-head">
+                        <div>
+                          <div className="generation-preview-label">Preview</div>
+                          <div className="generation-preview-value">{selectedReviewItem?.question || 'Select a question to preview it here.'}</div>
+                        </div>
+                        {selectedReviewItem ? (
+                          <span className={`badge ${selectedReviewItem.status === 'approved' ? 'approved' : selectedReviewItem.status === 'rejected' ? 'draft' : 'active'}`}>
+                            {selectedReviewItem.status.replace('_', ' ')}
+                          </span>
+                        ) : null}
+                      </div>
+                      {selectedReviewItem ? (
+                        <>
+                          <div className="preview-answer">
+                            <span className="preview-answer-label">Suggested answer</span>
+                            <p>{selectedReviewItem.answer || 'No suggested answer yet.'}</p>
+                          </div>
+                          <div className="preview-feedback">
+                            <span className="preview-feedback-label">Feedback</span>
+                            <p>{selectedReviewItem.feedback || 'No feedback attached.'}</p>
+                          </div>
+                          <div className="review-actions">
+                            <button type="button" className="primary" onClick={() => updateReviewStatus(selectedReviewItem.id, 'approved')}>Approve</button>
+                            <button type="button" className="ghost" onClick={() => updateReviewStatus(selectedReviewItem.id, 'rejected')}>Reject</button>
+                          </div>
+                        </>
+                      ) : null}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="generation-preview-section">
+                  <div className="section-head" style={{ marginBottom: 8 }}>
+                    <div>
+                      <h3 style={{ margin: 0 }}>Content statistics</h3>
+                    </div>
+                  </div>
+                  <div className="generation-preview-grid">
+                    <div className="generation-preview-item">
+                      <div className="generation-preview-label">Total questions</div>
+                      <div className="generation-preview-value">{questionCount}</div>
+                    </div>
+                    <div className="generation-preview-item">
+                      <div className="generation-preview-label">Difficulty</div>
+                      <div className="generation-preview-value">{difficulty}</div>
+                    </div>
+                    <div className="generation-preview-item">
+                      <div className="generation-preview-label">Bloom priority</div>
+                      <div className="generation-preview-value">{bloomPriority ? 'Higher-order thinking' : 'Standard mix'}</div>
+                    </div>
+                    <div className="generation-preview-item">
+                      <div className="generation-preview-label">Answer key</div>
+                      <div className="generation-preview-value">{includeAnswerKey ? 'Visible to staff' : 'Hidden'}</div>
+                    </div>
+                  </div>
+                  <div className="generation-breakdown-row">
+                    {generatedQuestionBreakdown.map((item) => (
+                      <span key={item.label} className="metric-pill" style={{ borderColor: item.accent }}>
+                        {item.label}: {item.value}
+                      </span>
+                    ))}
+                  </div>
+                  {liveAnalysis ? (
+                    <div className="generation-preview-result" style={{ marginTop: 14 }}>
+                      <div className="generation-preview-label">Source analysis</div>
+                      <div className="generation-preview-value">
+                        {liveAnalysis.incident_type || 'Unknown'} · {liveAnalysis.location || 'Not stated in source'}
+                      </div>
+                      <p className="sub" style={{ margin: '8px 0 0', whiteSpace: 'pre-wrap' }}>
+                        {(Array.isArray(liveAnalysis.key_facts) ? liveAnalysis.key_facts : []).slice(0, 5).join(' • ') || 'Analysis will appear after generation completes.'}
+                      </p>
+                    </div>
+                  ) : null}
+                </div>
+              </>
+            )}
+          </section>
+        ) : null}
+
+        {currentStep === 4 ? (
+          <section className="card">
+            <div className="section-head">
+              <div>
+                <h2>Step 4. Publish & Destination</h2>
+              </div>
+              <span className="badge active" style={{ fontSize: 16, paddingInline: 14 }}>{reviewCounts.selected} selected</span>
+            </div>
+
+            <div className="card" style={{ marginTop: 14, background: '#f8f9fb' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <UiIcon name={contentMeta.icon} />
                 <div>
-                  <h3 style={{ margin: 0 }}>Additional options</h3>
-                  <p className="sub" style={{ margin: '4px 0 0' }}>Publishing controls and review helpers.</p>
+                  <div style={{ fontWeight: 700 }}>{contentMeta.label}</div>
+                  <div className="sub">Pick where this draft should live.</div>
                 </div>
               </div>
-              <div className="feature-toggle-grid">
-                <label className="checkbox-field">
-                  <input type="checkbox" checked={includeAnswerKey} onChange={(event) => setIncludeAnswerKey(event.target.checked)} />
-                  <span>Answer key</span>
-                </label>
-                <label className="checkbox-field">
-                  <input type="checkbox" checked={includeFeedback} onChange={(event) => setIncludeFeedback(event.target.checked)} />
-                  <span>Feedback</span>
-                </label>
-                <label className="checkbox-field">
-                  <input type="checkbox" checked={suggestDiagramPlaceholders} onChange={(event) => setSuggestDiagramPlaceholders(event.target.checked)} />
-                  <span>Diagrams</span>
-                </label>
-                <label className="checkbox-field">
-                  <input type="checkbox" checked={autoTagByTopic} onChange={(event) => setAutoTagByTopic(event.target.checked)} />
-                  <span>Auto-tag</span>
-                </label>
-              </div>
-            </section>
-          </div>
+            </div>
 
-          <div className="form-grid">
             <div className="field" style={{ gridColumn: '1 / -1' }}>
               <label>Output destination</label>
               <div className="destination-grid">
@@ -789,200 +1014,30 @@ export default function AiGenerator() {
                 })}
               </div>
             </div>
-            <div className="field">
-              <label>School access</label>
-              <select value={schoolAccess} onChange={(event) => setSchoolAccess(event.target.value)}>
-                {BROWSER_OPTIONS.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
-              </select>
-            </div>
-          </div>
 
-          {schoolAccess === 'selected' ? (
-            <div className="field">
-              <label>School IDs</label>
-              <input value={selectedSchoolIds} onChange={(event) => setSelectedSchoolIds(event.target.value)} placeholder="Comma-separated institution IDs" />
-            </div>
-          ) : null}
-
-          <div className="generator-action-row">
-            <button type="button" className="primary" onClick={() => generateDraft('upload')} disabled={busy || !sourceReady}>
-              {busy ? 'Generating...' : (sourceMode === 'pdf' ? 'Upload & Generate' : 'Generate Draft')}
-            </button>
-            <button type="button" className="ghost" onClick={() => generateDraft('draft')} disabled={busy || !sourceReady}>
-              Generate Draft
-            </button>
-            <button type="button" className="ghost" onClick={cancelGeneration} disabled={busy && !job && !reviewQueue.length}>
-              Cancel
-            </button>
-          </div>
-
-          <div className="card generation-preview-card" style={{ marginTop: 16, background: '#f8f9fb' }}>
-            <div className="section-head" style={{ marginBottom: 10 }}>
-              <div>
-                <h3 style={{ margin: 0 }}>Destination preview</h3>
-                <p className="sub" style={{ margin: '4px 0 0' }}>
-                  Review the output path and structure before the generator publishes the draft.
-                </p>
-              </div>
-              <span className="badge active">{contentMeta.destination}</span>
-            </div>
-
-            <div className="generation-preview-item" style={{ marginBottom: 12 }}>
-              <div className="generation-preview-label">Summary</div>
-              <div className="generation-preview-value">
-                {destinationSummary.note} · Audience: {activeAudienceLabel}
+            <div className="form-grid">
+              <div className="field">
+                <label>School access</label>
+                <select value={schoolAccess} onChange={(event) => setSchoolAccess(event.target.value)}>
+                  {BROWSER_OPTIONS.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
+                </select>
               </div>
             </div>
 
-            <div className="generation-preview-grid">
-              <div className="generation-preview-item">
-                <div className="generation-preview-label">Content type</div>
-                <div className="generation-preview-value">{contentMeta.label}</div>
+            {schoolAccess === 'selected' ? (
+              <div className="field">
+                <label>School IDs</label>
+                <input value={selectedSchoolIds} onChange={(event) => setSelectedSchoolIds(event.target.value)} placeholder="Comma-separated institution IDs" />
               </div>
-              <div className="generation-preview-item">
-                <div className="generation-preview-label">Destination tab</div>
-                <div className="generation-preview-value">{publishDestination.replaceAll('_', ' ')}</div>
-              </div>
-              <div className="generation-preview-item">
-                <div className="generation-preview-label">Question count</div>
-                <div className="generation-preview-value">{questionCount}</div>
-              </div>
-              <div className="generation-preview-item">
-                <div className="generation-preview-label">Question types</div>
-                <div className="generation-preview-value">{enabledQuestionTypes.length ? enabledQuestionTypes.join(', ') : 'None selected'}</div>
-              </div>
-            </div>
-
-            <div className="generation-preview-list">
-              {previewChecklist.map((item) => (
-                <div key={item} className="generation-preview-check">
-                  <UiIcon name="result" />
-                  <span>{item}</span>
-                </div>
-              ))}
-            </div>
+            ) : null}
 
             <div className="generation-preview-section">
               <div className="section-head" style={{ marginBottom: 8 }}>
                 <div>
-                  <h3 style={{ margin: 0 }}>Question preview</h3>
+                  <h3 style={{ margin: 0 }}>Publish to Independent Students</h3>
+                  <p className="sub" style={{ margin: '4px 0 0' }}>Keep it clean and publish only when the title is ready.</p>
                 </div>
-              </div>
-              <div className="preview-question-list">
-                {livePreviewQuestions.map((item, index) => (
-                  <article key={item.question || item.prompt || `${item.type || 'question'}-${index}`} className="preview-question-card">
-                    <div className="preview-question-top">
-                      <span className="badge active">{String(item.type || 'question').replace('_', ' ')}</span>
-                      <span className="badge draft">Preview</span>
-                    </div>
-                    <h4>{item.question || item.prompt}</h4>
-                    <div className="preview-answer">
-                      <span className="preview-answer-label">Answer</span>
-                      <p>{item.answer}</p>
-                    </div>
-                    <div className="preview-feedback">
-                      <span className="preview-feedback-label">Feedback</span>
-                      <p>{item.feedback}</p>
-                    </div>
-                  </article>
-                ))}
-              </div>
-            </div>
-
-            <div className="generation-preview-section">
-              <div className="section-head" style={{ marginBottom: 8 }}>
-                <div>
-                  <h3 style={{ margin: 0 }}>Review queue</h3>
-                  <p className="sub" style={{ margin: '4px 0 0' }}>
-                    Review generated questions before publishing.
-                  </p>
-                </div>
-                <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-                  <span className="badge draft">{reviewCounts.total} total</span>
-                  <span className="badge active">{reviewCounts.selected} selected</span>
-                </div>
-              </div>
-
-              <div className="review-tabs" role="tablist" aria-label="Review queue filters">
-                {reviewTabs.map((tab) => (
-                  <button
-                    key={tab.key}
-                    type="button"
-                    className={`review-tab${reviewFilter === tab.key ? ' is-active' : ''}`}
-                    onClick={() => setReviewFilter(tab.key)}
-                  >
-                    {tab.label}
-                  </button>
-                ))}
-              </div>
-
-              <div className="review-queue-layout">
-                <div className="review-queue-list">
-                  {filteredReviewQueue.length ? filteredReviewQueue.map((item) => (
-                    <button
-                      key={item.id}
-                      type="button"
-                      className={`review-queue-card${selectedReviewItem?.id === item.id ? ' is-selected' : ''}`}
-                      onClick={() => setSelectedReviewId(item.id)}
-                    >
-                      <div className="review-queue-top">
-                        <span className={`badge ${item.status === 'approved' ? 'approved' : item.status === 'rejected' ? 'draft' : 'active'}`}>
-                          {item.status.replace('_', ' ')}
-                        </span>
-                        <span className="badge draft">{String(item.type || 'question').replace('_', ' ')}</span>
-                      </div>
-                      <h4>{item.question}</h4>
-                      <p>{item.answer || 'Answer hidden until review.'}</p>
-                    </button>
-                  )) : (
-                    <div className="generation-preview-result">
-                      <div className="generation-preview-value">No questions in this filter yet.</div>
-                      <p className="sub" style={{ margin: '8px 0 0' }}>Generate a draft to populate the review queue.</p>
-                    </div>
-                  )}
-                </div>
-
-                <div className="review-preview-card">
-                  <div className="review-preview-head">
-                    <div>
-                      <div className="generation-preview-label">Preview</div>
-                      <div className="generation-preview-value">{selectedReviewItem?.question || 'Select a question to preview it here.'}</div>
-                    </div>
-                    {selectedReviewItem ? (
-                      <span className={`badge ${selectedReviewItem.status === 'approved' ? 'approved' : selectedReviewItem.status === 'rejected' ? 'draft' : 'active'}`}>
-                        {selectedReviewItem.status.replace('_', ' ')}
-                      </span>
-                    ) : null}
-                  </div>
-                  {selectedReviewItem ? (
-                    <>
-                      <div className="preview-answer">
-                        <span className="preview-answer-label">Suggested answer</span>
-                        <p>{selectedReviewItem.answer || 'No suggested answer yet.'}</p>
-                      </div>
-                      <div className="preview-feedback">
-                        <span className="preview-feedback-label">Feedback</span>
-                        <p>{selectedReviewItem.feedback || 'No feedback attached.'}</p>
-                      </div>
-                      <div className="review-actions">
-                        <button type="button" className="primary" onClick={() => updateReviewStatus(selectedReviewItem.id, 'approved')}>Approve</button>
-                        <button type="button" className="ghost" onClick={() => updateReviewStatus(selectedReviewItem.id, 'rejected')}>Reject</button>
-                      </div>
-                    </>
-                  ) : null}
-                </div>
-              </div>
-            </div>
-
-            <div className="generation-preview-section">
-              <div className="section-head" style={{ marginBottom: 8 }}>
-                <div>
-                  <h3 style={{ margin: 0 }}>Publish to independent students</h3>
-                  <p className="sub" style={{ margin: '4px 0 0' }}>
-                    Lock in the assignment title before publishing approved questions.
-                  </p>
-                </div>
-                <span className="badge active">{reviewCounts.selected} selected</span>
+                <span className="badge active" style={{ fontSize: 16, paddingInline: 14 }}>{reviewCounts.selected} selected</span>
               </div>
 
               <div className="publish-panel">
@@ -999,10 +1054,6 @@ export default function AiGenerator() {
                 ) : null}
 
                 <div className="generation-preview-grid">
-                  <div className="generation-preview-item">
-                    <div className="generation-preview-label">Destination</div>
-                    <div className="generation-preview-value">{destinationSummary.label}</div>
-                  </div>
                   <div className="generation-preview-item">
                     <div className="generation-preview-label">Selected questions</div>
                     <div className="generation-preview-value">{reviewCounts.selected}</div>
@@ -1029,112 +1080,9 @@ export default function AiGenerator() {
                 {publishConfirmation}
               </div>
             ) : null}
-
-            <div className="generation-preview-section">
-              <div className="section-head" style={{ marginBottom: 8 }}>
-                <div>
-                  <h3 style={{ margin: 0 }}>Content statistics</h3>
-                </div>
-              </div>
-              <div className="generation-preview-grid">
-                <div className="generation-preview-item">
-                  <div className="generation-preview-label">Total questions</div>
-                  <div className="generation-preview-value">{questionCount}</div>
-                </div>
-                <div className="generation-preview-item">
-                  <div className="generation-preview-label">Difficulty</div>
-                  <div className="generation-preview-value">{difficulty}</div>
-                </div>
-                <div className="generation-preview-item">
-                  <div className="generation-preview-label">Bloom priority</div>
-                  <div className="generation-preview-value">{bloomPriority ? 'Higher-order thinking' : 'Standard mix'}</div>
-                </div>
-                <div className="generation-preview-item">
-                  <div className="generation-preview-label">Answer key</div>
-                  <div className="generation-preview-value">{includeAnswerKey ? 'Visible to staff' : 'Hidden'}</div>
-                </div>
-              </div>
-              <div className="generation-breakdown-row">
-                {generatedQuestionBreakdown.map((item) => (
-                  <span key={item.label} className="metric-pill" style={{ borderColor: item.accent }}>
-                    {item.label}: {item.value}
-                  </span>
-                ))}
-              </div>
-              {liveAnalysis ? (
-                <div className="generation-preview-result" style={{ marginTop: 14 }}>
-                  <div className="generation-preview-label">Source analysis</div>
-                  <div className="generation-preview-value">
-                    {liveAnalysis.incident_type || 'Unknown'} · {liveAnalysis.location || 'Not stated in source'}
-                  </div>
-                  <p className="sub" style={{ margin: '8px 0 0', whiteSpace: 'pre-wrap' }}>
-                    {(Array.isArray(liveAnalysis.key_facts) ? liveAnalysis.key_facts : []).slice(0, 5).join(' • ') || 'Analysis will appear after generation completes.'}
-                  </p>
-                </div>
-              ) : null}
-            </div>
-
-            {job?.result ? (
-              <div className="generation-preview-result">
-                <div className="generation-preview-label">Latest draft</div>
-                <div className="generation-preview-value">{job.result.title || title}</div>
-                <p className="sub" style={{ margin: '8px 0 0', whiteSpace: 'pre-wrap' }}>
-                  {liveSummary || job.result.sourceExcerpt || 'Preview will appear here after generation starts.'}
-                </p>
-              </div>
-            ) : (
-              <div className="ok-note" style={{ marginTop: 14 }}>
-                Start generation to preview the drafted output and answer key placement.
-              </div>
-            )}
-
-            {job ? (
-              <div style={{ marginTop: 14 }}>
-                <ProgressBar label={job.title} status={job.status} value={job.progress} />
-              </div>
-            ) : null}
-
-            {status ? <div className="ok-note" style={{ marginTop: 12 }}>{status}</div> : null}
-          </div>
-
-          {(busy || (job && job.status !== 'completed' && job.status !== 'failed')) ? (
-            <div className="generation-modal">
-              <div className="generation-modal-card card">
-                <div className="section-head">
-                  <div>
-                    <h3 style={{ margin: 0 }}>Generation progress</h3>
-                    <p className="sub" style={{ margin: '4px 0 0' }}>
-                      DeepSeek API Status: {busy ? 'Active' : 'Running'} | Elapsed: {elapsedSeconds}s | ETA: {job?.etaSeconds || 8}s
-                    </p>
-                  </div>
-                  <span className="badge active">{job?.status || 'queued'}</span>
-                </div>
-                <div className="generation-progress-list">
-                  {[
-                    { label: 'Source content extracted', done: !!sourceReady },
-                    { label: 'Content analyzed', done: (job?.progress || 0) >= 20 },
-                    { label: `Generating ${activeQuestionTypes[0]?.label || 'Multiple Choice'} questions`, done: (job?.progress || 0) >= 40 },
-                    { label: 'Generating answer key', done: (job?.progress || 0) >= 70 },
-                    { label: 'Generating feedback explanations', done: (job?.progress || 0) >= 90 },
-                  ].map((step) => (
-                    <div key={step.label} className={`generation-progress-step${step.done ? ' is-done' : ''}`}>
-                      <UiIcon name={step.done ? 'result' : 'activity'} />
-                      <span>{step.label}</span>
-                    </div>
-                  ))}
-                </div>
-                <ProgressBar
-                  label="Generation progress"
-                  status={job?.status || 'queued'}
-                  value={job?.progress || 0}
-                />
-              </div>
-            </div>
-          ) : null}
-        </section>
-      </div>
-
-      {selectedCase ? (
+          </section>
+        ) : null}
+      </div>      {selectedCase ? (
         <ContentCustomizer
           contentId={selectedCase.id}
           contentType="case_study"

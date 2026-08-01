@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { api } from '../../services/api';
 import ContentCustomizer from '../common/ContentCustomizer';
@@ -20,8 +20,30 @@ const CONTENT_TYPES = [
   { value: 'video_script', label: 'Video Scripts', destination: 'Video Script Bank', icon: 'activity' },
 ];
 
+const AUDIENCES = [
+  { value: 'emt-basic', label: 'EMT-Basic' },
+  { value: 'emt-intermediate', label: 'EMT-Intermediate' },
+  { value: 'emt-paramedic', label: 'EMT-Paramedic' },
+  { value: 'fire-fighter', label: 'Fire Fighter' },
+];
+
+const DIFFICULTIES = ['Basic', 'Intermediate', 'Advanced'];
+
+const QUESTION_TYPES = [
+  { key: 'multipleChoice', label: 'Multiple Choice' },
+  { key: 'trueFalse', label: 'True / False' },
+  { key: 'numeric', label: 'Numeric' },
+  { key: 'shortAnswer', label: 'Short Answer' },
+];
+
+const BROWSER_OPTIONS = [
+  { value: 'all', label: 'All Activated Schools' },
+  { value: 'selected', label: 'Select Specific Schools' },
+];
+
 export default function AiGenerator() {
   const [searchParams, setSearchParams] = useSearchParams();
+  const pdfInputRef = useRef(null);
   const [cases, setCases] = useState(null);
   const [sourceMode, setSourceMode] = useState('article');
   const [sourceFile, setSourceFile] = useState(null);
@@ -31,6 +53,24 @@ export default function AiGenerator() {
   const [prompt, setPrompt] = useState('');
   const [title, setTitle] = useState('MedPro AI Draft');
   const [contentType, setContentType] = useState('case_study');
+  const [audience, setAudience] = useState('emt-basic');
+  const [topic, setTopic] = useState('');
+  const [difficulty, setDifficulty] = useState('Intermediate');
+  const [questionCount, setQuestionCount] = useState(20);
+  const [bloomPriority, setBloomPriority] = useState(true);
+  const [includeAnswerKey, setIncludeAnswerKey] = useState(true);
+  const [includeFeedback, setIncludeFeedback] = useState(true);
+  const [suggestDiagramPlaceholders, setSuggestDiagramPlaceholders] = useState(false);
+  const [autoTagByTopic, setAutoTagByTopic] = useState(true);
+  const [publishDestination, setPublishDestination] = useState('question_bank');
+  const [schoolAccess, setSchoolAccess] = useState('all');
+  const [selectedSchoolIds, setSelectedSchoolIds] = useState('');
+  const [questionTypes, setQuestionTypes] = useState({
+    multipleChoice: true,
+    trueFalse: true,
+    numeric: false,
+    shortAnswer: true,
+  });
   const [job, setJob] = useState(null);
   const [status, setStatus] = useState('');
   const [busy, setBusy] = useState(false);
@@ -80,6 +120,11 @@ export default function AiGenerator() {
     const bits = [
       `${contentMeta.label} -> ${contentMeta.destination}`,
       `Source: ${SOURCE_MODES.find((item) => item.id === sourceMode)?.label || 'Article Paste'}`,
+      `Audience: ${AUDIENCES.find((item) => item.value === audience)?.label || audience}`,
+      topic ? `Topic: ${topic}` : '',
+      `Difficulty: ${difficulty}`,
+      `Questions: ${questionCount}`,
+      `Output: ${publishDestination.replaceAll('_', ' ')}`,
       sourceTitle ? `Title: ${sourceTitle}` : '',
       sourceMode === 'pdf' && sourceFile ? `File: ${sourceFile.name}` : '',
       sourceMode === 'url' && sourceUrl ? `URL: ${sourceUrl}` : '',
@@ -100,6 +145,19 @@ export default function AiGenerator() {
       payload.set('sourceTitle', sourceTitle);
       payload.set('sourceText', sourceText);
       payload.set('sourceUrl', sourceUrl);
+      payload.set('audience', audience);
+      payload.set('topic', topic);
+      payload.set('difficulty', difficulty);
+      payload.set('questionCount', String(questionCount));
+      payload.set('bloomPriority', String(bloomPriority));
+      payload.set('includeAnswerKey', String(includeAnswerKey));
+      payload.set('includeFeedback', String(includeFeedback));
+      payload.set('suggestDiagramPlaceholders', String(suggestDiagramPlaceholders));
+      payload.set('autoTagByTopic', String(autoTagByTopic));
+      payload.set('publishDestination', publishDestination);
+      payload.set('schoolAccess', schoolAccess);
+      payload.set('selectedSchoolIds', selectedSchoolIds);
+      payload.set('questionTypes', JSON.stringify(questionTypes));
       payload.set('targetLibrary', contentMeta.destination);
       if (sourceFile) payload.append('sourceFile', sourceFile);
 
@@ -142,7 +200,7 @@ export default function AiGenerator() {
             </div>
           </div>
 
-          <div className="grid-auto" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', marginBottom: 16 }}>
+          <div className="source-mode-grid">
             {SOURCE_MODES.map((mode) => {
               const active = sourceMode === mode.id;
               return (
@@ -180,12 +238,25 @@ export default function AiGenerator() {
           {sourceMode === 'pdf' ? (
             <div className="field">
               <label>PDF upload</label>
-              <input
-                type="file"
-                accept="application/pdf"
-                onChange={(event) => setSourceFile(event.target.files?.[0] || null)}
-              />
-              <small className="sub">Upload one source PDF per draft. The file is sent with the generation request.</small>
+              <div className="upload-picker">
+                <input
+                  ref={pdfInputRef}
+                  type="file"
+                  accept="application/pdf"
+                  className="sr-only"
+                  onChange={(event) => setSourceFile(event.target.files?.[0] || null)}
+                />
+                <button
+                  type="button"
+                  className="ghost upload-trigger"
+                  onClick={() => pdfInputRef.current?.click()}
+                >
+                  {sourceFile ? 'Change PDF' : 'Upload PDF'}
+                </button>
+                <small className="sub">
+                  {sourceFile ? `Selected: ${sourceFile.name}` : 'Tap to choose a PDF from your device.'}
+                </small>
+              </div>
             </div>
           ) : null}
 
@@ -251,6 +322,33 @@ export default function AiGenerator() {
                 ))}
               </select>
             </div>
+            <div className="field">
+              <label>Target audience</label>
+              <select value={audience} onChange={(event) => setAudience(event.target.value)}>
+                {AUDIENCES.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
+              </select>
+            </div>
+            <div className="field">
+              <label>Topic</label>
+              <input value={topic} onChange={(event) => setTopic(event.target.value)} placeholder="Airway management, trauma, cardiology..." />
+            </div>
+            <div className="field">
+              <label>Difficulty level</label>
+              <select value={difficulty} onChange={(event) => setDifficulty(event.target.value)}>
+                {DIFFICULTIES.map((item) => <option key={item}>{item}</option>)}
+              </select>
+            </div>
+            <div className="field">
+              <label>Question count: {questionCount}</label>
+              <input
+                type="range"
+                min="10"
+                max="100"
+                step="5"
+                value={questionCount}
+                onChange={(event) => setQuestionCount(Number(event.target.value))}
+              />
+            </div>
           </div>
 
           <div className="card" style={{ marginTop: 14, background: '#f8f9fb' }}>
@@ -272,6 +370,85 @@ export default function AiGenerator() {
               placeholder="Describe the learning output, tone, difficulty, and any required structure."
             />
           </div>
+
+          <div className="field">
+            <label>Question types</label>
+            <div className="source-mode-grid" style={{ marginBottom: 0 }}>
+              {QUESTION_TYPES.map((item) => {
+                const active = !!questionTypes[item.key];
+                return (
+                  <button
+                    key={item.key}
+                    type="button"
+                    className="card"
+                    onClick={() => setQuestionTypes((current) => ({ ...current, [item.key]: !current[item.key] }))}
+                    style={{
+                      textAlign: 'left',
+                      border: active ? '1px solid var(--accent-red)' : '1px solid var(--border)',
+                      boxShadow: active ? '0 0 0 2px rgba(230,57,53,.08)' : 'none',
+                      cursor: 'pointer',
+                      margin: 0,
+                      background: active ? '#fff8f7' : 'white',
+                      minHeight: 'auto',
+                    }}
+                  >
+                    <UiIcon name={active ? 'unlock' : 'lock'} />
+                    <h3 style={{ margin: '10px 0 6px' }}>{item.label}</h3>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="form-grid">
+            <label className="field checkbox-field">
+              <input type="checkbox" checked={bloomPriority} onChange={(event) => setBloomPriority(event.target.checked)} />
+              <span>Prioritize higher-order thinking</span>
+            </label>
+            <label className="field checkbox-field">
+              <input type="checkbox" checked={includeAnswerKey} onChange={(event) => setIncludeAnswerKey(event.target.checked)} />
+              <span>Include answer key</span>
+            </label>
+            <label className="field checkbox-field">
+              <input type="checkbox" checked={includeFeedback} onChange={(event) => setIncludeFeedback(event.target.checked)} />
+              <span>Include feedback explanations</span>
+            </label>
+            <label className="field checkbox-field">
+              <input type="checkbox" checked={suggestDiagramPlaceholders} onChange={(event) => setSuggestDiagramPlaceholders(event.target.checked)} />
+              <span>Suggest diagram placeholders</span>
+            </label>
+            <label className="field checkbox-field">
+              <input type="checkbox" checked={autoTagByTopic} onChange={(event) => setAutoTagByTopic(event.target.checked)} />
+              <span>Auto-tag by topic</span>
+            </label>
+          </div>
+
+          <div className="form-grid">
+            <div className="field">
+              <label>Output destination</label>
+              <select value={publishDestination} onChange={(event) => setPublishDestination(event.target.value)}>
+                <option value="question_bank">Question Bank</option>
+                <option value="independent_student">Independent Student</option>
+                <option value="ems_cases">EMS Cases</option>
+                <option value="exam_mcq">Exam Center - MCQ</option>
+                <option value="exam_mock">Exam Center - Mock</option>
+                <option value="simulation">Simulation</option>
+              </select>
+            </div>
+            <div className="field">
+              <label>School access</label>
+              <select value={schoolAccess} onChange={(event) => setSchoolAccess(event.target.value)}>
+                {BROWSER_OPTIONS.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
+              </select>
+            </div>
+          </div>
+
+          {schoolAccess === 'selected' ? (
+            <div className="field">
+              <label>School IDs</label>
+              <input value={selectedSchoolIds} onChange={(event) => setSelectedSchoolIds(event.target.value)} placeholder="Comma-separated institution IDs" />
+            </div>
+          ) : null}
 
           <div className="logbook-actions">
             <button type="button" className="primary" onClick={generateDraft} disabled={busy || (!sourceReady && !prompt.trim())}>

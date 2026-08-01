@@ -76,6 +76,56 @@ function buildSourceSummary({ sourceType, sourceTitle, sourceText, sourceUrl, so
   return sections.join('\n\n');
 }
 
+function parseJsonBoolean(value, fallback = false) {
+  if (typeof value === 'boolean') return value;
+  if (typeof value === 'string') {
+    const normalized = value.trim().toLowerCase();
+    if (['true', '1', 'yes', 'on'].includes(normalized)) return true;
+    if (['false', '0', 'no', 'off'].includes(normalized)) return false;
+  }
+  return fallback;
+}
+
+function parseQuestionTypes(value) {
+  if (!value) {
+    return {
+      multipleChoice: true,
+      trueFalse: true,
+      numeric: false,
+      shortAnswer: true,
+    };
+  }
+
+  if (typeof value === 'object') {
+    return {
+      multipleChoice: !!value.multipleChoice,
+      trueFalse: !!value.trueFalse,
+      numeric: !!value.numeric,
+      shortAnswer: !!value.shortAnswer,
+    };
+  }
+
+  try {
+    const parsed = JSON.parse(value);
+    return parseQuestionTypes(parsed);
+  } catch {
+    return {
+      multipleChoice: true,
+      trueFalse: true,
+      numeric: false,
+      shortAnswer: true,
+    };
+  }
+}
+
+function splitIds(value) {
+  if (Array.isArray(value)) return value.map((item) => String(item).trim()).filter(Boolean);
+  if (typeof value === 'string') {
+    return value.split(',').map((item) => String(item).trim()).filter(Boolean);
+  }
+  return [];
+}
+
 function normalizeCaseRow(row) {
   if (!row) return null;
   return {
@@ -161,6 +211,19 @@ export const startGeneration = asyncHandler(async (req, res) => {
   const sourceText = cleanText(body.sourceText || body.source_text || '');
   const sourceFileUrl = req.file?.location || req.file?.url || req.file?.path || null;
   const sourceFileName = req.file?.originalname || null;
+  const audience = cleanText(body.audience || body.targetAudience || 'emt-basic');
+  const topic = cleanText(body.topic || body.subject || '');
+  const difficulty = cleanText(body.difficulty || body.level || 'Intermediate');
+  const questionCount = Math.max(10, Math.min(Number(body.questionCount || body.question_count || 20) || 20, 100));
+  const bloomPriority = parseJsonBoolean(body.bloomPriority, true);
+  const includeAnswerKey = parseJsonBoolean(body.includeAnswerKey, true);
+  const includeFeedback = parseJsonBoolean(body.includeFeedback, true);
+  const suggestDiagramPlaceholders = parseJsonBoolean(body.suggestDiagramPlaceholders, false);
+  const autoTagByTopic = parseJsonBoolean(body.autoTagByTopic, true);
+  const publishDestination = cleanText(body.publishDestination || body.targetLibrary || 'question_bank');
+  const schoolAccess = cleanText(body.schoolAccess || 'all');
+  const selectedSchoolIds = splitIds(body.selectedSchoolIds || body.schoolIds || []);
+  const parsedQuestionTypes = parseQuestionTypes(body.questionTypes || body.question_types);
   const destination = CONTENT_DESTINATIONS[contentType] || 'Question Bank';
   const extractedExcerpt = sourceType === 'url' ? await loadUrlExcerpt(sourceUrl) : '';
   const sourceExcerpt = (sourceText || extractedExcerpt || (sourceFileName ? `Uploaded file: ${sourceFileName}` : '')).slice(0, 5000);
@@ -173,6 +236,21 @@ export const startGeneration = asyncHandler(async (req, res) => {
     prompt,
     contentType,
   });
+  const generationProfile = {
+    audience,
+    topic,
+    difficulty,
+    questionCount,
+    bloomPriority,
+    includeAnswerKey,
+    includeFeedback,
+    suggestDiagramPlaceholders,
+    autoTagByTopic,
+    publishDestination,
+    schoolAccess,
+    selectedSchoolIds,
+    questionTypes: parsedQuestionTypes,
+  };
 
   const job = createGenerationJob({
     type: contentType,
@@ -183,6 +261,7 @@ export const startGeneration = asyncHandler(async (req, res) => {
       title,
       contentType,
       destination,
+      generationProfile,
       sourceType,
       sourceUrl: sourceUrl || null,
       sourceTitle: sourceTitle || null,
@@ -199,6 +278,7 @@ export const startGeneration = asyncHandler(async (req, res) => {
       title,
       contentType,
       destination,
+      generationProfile,
       sourceType,
       sourceUrl: sourceUrl || null,
       sourceTitle: sourceTitle || null,
@@ -218,6 +298,7 @@ export const startGeneration = asyncHandler(async (req, res) => {
       contentType,
       prompt,
       destination,
+      generationProfile,
       sourceType,
       sourceUrl: sourceUrl || null,
       sourceTitle: sourceTitle || null,

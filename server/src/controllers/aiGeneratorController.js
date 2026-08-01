@@ -7,6 +7,75 @@ import {
   updateGenerationJob,
 } from '../services/masterAiGeneratorService.js';
 
+const CONTENT_DESTINATIONS = {
+  case_study: 'Question Bank',
+  simulation: 'Simulation Library',
+  assignment: 'Assignment Bank',
+  exam: 'Exam Center',
+  video_script: 'Video Script Bank',
+  worksheet: 'Worksheet Bank',
+};
+
+function cleanText(value) {
+  return String(value || '').trim();
+}
+
+function normalizeContentType(value) {
+  const next = cleanText(value).toLowerCase();
+  if (['case', 'case_study', 'case-study', 'case study'].includes(next)) return 'case_study';
+  if (['simulation', 'skill_simulation', 'skill-simulation'].includes(next)) return 'simulation';
+  if (['assignment', 'assignments'].includes(next)) return 'assignment';
+  if (['exam', 'mcq_exam', 'mcq', 'assessment'].includes(next)) return 'exam';
+  if (['video_script', 'video script', 'video'].includes(next)) return 'video_script';
+  if (['worksheet'].includes(next)) return 'worksheet';
+  return 'case_study';
+}
+
+function normalizeSourceType(value) {
+  const next = cleanText(value).toLowerCase();
+  if (['pdf', 'article', 'url'].includes(next)) return next;
+  return 'article';
+}
+
+function stripHtml(input = '') {
+  return String(input)
+    .replace(/<script[\s\S]*?<\/script>/gi, ' ')
+    .replace(/<style[\s\S]*?<\/style>/gi, ' ')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+async function loadUrlExcerpt(url) {
+  if (!url) return '';
+  try {
+    const response = await fetch(url, { redirect: 'follow' });
+    if (!response.ok) return '';
+    const contentType = response.headers.get('content-type') || '';
+    const body = await response.text();
+    if (contentType.includes('text/html') || contentType.includes('text/plain')) {
+      return stripHtml(body).slice(0, 5000);
+    }
+    return body.slice(0, 2000);
+  } catch {
+    return '';
+  }
+}
+
+function buildSourceSummary({ sourceType, sourceTitle, sourceText, sourceUrl, sourceFileName, prompt, contentType }) {
+  const sections = [
+    `Artifact: ${CONTENT_DESTINATIONS[contentType] || 'Question Bank'}`,
+    `Source type: ${sourceType}`,
+    sourceTitle ? `Source title: ${sourceTitle}` : '',
+    sourceFileName ? `Source file: ${sourceFileName}` : '',
+    sourceUrl ? `Source URL: ${sourceUrl}` : '',
+    sourceText ? `Source excerpt:\n${sourceText}` : '',
+    prompt ? `Generation brief:\n${prompt}` : '',
+  ].filter(Boolean);
+
+  return sections.join('\n\n');
+}
+
 function normalizeCaseRow(row) {
   if (!row) return null;
   return {
@@ -82,12 +151,45 @@ function bufferForPdf(textLines = []) {
 }
 
 export const startGeneration = asyncHandler(async (req, res) => {
-  const { prompt = '', contentType = 'case', title = 'Generated content' } = req.body || {};
+  const body = req.body || {};
+  const contentType = normalizeContentType(body.contentType || body.content_type || 'case_study');
+  const sourceType = normalizeSourceType(body.sourceType || body.source_type || (req.file ? 'pdf' : 'article'));
+  const title = cleanText(body.title || body.sourceTitle || body.source_title || 'Generated content');
+  const prompt = cleanText(body.prompt || body.instructions || '');
+  const sourceUrl = cleanText(body.sourceUrl || body.source_url || '');
+  const sourceTitle = cleanText(body.sourceTitle || body.source_title || '');
+  const sourceText = cleanText(body.sourceText || body.source_text || '');
+  const sourceFileUrl = req.file?.location || req.file?.url || req.file?.path || null;
+  const sourceFileName = req.file?.originalname || null;
+  const destination = CONTENT_DESTINATIONS[contentType] || 'Question Bank';
+  const extractedExcerpt = sourceType === 'url' ? await loadUrlExcerpt(sourceUrl) : '';
+  const sourceExcerpt = (sourceText || extractedExcerpt || (sourceFileName ? `Uploaded file: ${sourceFileName}` : '')).slice(0, 5000);
+  const summary = buildSourceSummary({
+    sourceType,
+    sourceTitle,
+    sourceText: sourceExcerpt,
+    sourceUrl,
+    sourceFileName,
+    prompt,
+    contentType,
+  });
+
   const job = createGenerationJob({
     type: contentType,
     title,
-    description: prompt,
+    description: summary || prompt || title,
     etaSeconds: 8,
+    result: {
+      title,
+      contentType,
+      destination,
+      sourceType,
+      sourceUrl: sourceUrl || null,
+      sourceTitle: sourceTitle || null,
+      sourceFileUrl,
+      sourceFileName,
+      prompt,
+    },
   });
 
   updateGenerationJob(job.jobId, { status: 'running', progress: 20 });
@@ -96,7 +198,15 @@ export const startGeneration = asyncHandler(async (req, res) => {
     finishGenerationJob(job.jobId, {
       title,
       contentType,
-      draft: prompt || `${title} draft generated successfully.`,
+      destination,
+      sourceType,
+      sourceUrl: sourceUrl || null,
+      sourceTitle: sourceTitle || null,
+      sourceFileUrl,
+      sourceFileName,
+      prompt,
+      sourceExcerpt,
+      draft: prompt || sourceExcerpt || `${title} draft generated successfully.`,
     });
   }, 1200);
 
@@ -107,6 +217,13 @@ export const startGeneration = asyncHandler(async (req, res) => {
       title,
       contentType,
       prompt,
+      destination,
+      sourceType,
+      sourceUrl: sourceUrl || null,
+      sourceTitle: sourceTitle || null,
+      sourceFileUrl,
+      sourceFileName,
+      sourceExcerpt,
     },
   });
 });

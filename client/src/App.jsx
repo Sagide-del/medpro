@@ -69,6 +69,7 @@ import SuperAdminContentUpload from './components/superadmin/ContentUpload';
 import SuperAdminClinicalReferenceCardsManager from './components/superadmin/ClinicalReferenceCardsManager';
 import SuperAdminRevenueAnalytics from './components/superadmin/RevenueAnalytics';
 import SuperAdminELibraryManager from './components/superadmin/ELibraryManager';
+import SuperAdminAiGenerator from './components/superadmin/AiGenerator';
 
 
 const STUDENT_LINKS = [
@@ -186,12 +187,14 @@ const SUPERADMIN_LINKS = [
         label: 'Upload Content',
       },
       {
-        to: '/superadmin/medprohub/generator',
+        to: '/superadmin/ai-generator',
         label: 'Master AI Generator',
+        icon: 'activity',
       },
       {
         to: '/superadmin/medprohub/bank',
         label: 'EMS Bank',
+        icon: 'cases',
       },
       {
         to: '/superadmin/elibrary',
@@ -393,7 +396,7 @@ function AppRoutes() {
           <Route path="/superadmin/institutions" element={<SuperAdminInstitutions />} />
           <Route path="/superadmin/users" element={<AdminUsers />} />
           <Route path="/superadmin/content" element={<SuperAdminContentUpload />} />
-          <Route path="/superadmin/ai-generator" element={<MedProhubEmsCaseGenerator />} />
+          <Route path="/superadmin/ai-generator" element={<SuperAdminAiGenerator />} />
           <Route path="/superadmin/medprohub/generator" element={<MedProhubEmsCaseGenerator />} />
           <Route path="/superadmin/medprohub/bank" element={<MedProhubEmsBankManager />} />
           <Route path="/superadmin/elibrary" element={<SuperAdminELibraryManager />} />

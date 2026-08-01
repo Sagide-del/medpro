@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { authenticate } from '../middleware/auth.js';
 import { requireRole } from '../middleware/roleCheck.js';
+import { createUploader } from '../services/storage.js';
 import {
   bulkApproveContent,
   bulkRejectContent,
@@ -12,10 +13,11 @@ import {
 } from '../controllers/aiGeneratorController.js';
 
 const router = Router();
+const { upload } = createUploader('ai-generator-sources');
 
 router.use(authenticate);
 
-router.post('/generate', requireRole('teacher', 'institution_admin', 'super_admin'), startGeneration);
+router.post('/generate', requireRole('teacher', 'institution_admin', 'super_admin'), upload.single('sourceFile'), startGeneration);
 router.get('/progress/:jobId', requireRole('teacher', 'institution_admin', 'super_admin'), getGenerationProgress);
 router.get('/customize/:type/:id', requireRole('teacher', 'institution_admin', 'super_admin'), customizeContent);
 router.post('/customize/save', requireRole('teacher', 'institution_admin', 'super_admin'), saveCustomizedContent);
@@ -24,4 +26,3 @@ router.post('/bulk-reject', requireRole('super_admin'), bulkRejectContent);
 router.post('/export/pdf', requireRole('teacher', 'institution_admin', 'super_admin'), exportPdf);
 
 export default router;
-

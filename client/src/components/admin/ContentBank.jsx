@@ -81,7 +81,7 @@ export default function ContentBank() {
         </div>
         <div className="logbook-actions">
           <Link className="ghost" to="/superadmin/content">Open uploader</Link>
-          <Link className="primary" to="/superadmin/medprohub/generator">Open Master AI Generator</Link>
+          <Link className="primary" to="/superadmin/ai-generator">Open Master AI Generator</Link>
         </div>
       </div>
 
@@ -142,7 +142,7 @@ export default function ContentBank() {
               <div className="field"><label>Status</label><input value={item.is_active ? 'Active' : 'Inactive'} readOnly /></div>
             </div>
             <div className="logbook-actions">
-              <Link className="ghost" to={`/superadmin/medprohub/generator?caseId=${item.id}`}>Customize</Link>
+              <Link className="ghost" to={`/superadmin/ai-generator?contentId=${item.id}&contentType=case_study`}>Customize</Link>
             </div>
           </article>
         ))}

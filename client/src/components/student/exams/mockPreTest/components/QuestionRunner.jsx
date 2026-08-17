@@ -21,17 +21,21 @@ export default function QuestionRunner({
   return (
     <section className="mpt-runner">
       <div className="mpt-runner-topbar">
+        <div className="mpt-runner-badges">
+          <span className="mpt-mini-chip">Question {currentIndex + 1} of {total}</span>
+          <span className="mpt-mini-chip">{answeredCount}/{total} answered</span>
+          <span className="mpt-mini-chip">{progressPct}% complete</span>
+        </div>
         <div className="mpt-progress-track">
           <div className="mpt-progress-fill" style={{ width: `${progressPct}%` }} />
-        </div>
-        <div className="mpt-runner-meta">
-          <span className="mpt-question-count">Question {currentIndex + 1} of {total}</span>
-          <span className="mpt-answered-count">{answeredCount}/{total} answered</span>
         </div>
       </div>
 
       <div className="card mpt-card mpt-question-card">
-        <div className="mpt-question-topic">{question.topic}</div>
+        <div className="mpt-question-top">
+          <div className="mpt-question-topic">{question.topic}</div>
+          <div className="mpt-question-number">Question {currentIndex + 1}</div>
+        </div>
         <h2 className="mpt-question-text">{question.question}</h2>
 
         <div className="mpt-option-list">
@@ -69,15 +73,15 @@ export default function QuestionRunner({
 
       <div className="mpt-nav-bar">
         <button type="button" className="ghost" onClick={onPrevious} disabled={currentIndex === 0}>
-          ← Previous
+          Previous
         </button>
         {isLast ? (
           <button type="button" className="mpt-submit-btn" onClick={onSubmit} disabled={submitting}>
-            {submitting ? 'Submitting...' : 'Submit Mock Test'}
+            {submitting ? 'Submitting...' : 'Submit'}
           </button>
         ) : (
           <button type="button" className="primary" onClick={onNext}>
-            Next →
+            Next
           </button>
         )}
       </div>

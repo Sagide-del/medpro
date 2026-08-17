@@ -19,6 +19,7 @@ function TopicDashboard({ modules, questionCountOptions, subscription, onStart, 
 
   const selectedModuleData = modules.find((m) => m.key === selectedModule);
   const canStart = Boolean(selectedModuleData?.enabled) && !starting;
+  const availableModules = modules.filter((m) => m.enabled).length;
 
   return (
     <div className="mpt-page">
@@ -26,7 +27,7 @@ function TopicDashboard({ modules, questionCountOptions, subscription, onStart, 
         <div className="mpt-hero-icon" aria-hidden="true"><UiIcon name="exam" /></div>
         <div>
           <h1>EMT Mock Pre-Test</h1>
-          <p>Practice before your formal exams with randomized questions, instant scoring, and review after submission.</p>
+          <p>Choose a topic, set your question count, and start a timed test.</p>
         </div>
       </header>
 
@@ -35,6 +36,12 @@ function TopicDashboard({ modules, questionCountOptions, subscription, onStart, 
           <UiIcon name="alert" /> Your subscription is {subscription.status}. Renew to continue with the Mock Pre-Test.
         </div>
       )}
+
+      <div className="mpt-meta-row">
+        <div className="mpt-meta-chip"><span>Topics</span><strong>{availableModules}</strong></div>
+        <div className="mpt-meta-chip"><span>Question counts</span><strong>{questionCountOptions.join(' / ')}</strong></div>
+        <div className="mpt-meta-chip"><span>Review</span><strong>Shown after submit</strong></div>
+      </div>
 
       <div className="card mpt-card mpt-selector-card">
         <div className="mpt-selector-section">
@@ -50,9 +57,7 @@ function TopicDashboard({ modules, questionCountOptions, subscription, onStart, 
               >
                 <span className="mpt-topic-icon" aria-hidden="true">{module.icon}</span>
                 <span className="mpt-topic-label">{module.label}</span>
-                <span className="mpt-topic-sub">
-                  {module.enabled ? `${module.availableQuestions} questions` : 'Coming soon'}
-                </span>
+                <span className="mpt-topic-sub">{module.enabled ? `${module.availableQuestions} available` : 'Coming soon'}</span>
               </button>
             ))}
           </div>
@@ -82,7 +87,7 @@ function TopicDashboard({ modules, questionCountOptions, subscription, onStart, 
           disabled={!canStart}
           onClick={() => onStart(selectedModule, selectedCount)}
         >
-          {starting ? 'Preparing test...' : 'START MOCK TEST'}
+          {starting ? 'Preparing test...' : 'Start Mock Test'}
         </button>
       </div>
     </div>

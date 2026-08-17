@@ -5,18 +5,18 @@ const PREP_MODULES = [
   {
     to: '/student/mcq-questions',
     title: 'MCQ Questions',
-    description: 'Practice the active EMT-B question bank.',
+    description: 'Topic-based questions with instant review.',
     icon: 'exam',
     accent: '#c62828',
-    action: 'Open',
+    meta: 'Question bank',
   },
   {
     to: '/student/mock-prep-tests',
     title: 'Mock Prep Tests',
-    description: 'Timed revision sets with review after submission.',
+    description: 'Timed topic tests with score review.',
     icon: 'simulation',
     accent: '#ef6c00',
-    action: 'Open',
+    meta: 'Timed practice',
   },
 ];
 
@@ -26,8 +26,14 @@ export default function ExamPreparation() {
       <div className="page-head">
         <div>
           <h1>Exam Center</h1>
-          <div className="sub">Focused exam practice without the clutter.</div>
+          <div className="sub">Topic-based exam practice.</div>
         </div>
+      </div>
+
+      <div className="exam-center-meta">
+        <div className="exam-center-chip"><span>MCQ</span><strong>Topic drills</strong></div>
+        <div className="exam-center-chip"><span>Mock</span><strong>Timed prep tests</strong></div>
+        <div className="exam-center-chip"><span>Review</span><strong>Answers after submission</strong></div>
       </div>
 
       <div className="student-action-grid">
@@ -38,10 +44,13 @@ export default function ExamPreparation() {
                 <span className="student-action-icon" style={{ color: module.accent }}>
                   <UiIcon name={module.icon} />
                 </span>
-                <div className="student-action-title">{module.title}</div>
+                <div>
+                  <div className="student-action-title">{module.title}</div>
+                  <div className="student-action-meta">{module.meta}</div>
+                </div>
               </div>
               <p className="student-action-copy">{module.description}</p>
-              <div className="student-action-label" style={{ color: module.accent }}>{module.action}</div>
+              <div className="student-action-label" style={{ color: module.accent }}>Open</div>
             </div>
           </Link>
         ))}

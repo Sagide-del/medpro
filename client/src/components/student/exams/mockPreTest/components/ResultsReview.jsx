@@ -11,6 +11,7 @@ function performanceClass(performance) {
 export default function ResultsReview({ result, onRetake, onBackToDashboard }) {
   const { score, correctCount, totalCount, performance, review, module } = result;
   const tierClass = performanceClass(performance);
+  const isPass = score >= 70;
 
   return (
     <section className="mpt-results">
@@ -28,12 +29,15 @@ export default function ResultsReview({ result, onRetake, onBackToDashboard }) {
             <span className={`mpt-performance-pill ${tierClass}`}>{performance}</span>
           </div>
         </div>
+        <div className="mpt-score-summary">
+          {isPass ? 'Pass achieved.' : 'Review the missed items and retake when ready.'}
+        </div>
         <div className="mpt-progress-track">
           <div className="mpt-progress-fill" style={{ width: `${score}%` }} />
         </div>
         <div className="mpt-score-actions">
-          <button type="button" className="ghost" onClick={onBackToDashboard}>Back to Mock Pre-Test</button>
-          <button type="button" className="primary" onClick={() => onRetake(module)}>Retake This Topic</button>
+          <button type="button" className="ghost" onClick={onBackToDashboard}>Back to modules</button>
+          <button type="button" className="primary" onClick={() => onRetake(module)}>Retake topic</button>
         </div>
       </div>
 
@@ -44,13 +48,15 @@ export default function ResultsReview({ result, onRetake, onBackToDashboard }) {
             <div className="mpt-review-head">
               <span className="mpt-review-number">Question {index + 1}</span>
               <span className={`mpt-review-badge${item.isCorrect ? ' correct' : ' incorrect'}`}>
-                {item.isCorrect ? '✓ Correct' : '✗ Incorrect'}
+                {item.isCorrect ? 'Correct' : 'Needs review'}
               </span>
             </div>
             <p className="mpt-review-question">{item.question}</p>
-            <div className="mpt-review-row"><strong>Your answer:</strong> {item.studentAnswer}</div>
-            <div className="mpt-review-row"><strong>Correct answer:</strong> {item.correctAnswer}</div>
-            <div className="mpt-review-explanation"><strong>Explanation:</strong> {item.explanation}</div>
+            <div className="mpt-review-grid">
+              <div className="mpt-review-row"><strong>Your answer</strong><span>{item.studentAnswer}</span></div>
+              <div className="mpt-review-row"><strong>Correct answer</strong><span>{item.correctAnswer}</span></div>
+            </div>
+            <div className="mpt-review-explanation"><strong>Explanation</strong><span>{item.explanation}</span></div>
           </div>
         ))}
       </div>

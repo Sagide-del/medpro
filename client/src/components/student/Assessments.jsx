@@ -5,12 +5,12 @@ import Loading from '../shared/Loading';
 import UiIcon from '../shared/UiIcon';
 
 const VIEW_META = [
-  { match: '/student/mcq-questions', title: 'EMT-B Modules', subtitle: 'Database-driven MCQ progression' },
-  { match: '/student/mock-prep-tests', title: 'EMT-B Modules', subtitle: 'Database-driven MCQ progression' },
-  { match: '/student/question-bank', title: 'EMT-B Modules', subtitle: 'Database-driven MCQ progression' },
-  { match: '/student/mock-exams', title: 'EMT-B Modules', subtitle: 'Database-driven MCQ progression' },
-  { match: '/student/cats', title: 'EMT-B Modules', subtitle: 'Database-driven MCQ progression' },
-  { match: '/student/assessments', title: 'EMT-B Modules', subtitle: 'Database-driven MCQ progression' },
+  { match: '/student/mcq-questions', title: 'EMT-B Modules', subtitle: 'Topic-based MCQ practice' },
+  { match: '/student/mock-prep-tests', title: 'EMT-B Modules', subtitle: 'Timed topic-based mock tests' },
+  { match: '/student/question-bank', title: 'EMT-B Modules', subtitle: 'Topic-based MCQ practice' },
+  { match: '/student/mock-exams', title: 'EMT-B Modules', subtitle: 'Timed topic-based mock tests' },
+  { match: '/student/cats', title: 'EMT-B Modules', subtitle: 'Timed topic-based mock tests' },
+  { match: '/student/assessments', title: 'EMT-B Modules', subtitle: 'Topic-based MCQ practice' },
 ];
 
 function getMeta(pathname) {
@@ -64,6 +64,12 @@ function ModuleList() {
         </div>
       </div>
 
+      <div className="mcq-landing-meta">
+        <div className="mcq-landing-chip"><span>Module flow</span><strong>Locked by progression</strong></div>
+        <div className="mcq-landing-chip"><span>Review</span><strong>Available after submit</strong></div>
+        <div className="mcq-landing-chip"><span>Scores</span><strong>Saved to your account</strong></div>
+      </div>
+
       {location.pathname.startsWith('/student/mcq-questions') && (
         <button
           type="button"
@@ -73,7 +79,7 @@ function ModuleList() {
           <span className="mpt-entry-icon" aria-hidden="true"><UiIcon name="exam" /></span>
           <span>
             <div className="mpt-entry-title">EMT Mock Pre-Test</div>
-            <div className="mpt-entry-sub">Practice with randomized questions before your formal exams</div>
+            <div className="mpt-entry-sub">Timed topic tests with review after submission</div>
           </span>
           <span className="mpt-entry-arrow" aria-hidden="true"><UiIcon name="arrowRight" /></span>
         </button>
@@ -99,8 +105,8 @@ function ModuleList() {
             <p className="mcq-module-description">{module.description}</p>
 
             <div className="mcq-module-meta">
-              <span>{module.total_questions} Questions</span>
-              <span>{module.passing_score}% Required</span>
+              <span>{module.total_questions} questions</span>
+              <span>{module.passing_score}% pass mark</span>
             </div>
 
             <div className="progress-bar mcq-module-progress">
@@ -246,24 +252,24 @@ function ModuleExam() {
   return (
     <>
       <div className="page-head">
-        <div>
-          <h1>{module.title}</h1>
-          <div className="sub">{module.total_questions} questions • {module.passing_score}% required</div>
-        </div>
-      </div>
-
-      <div className="card mcq-session-card">
-        <div className="mcq-session-top">
           <div>
-            <div className="mcq-module-order">Module {module.order_number}</div>
-            <p className="mcq-module-description">{module.description}</p>
-          </div>
-          <div className="mcq-session-meta">
-            <span>{answeredCount}/{questions.length} answered</span>
-            <span className={`badge ${badgeForStatus(module.status)}`}>{labelForStatus(module.status)}</span>
+            <h1>{module.title}</h1>
+            <div className="sub">{module.total_questions} questions • {module.passing_score}% pass mark</div>
           </div>
         </div>
-      </div>
+
+        <div className="card mcq-session-card">
+          <div className="mcq-session-top">
+            <div>
+              <div className="mcq-module-order">Module {module.order_number}</div>
+              <p className="mcq-module-description">{module.description}</p>
+            </div>
+            <div className="mcq-session-meta">
+              <span>{answeredCount}/{questions.length} answered</span>
+              <span className={`badge ${badgeForStatus(module.status)}`}>{labelForStatus(module.status)}</span>
+            </div>
+          </div>
+        </div>
 
       <div className="mcq-review-stack">
         {questions.map((question, index) => (

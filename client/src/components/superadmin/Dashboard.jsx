@@ -29,7 +29,6 @@ export default function SuperAdminDashboard() {
           <div>
             <div className="superadmin-kicker">Workspace</div>
             <h2 style={{ marginTop: 0, marginBottom: 4 }}>Users & Communication</h2>
-            <p className="superadmin-muted" style={{ margin: 0 }}>Permanent deletion, templates, email, SMS, and reminders.</p>
           </div>
         </div>
         <div className="logbook-actions">

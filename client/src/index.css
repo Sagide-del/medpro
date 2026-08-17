@@ -430,18 +430,18 @@ input:focus, select:focus, textarea:focus, button:focus-visible, a:focus-visible
 .wizard-stepper {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 10px;
-  margin: 0 0 14px;
+  gap: 8px;
+  margin: 0 0 12px;
 }
 .wizard-step {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   border: 1px solid var(--line);
   background: #fff;
   border-radius: 16px;
-  padding: 12px 14px;
-  min-height: 56px;
+  padding: 10px 12px;
+  min-height: 50px;
   cursor: pointer;
   text-align: left;
 }
@@ -476,6 +476,7 @@ input:focus, select:focus, textarea:focus, button:focus-visible, a:focus-visible
   font-weight: 700;
   color: var(--black);
   line-height: 1.2;
+  font-size: 13px;
 }
 .wizard-nav {
   display: flex;
@@ -493,26 +494,26 @@ input:focus, select:focus, textarea:focus, button:focus-visible, a:focus-visible
 }
 .review-pills .review-tab {
   border-radius: 999px;
-  min-height: 36px;
-  padding-inline: 12px;
+  min-height: 34px;
+  padding-inline: 11px;
 }
 .generator-feature-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 12px;
-  margin-top: 14px;
+  gap: 10px;
+  margin-top: 12px;
 }
 .generator-feature-card {
   border: 1px solid var(--line);
   border-radius: 16px;
   background: linear-gradient(180deg, #fff 0%, #f8f9fb 100%);
-  padding: 16px;
+  padding: 14px;
 }
 .checkbox-feature-row {
   align-items: flex-start;
   min-height: auto;
-  padding: 14px;
-  gap: 12px;
+  padding: 12px;
+  gap: 10px;
 }
 .checkbox-feature-row span {
   display: grid;
@@ -530,13 +531,13 @@ input:focus, select:focus, textarea:focus, button:focus-visible, a:focus-visible
 .feature-chip-row {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
-  margin-top: 12px;
+  gap: 7px;
+  margin-top: 10px;
 }
 .feature-toggle-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-  gap: 10px;
+  grid-template-columns: repeat(auto-fit, minmax(128px, 1fr));
+  gap: 8px;
 }
 .feature-toggle-grid .checkbox-field {
   margin: 0;
@@ -619,16 +620,16 @@ input:focus, select:focus, textarea:focus, button:focus-visible, a:focus-visible
 .review-tabs {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
-  margin: 12px 0;
+  gap: 6px;
+  margin: 10px 0 8px;
 }
 .review-tab {
   border: 1px solid var(--line);
   background: #fff;
   color: var(--ink-soft);
   border-radius: 999px;
-  min-height: 40px;
-  padding: 0 14px;
+  min-height: 36px;
+  padding: 0 12px;
   font-weight: 700;
   cursor: pointer;
 }
@@ -640,7 +641,7 @@ input:focus, select:focus, textarea:focus, button:focus-visible, a:focus-visible
 .review-queue-layout {
   display: grid;
   grid-template-columns: minmax(0, 1.2fr) minmax(280px, 0.8fr);
-  gap: 14px;
+  gap: 12px;
 }
 .review-queue-list {
   display: grid;
@@ -652,7 +653,7 @@ input:focus, select:focus, textarea:focus, button:focus-visible, a:focus-visible
   border: 1px solid var(--line);
   border-radius: 14px;
   background: #fff;
-  padding: 14px;
+  padding: 12px;
   cursor: pointer;
   transition: border-color 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease;
 }
@@ -713,7 +714,7 @@ input:focus, select:focus, textarea:focus, button:focus-visible, a:focus-visible
   border: 1px solid var(--line);
   border-radius: 16px;
   background: #fff;
-  padding: 16px;
+  padding: 14px;
   display: grid;
   gap: 12px;
   align-content: start;
@@ -733,16 +734,16 @@ input:focus, select:focus, textarea:focus, button:focus-visible, a:focus-visible
   border: 1px solid var(--line);
   border-radius: 16px;
   background: #fff;
-  padding: 16px;
+  padding: 14px;
 }
 .destination-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 12px;
+  gap: 10px;
 }
 .destination-card {
   text-align: left;
-  min-height: 132px;
+  min-height: 118px;
   cursor: pointer;
 }
 .destination-card.is-active {
@@ -811,7 +812,7 @@ input:focus, select:focus, textarea:focus, button:focus-visible, a:focus-visible
   margin-top: 10px;
 }
 .generation-preview-section {
-  margin-top: 16px;
+  margin-top: 12px;
 }
 .preview-question-list {
   display: grid;
@@ -821,7 +822,7 @@ input:focus, select:focus, textarea:focus, button:focus-visible, a:focus-visible
   background: #fff;
   border: 1px solid var(--line);
   border-radius: 14px;
-  padding: 14px;
+  padding: 12px;
 }
 .preview-question-top {
   display: flex;
@@ -4537,7 +4538,7 @@ button:disabled { opacity: 0.5; cursor: default; }
 /* ---------- super admin users & communication center ---------- */
 .superadmin-center-shell {
   display: grid;
-  gap: 14px;
+  gap: 12px;
 }
 
 .superadmin-hero {
@@ -4551,7 +4552,7 @@ button:disabled { opacity: 0.5; cursor: default; }
 
 .superadmin-hero-copy {
   display: grid;
-  gap: 8px;
+  gap: 6px;
   max-width: 760px;
 }
 
@@ -4579,7 +4580,7 @@ button:disabled { opacity: 0.5; cursor: default; }
 .superadmin-stat-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 12px;
+  gap: 10px;
 }
 
 .superadmin-stat-card {
@@ -4589,7 +4590,7 @@ button:disabled { opacity: 0.5; cursor: default; }
   border: 1px solid var(--line);
   border-radius: 16px;
   background: #fff;
-  padding: 14px 15px;
+  padding: 12px 14px;
   box-shadow: 0 8px 24px rgba(15, 23, 42, 0.04);
 }
 
@@ -4619,15 +4620,15 @@ button:disabled { opacity: 0.5; cursor: default; }
 .superadmin-center-tabs {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
+  gap: 8px;
 }
 
 .superadmin-center-tabs .review-tab {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  padding-inline: 14px;
-  min-height: 44px;
+  padding-inline: 12px;
+  min-height: 40px;
 }
 
 .superadmin-center-tabs .review-tab svg {
@@ -4638,14 +4639,14 @@ button:disabled { opacity: 0.5; cursor: default; }
 .superadmin-center-grid {
   display: grid;
   grid-template-columns: minmax(0, 1.55fr) minmax(280px, 0.85fr);
-  gap: 14px;
+  gap: 12px;
   align-items: start;
 }
 
 .superadmin-main-panel,
 .superadmin-side-panel {
   display: grid;
-  gap: 14px;
+  gap: 12px;
 }
 
 .superadmin-panel-head {
@@ -4653,7 +4654,7 @@ button:disabled { opacity: 0.5; cursor: default; }
   align-items: flex-start;
   justify-content: space-between;
   gap: 12px;
-  margin-bottom: 14px;
+  margin-bottom: 12px;
 }
 
 .superadmin-kicker {
@@ -4673,27 +4674,27 @@ button:disabled { opacity: 0.5; cursor: default; }
 .superadmin-action-row {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
+  gap: 8px;
   align-items: center;
 }
 
 .superadmin-toolbar {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 12px;
-  margin-bottom: 12px;
+  gap: 10px;
+  margin-bottom: 10px;
 }
 
 .superadmin-bulk-bar {
   display: flex;
   justify-content: space-between;
-  gap: 12px;
+  gap: 10px;
   align-items: center;
   border: 1px solid color-mix(in srgb, var(--red) 14%, var(--line));
   background: color-mix(in srgb, var(--red) 4%, #fff);
   border-radius: 16px;
-  padding: 12px 14px;
-  margin-bottom: 14px;
+  padding: 10px 12px;
+  margin-bottom: 12px;
 }
 
 .superadmin-bulk-count {
@@ -4723,7 +4724,7 @@ button:disabled { opacity: 0.5; cursor: default; }
 
 .superadmin-table th,
 .superadmin-table td {
-  padding: 12px 14px;
+  padding: 10px 12px;
 }
 
 .superadmin-table tbody tr.is-selected td {
@@ -4862,13 +4863,13 @@ button:disabled { opacity: 0.5; cursor: default; }
 .superadmin-quick-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 10px;
+  gap: 8px;
 }
 
 .superadmin-quick-card {
   border: 1px solid var(--line);
   border-radius: 14px;
-  padding: 12px;
+  padding: 10px 12px;
   background: #fff;
   display: grid;
   gap: 4px;
@@ -4891,7 +4892,7 @@ button:disabled { opacity: 0.5; cursor: default; }
 .superadmin-history-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 14px;
+  gap: 12px;
 }
 
 .superadmin-inner-card {
@@ -4943,7 +4944,7 @@ button:disabled { opacity: 0.5; cursor: default; }
   margin-top: 12px;
   border: 1px solid var(--line);
   border-radius: 14px;
-  padding: 12px 14px;
+  padding: 10px 12px;
   background: var(--paper);
   display: grid;
   gap: 4px;

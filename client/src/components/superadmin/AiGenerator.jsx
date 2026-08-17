@@ -7,9 +7,9 @@ import UiIcon from '../shared/UiIcon';
 import Loading from '../shared/Loading';
 
 const SOURCE_MODES = [
-  { id: 'pdf', label: 'PDF Upload', hint: 'Reports, manuals, protocols.', icon: 'document', accent: '#e63935', tint: '#fef2f2' },
-  { id: 'article', label: 'Article Paste', hint: 'News, incident writeups, research.', icon: 'activity', accent: '#0f766e', tint: '#ecfeff' },
-  { id: 'url', label: 'URL / Link', hint: 'Web pages and official resources.', icon: 'dispatch', accent: '#2563eb', tint: '#eff6ff' },
+  { id: 'pdf', label: 'PDF Upload', icon: 'document', accent: '#e63935', tint: '#fef2f2' },
+  { id: 'article', label: 'Article Paste', icon: 'activity', accent: '#0f766e', tint: '#ecfeff' },
+  { id: 'url', label: 'URL / Link', icon: 'dispatch', accent: '#2563eb', tint: '#eff6ff' },
 ];
 
 const CONTENT_TYPES = [
@@ -43,12 +43,12 @@ const BROWSER_OPTIONS = [
 ];
 
 const OUTPUT_DESTINATIONS = [
-  { value: 'question_bank', label: 'Question Bank', icon: 'question', note: 'Teacher library', tint: '#fef2f2' },
-  { value: 'independent_student', label: 'Independent Student', icon: 'learn', note: 'Direct learner access', tint: '#ecfeff' },
-  { value: 'ems_cases', label: 'EMS Cases', icon: 'cases', note: 'Case study library', tint: '#eff6ff' },
-  { value: 'exam_mcq', label: 'Exam Center - MCQ', icon: 'exam', note: 'Formative assessment', tint: '#fdf2dc' },
-  { value: 'exam_mock', label: 'Exam Center - Mock', icon: 'result', note: 'Summative assessment', tint: '#ecfdf5' },
-  { value: 'simulation', label: 'Simulation', icon: 'simulation', note: 'Interactive practice', tint: '#f5f3ff' },
+  { value: 'question_bank', label: 'Question Bank', icon: 'question', tint: '#fef2f2' },
+  { value: 'independent_student', label: 'Independent Student', icon: 'learn', tint: '#ecfeff' },
+  { value: 'ems_cases', label: 'EMS Cases', icon: 'cases', tint: '#eff6ff' },
+  { value: 'exam_mcq', label: 'Exam Center - MCQ', icon: 'exam', tint: '#fdf2dc' },
+  { value: 'exam_mock', label: 'Exam Center - Mock', icon: 'result', tint: '#ecfdf5' },
+  { value: 'simulation', label: 'Simulation', icon: 'simulation', tint: '#f5f3ff' },
 ];
 
 export default function AiGenerator() {
@@ -198,15 +198,6 @@ export default function AiGenerator() {
     const text = sourceText.trim();
     if (!text) return 0;
     return text.split(/\s+/).filter(Boolean).length;
-  }, [sourceText]);
-
-  const sourceStructureHint = useMemo(() => {
-    const text = sourceText.trim();
-    if (!text) return 'Paste text to detect headings, questions, and table structure.';
-    const lines = text.split(/\n+/).filter(Boolean).length;
-    if (/^\s*\d+[.)]/m.test(text) || /part\s+\d+/i.test(text)) return 'Structured worksheet / multi-phase content detected.';
-    if (lines > 20) return 'Long-form article or incident brief detected.';
-    return 'Short briefing detected.';
   }, [sourceText]);
 
   const destinationSummary = useMemo(
@@ -511,7 +502,6 @@ export default function AiGenerator() {
       <div className="page-head">
         <div>
           <h1>Master AI Generator</h1>
-          <div className="sub">Multi-source drafting for EMS cases, simulations, assignments, exams, and video scripts.</div>
         </div>
       </div>
 
@@ -554,12 +544,9 @@ export default function AiGenerator() {
                   >
                     <div className="source-mode-top">
                       <span className="source-mode-icon"><UiIcon name={mode.icon} /></span>
-                      <span className="source-mode-badge" style={{ color: mode.accent, background: mode.tint }}>
-                        {active ? 'Selected' : 'Source'}
-                      </span>
+                      <span className="source-mode-badge" style={{ color: mode.accent, background: mode.tint }}>{active ? 'Selected' : 'Source'}</span>
                     </div>
                     <h3 style={{ margin: '10px 0 6px' }}>{mode.label}</h3>
-                    <p className="sub" style={{ margin: 0 }}>{mode.hint}</p>
                   </button>
                 );
               })}
@@ -636,7 +623,6 @@ export default function AiGenerator() {
                 />
                 <div className="inline-metrics">
                   <span className="metric-pill">Words: {sourceWordCount}</span>
-                  <span className="metric-pill">{sourceStructureHint}</span>
                 </div>
               </div>
             ) : null}
@@ -645,16 +631,6 @@ export default function AiGenerator() {
               <div className="field">
                 <label>Source URL</label>
                 <input value={sourceUrl} onChange={(event) => setSourceUrl(event.target.value)} placeholder="https://..." />
-                <div className="card" style={{ marginTop: 12, background: '#f8f9fb' }}>
-                  <div className="section-head" style={{ marginBottom: 8 }}>
-                    <div>
-                      <h3 style={{ margin: 0 }}>Extraction preview</h3>
-                    </div>
-                  </div>
-                  <p className="sub" style={{ margin: 0, whiteSpace: 'pre-wrap' }}>
-                    {sourceUrl.trim() ? 'Main article content will be extracted on generation and previewed here.' : 'Paste a URL to load the article preview.'}
-                  </p>
-                </div>
               </div>
             ) : null}
 
@@ -663,7 +639,6 @@ export default function AiGenerator() {
                 <UiIcon name={contentMeta.icon} />
                 <div>
                   <div style={{ fontWeight: 700 }}>{contentMeta.label}</div>
-                  <div className="sub">Source input will be sent through the DeepSeek pipeline.</div>
                 </div>
               </div>
             </div>
@@ -747,14 +722,12 @@ export default function AiGenerator() {
                 <div className="section-head" style={{ marginBottom: 12 }}>
                   <div>
                     <h3 style={{ margin: 0 }}>Bloom&apos;s Taxonomy</h3>
-                    <p className="sub" style={{ margin: '4px 0 0' }}>Shape the cognitive depth of the draft.</p>
                   </div>
                 </div>
                 <label className="checkbox-field checkbox-feature-row">
                   <input type="checkbox" checked={bloomPriority} onChange={(event) => setBloomPriority(event.target.checked)} />
                   <span>
                     <strong>Higher-order thinking</strong>
-                    <small>Prioritize analysis, evaluation, and decision-making.</small>
                   </span>
                 </label>
                 <div className="feature-chip-row">
@@ -770,7 +743,6 @@ export default function AiGenerator() {
                 <div className="section-head" style={{ marginBottom: 12 }}>
                   <div>
                     <h3 style={{ margin: 0 }}>Additional options</h3>
-                    <p className="sub" style={{ margin: '4px 0 0' }}>Publishing controls and review helpers.</p>
                   </div>
                 </div>
                 <div className="feature-toggle-grid">
@@ -826,7 +798,7 @@ export default function AiGenerator() {
             </div>
 
             {!previewReady ? (
-              <div className="ok-note">Generate a draft first to open the preview and review queue.</div>
+              <div className="ok-note">Generate a draft to continue.</div>
             ) : (
               <>
                 <button type="button" className="ghost" onClick={() => setShowQuestionPreview((current) => !current)} style={{ marginBottom: 14 }}>
@@ -863,16 +835,15 @@ export default function AiGenerator() {
                 ) : null}
 
                 <div className="generation-preview-section">
-                  <div className="section-head" style={{ marginBottom: 8 }}>
-                    <div>
-                      <h3 style={{ margin: 0 }}>Review queue</h3>
-                      <p className="sub" style={{ margin: '4px 0 0' }}>Approve or reject questions before publishing.</p>
-                    </div>
-                <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-                  <span className="badge draft">{reviewCounts.total} total</span>
-                  <span className="badge active" style={{ fontSize: 16, paddingInline: 14 }}>{selectedBulkCount} selected</span>
+                <div className="section-head" style={{ marginBottom: 8 }}>
+                  <div>
+                    <h3 style={{ margin: 0 }}>Review queue</h3>
+                  </div>
+                  <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                    <span className="badge draft">{reviewCounts.total} total</span>
+                    <span className="badge active" style={{ fontSize: 16, paddingInline: 14 }}>{selectedBulkCount} selected</span>
+                  </div>
                 </div>
-              </div>
 
                   <div className="review-tabs review-pills" role="tablist" aria-label="Review queue filters">
                     {reviewTabs.map((tab) => (
@@ -936,7 +907,6 @@ export default function AiGenerator() {
                       )) : (
                         <div className="generation-preview-result">
                           <div className="generation-preview-value">No questions in this filter yet.</div>
-                          <p className="sub" style={{ margin: '8px 0 0' }}>Generate a draft to populate the review queue.</p>
                         </div>
                       )}
                     </div>
@@ -1035,7 +1005,6 @@ export default function AiGenerator() {
                 <UiIcon name={contentMeta.icon} />
                 <div>
                   <div style={{ fontWeight: 700 }}>{contentMeta.label}</div>
-                  <div className="sub">Pick where this draft should live.</div>
                 </div>
               </div>
             </div>
@@ -1058,12 +1027,9 @@ export default function AiGenerator() {
                     >
                       <div className="source-mode-top">
                         <span className="source-mode-icon"><UiIcon name={destination.icon} /></span>
-                        <span className="source-mode-badge" style={{ color: active ? 'var(--red)' : 'var(--ink-soft)', background: active ? '#fee2e2' : destination.tint }}>
-                          {active ? 'Selected' : 'Route'}
-                        </span>
+                        <span className="source-mode-badge" style={{ color: active ? 'var(--red)' : 'var(--ink-soft)', background: active ? '#fee2e2' : destination.tint }}>{active ? 'Selected' : 'Route'}</span>
                       </div>
                       <h3 style={{ margin: '10px 0 6px' }}>{destination.label}</h3>
-                      <p className="sub" style={{ margin: 0 }}>{destination.note}</p>
                     </button>
                   );
                 })}
@@ -1090,7 +1056,6 @@ export default function AiGenerator() {
               <div className="section-head" style={{ marginBottom: 8 }}>
                 <div>
                   <h3 style={{ margin: 0 }}>Publish to Independent Students</h3>
-                  <p className="sub" style={{ margin: '4px 0 0' }}>Keep it clean and publish only when the title is ready.</p>
                 </div>
                 <span className="badge active" style={{ fontSize: 16, paddingInline: 14 }}>{selectedBulkCount} selected</span>
               </div>

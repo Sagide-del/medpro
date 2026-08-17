@@ -156,10 +156,7 @@ function DeleteConfirmModal({ title, count = 1, onCancel, onConfirm, confirmText
           </div>
           <UiIcon name="trash" />
         </div>
-        <p className="superadmin-muted" style={{ marginTop: 0 }}>
-          {count > 1 ? `${count} users will be deleted permanently.` : 'This user will be removed permanently.'}
-          {' '}Type DELETE to continue.
-        </p>
+        <p className="superadmin-muted" style={{ marginTop: 0 }}>{count > 1 ? `${count} users will be deleted permanently.` : 'This user will be removed permanently.'} Type DELETE to continue.</p>
         <div className="field">
           <label>Type DELETE</label>
           <input value={confirmText} onChange={(e) => setConfirmText(e.target.value)} autoComplete="off" />
@@ -568,9 +565,6 @@ export default function UserCommunications({ defaultTab = 'users' }) {
         <div className="superadmin-hero-copy">
           <div className="superadmin-kicker">Super admin workspace</div>
           <h1>Users & Communication</h1>
-          <p className="superadmin-hero-subtitle">
-            Manage the 15 free users, permanent deletion, email templates, SMS sends, and reminder rules from one clean console.
-          </p>
         </div>
         <div className="superadmin-hero-actions">
           <button type="button" className={`review-tab ${activeTab === 'users' ? 'is-active' : ''}`} onClick={() => setActiveTab('users')}>

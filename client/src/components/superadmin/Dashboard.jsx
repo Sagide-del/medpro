@@ -25,12 +25,18 @@ export default function SuperAdminDashboard() {
       <div className="page-head"><div><h1>System overview</h1><div className="sub">Live vitals across all institutions</div></div></div>
 
       <div className="card" style={{ marginBottom: 18, borderLeft: '4px solid var(--accent-red)' }}>
-        <h2 style={{ marginTop: 0 }}>Master AI Generator</h2>
+        <div className="superadmin-panel-head">
+          <div>
+            <div className="superadmin-kicker">Workspace</div>
+            <h2 style={{ marginTop: 0, marginBottom: 4 }}>Users & Communication</h2>
+            <p className="superadmin-muted" style={{ margin: 0 }}>Permanent deletion, templates, email, SMS, and reminders.</p>
+          </div>
+        </div>
         <div className="logbook-actions">
-          <Link className="primary" to="/superadmin/ai-generator">Open generator</Link>
-          <Link className="ghost" to="/superadmin/content">Open uploader</Link>
-          <Link className="ghost" to="/superadmin/users">Users</Link>
-          <Link className="ghost" to="/superadmin/communications">Communication center</Link>
+          <Link className="primary" to="/superadmin/users">Open users</Link>
+          <Link className="ghost" to="/superadmin/communications">Open communication center</Link>
+          <Link className="ghost" to="/superadmin/ai-generator">AI generator</Link>
+          <Link className="ghost" to="/superadmin/content">Content uploader</Link>
         </div>
       </div>
 

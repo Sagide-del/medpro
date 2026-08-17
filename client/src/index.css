@@ -4540,6 +4540,82 @@ button:disabled { opacity: 0.5; cursor: default; }
   gap: 14px;
 }
 
+.superadmin-hero {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  align-items: flex-start;
+  background: linear-gradient(135deg, #ffffff 0%, #fbfbfd 100%);
+  border: 1px solid color-mix(in srgb, var(--line) 85%, var(--red) 15%);
+}
+
+.superadmin-hero-copy {
+  display: grid;
+  gap: 8px;
+  max-width: 760px;
+}
+
+.superadmin-hero-copy h1 {
+  margin: 0;
+  font-size: 30px;
+  line-height: 1.12;
+}
+
+.superadmin-hero-subtitle {
+  margin: 0;
+  color: var(--ink-soft);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.superadmin-hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: flex-end;
+  align-items: center;
+}
+
+.superadmin-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.superadmin-stat-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: #fff;
+  padding: 14px 15px;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.04);
+}
+
+.superadmin-stat-card svg {
+  width: 20px;
+  height: 20px;
+  color: var(--red);
+  flex-shrink: 0;
+}
+
+.superadmin-stat-card strong {
+  display: block;
+  color: var(--black);
+  font-size: 20px;
+  line-height: 1.1;
+}
+
+.superadmin-stat-card span {
+  display: block;
+  margin-top: 3px;
+  font-size: 11px;
+  color: var(--ink-soft);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
 .superadmin-center-tabs {
   display: flex;
   flex-wrap: wrap;
@@ -4882,6 +4958,18 @@ button:disabled { opacity: 0.5; cursor: default; }
 }
 
 @media (max-width: 960px) {
+  .superadmin-hero {
+    flex-direction: column;
+  }
+
+  .superadmin-hero-actions {
+    justify-content: flex-start;
+  }
+
+  .superadmin-stat-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .superadmin-center-grid,
   .superadmin-template-grid,
   .superadmin-history-grid,
@@ -4891,6 +4979,10 @@ button:disabled { opacity: 0.5; cursor: default; }
 
   .superadmin-toolbar {
     grid-template-columns: 1fr;
+  }
+
+  .superadmin-hero-copy h1 {
+    font-size: 24px;
   }
 
   .superadmin-mini-stats,
@@ -4915,7 +5007,12 @@ button:disabled { opacity: 0.5; cursor: default; }
   .superadmin-modal-actions,
   .superadmin-bulk-actions,
   .superadmin-row-actions,
-  .superadmin-channel-badges {
+  .superadmin-channel-badges,
+  .superadmin-hero-actions {
     justify-content: flex-start;
+  }
+
+  .superadmin-stat-grid {
+    grid-template-columns: 1fr;
   }
 }

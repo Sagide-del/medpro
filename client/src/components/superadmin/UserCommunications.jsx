@@ -553,16 +553,47 @@ export default function UserCommunications({ defaultTab = 'users' }) {
 
   const selectedCount = selectedUserIds.length;
   const filteredUsers = useMemo(() => users || [], [users]);
+  const overviewStats = useMemo(() => [
+    { label: 'Visible users', value: filteredUsers.length, icon: 'shield' },
+    { label: 'Selected', value: selectedCount, icon: 'trash' },
+    { label: 'Templates', value: templates.length, icon: 'document' },
+    { label: 'Messages', value: history.history.length + history.logs.length, icon: 'mail' },
+  ], [filteredUsers.length, history.history.length, history.logs.length, selectedCount, templates.length]);
 
   if (loading && !users) return <Loading label="Loading super admin workspace..." />;
 
   return (
     <div className="superadmin-center-shell">
-      <div className="page-head">
-        <div>
+      <div className="superadmin-hero card">
+        <div className="superadmin-hero-copy">
+          <div className="superadmin-kicker">Super admin workspace</div>
           <h1>Users & Communication</h1>
-          <div className="sub">Permanent user controls, templates, schedules, and reminders in one workspace.</div>
+          <p className="superadmin-hero-subtitle">
+            Manage the 15 free users, permanent deletion, email templates, SMS sends, and reminder rules from one clean console.
+          </p>
         </div>
+        <div className="superadmin-hero-actions">
+          <button type="button" className={`review-tab ${activeTab === 'users' ? 'is-active' : ''}`} onClick={() => setActiveTab('users')}>
+            <UiIcon name="shield" />
+            <span>Users</span>
+          </button>
+          <button type="button" className={`review-tab ${activeTab === 'communications' ? 'is-active' : ''}`} onClick={() => setActiveTab('communications')}>
+            <UiIcon name="mail" />
+            <span>Communication</span>
+          </button>
+        </div>
+      </div>
+
+      <div className="superadmin-stat-grid">
+        {overviewStats.map((stat) => (
+          <div className="superadmin-stat-card" key={stat.label}>
+            <UiIcon name={stat.icon} />
+            <div>
+              <strong>{stat.value}</strong>
+              <span>{stat.label}</span>
+            </div>
+          </div>
+        ))}
       </div>
 
       <div className="superadmin-center-tabs">

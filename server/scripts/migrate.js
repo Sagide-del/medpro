@@ -32,7 +32,6 @@ const files = [
   'migration_006_simulation_engine.sql',
   'migration_007_subscription_refinement.sql',
   'migration_008_final_release_modules.sql',
-  'migration_009_intasend_payment_method.sql',
   'migration_010_mcq_module_assessments.sql',
   'migration_011_kenya_case_studies.sql',
   'migration_012_case_progress_jsonb.sql',
@@ -47,6 +46,7 @@ const files = [
   'migration_019_logbook_pdf_upload.sql',
   'migration_020_medprohub_ems_generator.sql',
   'migration_021_user_communications_admin.sql',
+  'migration_022_tatua_student_subscription.sql',
 ];
 
 if (!process.env.DATABASE_URL) {

@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import { useLocation } from 'react-router-dom';
 import { api } from '../../services/api';
 import { kes } from '../format';
 import Loading from '../shared/Loading';
@@ -15,12 +14,11 @@ const typeLabel = {
 };
 
 export default function Payments() {
-  const location = useLocation();
   const [data, setData] = useState(null);
-  const [phone, setPhone] = useState('');
   const [busy, setBusy] = useState(false);
   const [status, setStatus] = useState('');
   const [error, setError] = useState('');
+  const [paymentRequest, setPaymentRequest] = useState(null);
 
   function load() {
     Promise.all([
@@ -33,18 +31,14 @@ export default function Payments() {
 
   useEffect(load, []);
 
-  async function renew() {
+  async function generateReference() {
     setBusy(true);
     setStatus('');
     setError('');
     try {
-      const response = await api('/subscriptions/student/renew', { method: 'POST', body: { phone } });
-      if (response.paymentUrl && !response.simulated) {
-        setStatus('Redirecting you to IntaSend to complete your subscription payment...');
-        window.location.href = response.paymentUrl;
-        return;
-      }
-      setStatus(response.simulated ? 'Subscription activated in dev mode.' : 'Payment request created. Complete the IntaSend checkout to activate access.');
+      const response = await api('/subscriptions/student/renew', { method: 'POST', body: {} });
+      setPaymentRequest(response);
+      setStatus('Reference created. Pay via Tatua and wait for automatic confirmation.');
       load();
     } catch (err) {
       setError(err.message);
@@ -60,6 +54,7 @@ export default function Payments() {
   const expiry = data.subscription?.expiresAt ? new Date(data.subscription.expiresAt).toLocaleDateString('en-KE') : 'Not active';
   const paymentStatus = data.subscription?.status || 'expired';
   const transactions = data.transactions || [];
+  const tillNumber = paymentRequest?.tillNumber || '4382411';
   const totalSpent = transactions
     .filter((transaction) => transaction.status === 'completed')
     .reduce((sum, transaction) => sum + Number(transaction.amount || 0), 0);
@@ -69,7 +64,7 @@ export default function Payments() {
       <div className="page-head">
         <div>
           <h1>Student Subscription</h1>
-          <div className="sub">Manage your student plan.</div>
+          <div className="sub">Tatua subscription access for student accounts.</div>
         </div>
       </div>
 
@@ -80,38 +75,46 @@ export default function Payments() {
               <div className="student-plan-kicker">MedProHub Student Plan</div>
               <h2 style={{ marginBottom: 6 }}>MedProHub Student Plan</h2>
             </div>
-            <div className="student-plan-price">KES {Number(currentPlan?.price || 300).toLocaleString('en-KE')}<small>/month</small></div>
-          </div>
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', margin: '10px 0 14px' }}>
-          <span className={`badge ${data.subscription?.allowed ? 'approved' : paymentStatus === 'pending' ? 'draft' : 'rejected'}`}>
-            {paymentStatus}
-          </span>
-          <span className="badge draft">Expiry: {expiry}</span>
+            <div className="student-plan-price">KES {Number(currentPlan?.price || 150).toLocaleString('en-KE')}<small>/month</small></div>
           </div>
 
-          {!data.subscription?.allowed && location.state?.from && (
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', margin: '10px 0 14px' }}>
+            <span className={`badge ${data.subscription?.allowed ? 'approved' : paymentStatus === 'pending' ? 'draft' : 'rejected'}`}>
+              {paymentStatus}
+            </span>
+            <span className="badge draft">Expiry: {expiry}</span>
+            <span className="badge draft">Till: {tillNumber}</span>
+          </div>
+
+          {!data.subscription?.allowed && (
             <div className="alert" style={{ marginBottom: 12 }}>
-              Activate your plan to continue.
+              Generate a payment reference, then pay KES 150 to Tatua Till 4382411.
             </div>
           )}
 
           <div className="student-feature-list">
-            {[
-              'Exam Preparation',
-              'Clinical Reference Cards',
-              'Skill Simulations',
-              'Assignments',
-              'Progress Tracking',
-            ].map((feature) => <div key={feature} className="student-feature-item">{feature}</div>)}
+            {['Clinical Reference Cards', 'Assessments', 'Simulations', 'Assignments', 'Exam Preparation'].map((feature) => (
+              <div key={feature} className="student-feature-item">{feature}</div>
+            ))}
           </div>
 
-          <div className="field">
-            <label htmlFor="student-phone">Phone number</label>
-            <input id="student-phone" value={phone} onChange={(event) => setPhone(event.target.value)} placeholder="07XX XXX XXX" />
-          </div>
-          <button className="primary student-cta" onClick={renew} disabled={busy || !phone}>
-            {busy ? 'Processing...' : 'Pay KES 300'}
+          <button className="primary student-cta" onClick={generateReference} disabled={busy}>
+            {busy ? 'Generating...' : 'Generate payment reference'}
           </button>
+
+          {paymentRequest && (
+            <div className="card" style={{ marginTop: 16, background: 'var(--panel-soft)' }}>
+              <div className="student-plan-kicker">Payment reference</div>
+              <div style={{ fontSize: 28, fontWeight: 800, letterSpacing: 1, margin: '8px 0' }}>{paymentRequest.paymentReference}</div>
+              <div style={{ color: 'var(--ink-soft)', marginBottom: 8 }}>{paymentRequest.instructions}</div>
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                <span className="badge draft">KES {Number(paymentRequest.amount || currentPlan?.price || 150).toLocaleString('en-KE')}</span>
+                <span className="badge draft">Till {paymentRequest.tillNumber || tillNumber}</span>
+                <span className="badge draft">Provider: Tatua</span>
+              </div>
+            </div>
+          )}
+
           {status && <div className="ok-note" style={{ marginTop: 12 }}>{status}</div>}
         </div>
 

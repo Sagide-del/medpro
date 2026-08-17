@@ -2,7 +2,7 @@ import { Router } from 'express';
 import {
   purchase,
   mpesaCallback,
-  intasendWebhook,
+  tatuaWebhook,
   paymentStatus,
   myPurchaseHistory,
   subscriptionStatus,
@@ -16,11 +16,11 @@ const router = Router();
 
 router.post('/purchase', authenticate, requireRole('student'), validate({ itemType: 'required', itemId: 'required', phone: 'required' }), purchase);
 router.post('/mpesa/callback', mpesaCallback);
-router.post('/intasend/webhook', intasendWebhook);
+router.post('/tatua/webhook', tatuaWebhook);
 router.get('/status/:checkoutId', authenticate, paymentStatus);
 router.get('/history', authenticate, requireRole('student'), myPurchaseHistory);
 
 router.get('/subscription', authenticate, requireRole('student'), subscriptionStatus);
-router.post('/subscribe', authenticate, requireRole('student'), validate({ phone: 'required' }), subscribeToAssessments);
+router.post('/subscribe', authenticate, requireRole('student'), subscribeToAssessments);
 
 export default router;

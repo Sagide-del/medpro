@@ -230,8 +230,8 @@ export async function recordPaymentAttempt({
     transactionId,
     planId,
     provider,
-    providerReference: paymentResponse.merchantRequestId,
-    checkoutRequestId: paymentResponse.checkoutRequestId,
+    providerReference: paymentResponse.providerReference || paymentResponse.paymentReference || paymentResponse.merchantRequestId || paymentResponse.checkoutRequestId,
+    checkoutRequestId: paymentResponse.checkoutRequestId || paymentResponse.paymentReference,
     ownerUserId,
     ownerInstitutionId,
     expectedAmount,
@@ -248,7 +248,7 @@ export const ACCESS_DURATION_HOURS = {
   elibrary_resource: 24 * 365 * 10,
 };
 
-export const DEFAULT_STUDENT_SUBSCRIPTION_PRICE_KES = 300;
+export const DEFAULT_STUDENT_SUBSCRIPTION_PRICE_KES = 150;
 export const DEFAULT_STUDENT_SUBSCRIPTION_DAYS = 30;
 
 export async function stkPush(args) {

@@ -20,7 +20,7 @@ router.get('/plans', listPlans);
 router.patch('/plans/:id', requireRole('super_admin'), updatePlan);
 
 router.get('/student/current', requireRole('student'), studentSubscriptionSummary);
-router.post('/student/renew', requireRole('student'), validate({ phone: 'required' }), renewStudentSubscription);
+router.post('/student/renew', requireRole('student'), renewStudentSubscription);
 
 router.get('/institution/current', requireRole('institution_admin', 'super_admin'), institutionLicenceSummary);
 router.post('/institution/renew', requireRole('institution_admin', 'super_admin'), validate({ phone: 'required' }), renewInstitutionLicence);

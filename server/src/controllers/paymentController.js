@@ -14,7 +14,7 @@ import {
   ACCESS_DURATION_HOURS,
   DEFAULT_STUDENT_SUBSCRIPTION_PRICE_KES,
 } from '../services/paymentService.js';
-import { handleWebhook as handleIntaSendWebhook } from '../services/intasendService.js';
+import { createPayment as createTatuaPayment, handleWebhook as handleTatuaWebhook } from '../services/tatuaService.js';
 import { resolveStudentSubscriptionAccess } from '../services/subscriptionAccess.js';
 import { asyncHandler } from '../utils/helpers.js';
 
@@ -111,7 +111,7 @@ export const myPurchaseHistory = asyncHandler(async (req, res) => {
 });
 
 // Whether this student can currently open assessments — either through their
-// own Ksh 500/month subscription, or for free because their institution has
+// own Ksh 150/month subscription, or for free because their institution has
 // an active site-license subscription.
 export const subscriptionStatus = asyncHandler(async (req, res) => {
   const subscription = await resolveStudentSubscriptionAccess(req.user);
@@ -129,17 +129,16 @@ export const subscriptionStatus = asyncHandler(async (req, res) => {
 });
 
 export const subscribeToAssessments = asyncHandler(async (req, res) => {
-  const { phone } = req.body;
   const plan = await SubscriptionPlan.findActiveByCode('student_monthly');
   if (!plan) return res.status(500).json({ error: 'Student subscription plan is not configured.' });
   const amount = Number(plan.price);
 
-  const stk = await initiatePayment({
-    provider: 'mpesa',
-    phone,
+  const tatua = await createTatuaPayment({
     amount,
-    accountRef: plan.name,
-    description: 'MedPro student',
+    currency: plan.currency || 'KES',
+    phone: req.body.phone,
+    name: req.user.name || req.user.full_name || 'MedProHub Student',
+    studentId: req.user.sub,
   });
 
   const txn = await Payment.createPending({
@@ -149,42 +148,35 @@ export const subscribeToAssessments = asyncHandler(async (req, res) => {
     itemId: null,
     transactionType: 'student_subscription',
     amount,
-    phone,
-    mpesaCheckoutId: stk.checkoutRequestId,
+    phone: req.body.phone,
+    mpesaCheckoutId: tatua.checkoutRequestId,
+    paymentMethod: 'tatua',
   });
   await recordPaymentAttempt({
     transactionId: txn.transaction_id,
     planId: plan.plan_id,
-    provider: stk.provider || 'mpesa',
-    paymentResponse: stk,
+    provider: tatua.provider || 'tatua',
+    paymentResponse: tatua,
     ownerUserId: req.user.sub,
     ownerInstitutionId: req.user.institutionId,
     expectedAmount: amount,
-    phone,
+    phone: req.body.phone,
   });
 
-  if (stk.simulated) {
-    await Payment.markCompleted(stk.checkoutRequestId, { mpesaCode: `SIM${Date.now().toString().slice(-8)}` });
-    await handleCallback({
-      paymentModel: Payment,
-      subscriptionPlan: plan,
-      transaction: txn,
-      callbackResult: {
-        checkoutRequestId: stk.checkoutRequestId,
-        success: true,
-        mpesaReceipt: `SIM${Date.now().toString().slice(-8)}`,
-        amount,
-        phone,
-      },
-    });
-  }
-
-  res.status(201).json({ transaction: txn, checkoutRequestId: stk.checkoutRequestId, simulated: !!stk.simulated });
+  res.status(201).json({
+    transaction: txn,
+    checkoutRequestId: tatua.checkoutRequestId,
+    paymentReference: tatua.paymentReference,
+    billRef: tatua.billRef,
+    tillNumber: tatua.tillNumber,
+    instructions: tatua.instructions,
+    simulated: !!tatua.simulated,
+    provider: 'tatua',
+  });
 });
 
-export const intasendWebhook = asyncHandler(async (req, res) => {
-  const signature = req.headers['x-intasend-signature'] || req.headers['x-signature'];
-  const result = await handleIntaSendWebhook(req.body, signature);
+export const tatuaWebhook = asyncHandler(async (req, res) => {
+  const result = await handleTatuaWebhook(req.body);
   if (!result.ok) {
     return res.status(result.status || 400).json({ error: result.reason || 'Webhook verification failed.' });
   }

@@ -1,6 +1,6 @@
 import { query } from '../config/database.js';
 
-// Personal Ksh 500/month "unlock all assessments" subscription. Separate
+// Personal Ksh 150/month "unlock all assessments" subscription. Separate
 // from institution_subscriptions — a student can get assessment access
 // either by paying for this directly, or for free if their institution has
 // an active site-license subscription (see Institution.hasActiveSubscription).

@@ -40,7 +40,7 @@ INSERT INTO users (institution_id, reg_number, full_name, email, phone, password
 (1, 'KRCTI-2026-0234', 'Amina Yusuf',  'amina.yusuf@krcti.ac.ke', '0712345699',
  '$2b$10$zD3yfEdWO0FUy8q/MD13je2NxFwMlDJypqf9geq/5ooLU1dzo7gPm', 'student', 'Diploma in Paramedicine', 1);
 
--- Independent student with no institution — demonstrates the Ksh 500/month
+-- Independent student with no institution — demonstrates the Ksh 150/month
 -- personal assessment subscription paywall (every seeded institution above
 -- has an active/trial site-license, so their students are unlocked for free).
 INSERT INTO users (institution_id, reg_number, full_name, email, phone, password_hash, role, program, year_of_study) VALUES

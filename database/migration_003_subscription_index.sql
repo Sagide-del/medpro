@@ -1,4 +1,4 @@
--- Migration 003: index to speed up the Ksh 500/month assessment subscription
+-- Migration 003: index to speed up the monthly assessment subscription
 -- lookup (StudentSubscription.findActive runs on every assessment view/attempt).
 -- Additive and idempotent — safe to re-run.
 

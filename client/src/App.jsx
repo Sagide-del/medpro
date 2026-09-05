@@ -82,7 +82,7 @@ const STUDENT_LINKS = [
     ],
   },
   {
-    group: 'Learn',
+    group: 'My Learning',
     items: [
       { to: '/student/exam-center', label: 'Exam Center', icon: 'exam' },
       { to: '/student/assignments', label: 'Assignments', icon: 'document' },
@@ -91,11 +91,17 @@ const STUDENT_LINKS = [
     ],
   },
   {
-    group: 'Practice',
+    group: 'Study Materials',
+    items: [
+      { to: '/student/reference-cards', label: 'Clinical Reference Cards', icon: 'document' },
+      { to: '/student/elibrary', label: 'E-Library', icon: 'learn' },
+    ],
+  },
+  {
+    group: 'Practical Training',
     items: [
       { to: '/student/logbook', label: 'Clinical Logbook', icon: 'document' },
-      { to: '/student/videos', label: 'Clinical Skills Videos', icon: 'practice' },
-      { to: '/student/reference-cards', label: 'Clinical Reference Cards', icon: 'document' },
+      { to: '/student/videos', label: 'Practical Skills', icon: 'practice' },
     ],
   },
   {
@@ -108,7 +114,6 @@ const STUDENT_LINKS = [
     group: 'Community',
     items: [
       { to: '/student/community', label: 'My Study Group', icon: 'community' },
-      { to: '/student/elibrary', label: 'E-Library', icon: 'document' },
     ],
   },
   {

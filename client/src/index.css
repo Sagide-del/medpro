@@ -946,6 +946,24 @@ input:focus, select:focus, textarea:focus, button:focus-visible, a:focus-visible
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 14px;
 }
+.exam-center-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+  max-width: 860px;
+}
+.exam-center-module {
+  min-height: 168px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  border-top: 4px solid var(--module-accent, var(--red));
+  transition: transform .18s ease, box-shadow .18s ease;
+}
+.exam-center-module:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 28px rgba(15, 23, 42, .08);
+}
 .exam-center-meta {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -2257,6 +2275,7 @@ button:disabled { opacity: 0.5; cursor: default; }
   .vitals { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
   .form-grid,
   .student-action-grid,
+  .exam-center-grid,
   .student-subscription-grid,
   .student-feature-list,
   .mcq-module-grid,

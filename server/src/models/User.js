@@ -34,24 +34,37 @@ async function execIfColumnExists(exec, tableName, columnName, sql, params = [])
 export const User = {
   async findByEmail(email) {
     const { rows } = await query(
-      `SELECT u.*, i.name AS institution_name
-       FROM users u LEFT JOIN institutions i ON i.institution_id = u.institution_id
+      `SELECT u.*
+       FROM users u
        WHERE u.email = $1`,
       [email.toLowerCase().trim()]
     );
-    return rows[0] || null;
+    const user = rows[0] || null;
+    if (!user || !user.institution_id || !(await tableExists(query, 'institutions'))) return user;
+
+    const institution = await query(
+      `SELECT name FROM institutions WHERE institution_id = $1`,
+      [user.institution_id]
+    );
+    return { ...user, institution_name: institution.rows[0]?.name || null };
   },
 
   async findById(userId) {
     const { rows } = await query(
       `SELECT u.user_id, u.institution_id, u.reg_number, u.full_name, u.email, u.phone,
-              u.role, u.status, u.program, u.year_of_study, u.avatar_url, u.last_active_at, u.created_at,
-              i.name AS institution_name
-       FROM users u LEFT JOIN institutions i ON i.institution_id = u.institution_id
+              u.role, u.status, u.program, u.year_of_study, u.avatar_url, u.last_active_at, u.created_at
+       FROM users u
        WHERE u.user_id = $1`,
       [userId]
     );
-    return rows[0] || null;
+    const user = rows[0] || null;
+    if (!user || !user.institution_id || !(await tableExists(query, 'institutions'))) return user;
+
+    const institution = await query(
+      `SELECT name FROM institutions WHERE institution_id = $1`,
+      [user.institution_id]
+    );
+    return { ...user, institution_name: institution.rows[0]?.name || null };
   },
 
   async create({ institutionId, regNumber, fullName, email, phone, password, role = 'student', program, yearOfStudy }) {

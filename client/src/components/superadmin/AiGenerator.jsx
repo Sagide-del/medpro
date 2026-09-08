@@ -13,10 +13,13 @@ const SOURCE_MODES = [
 ];
 
 const CONTENT_TYPES = [
-  { value: 'case_study', label: 'Case Studies', destination: 'Question Bank', icon: 'cases' },
+  { value: 'case_study', label: 'Kenya EMS Cases', destination: 'Kenya EMS Cases', icon: 'cases' },
   { value: 'simulation', label: 'Skill Simulations', destination: 'Simulation Library', icon: 'simulation' },
   { value: 'assignment', label: 'Assignments', destination: 'Assignment Bank', icon: 'document' },
   { value: 'exam', label: 'MCQ / Exams', destination: 'Exam Center', icon: 'question' },
+  { value: 'essay', label: 'Essays', destination: 'Essay Bank', icon: 'document' },
+  { value: 'learning_path', label: 'Learning Paths', destination: 'Learning Paths', icon: 'result' },
+  { value: 'cheat_sheet', label: 'Cheat Sheets', destination: 'Cheat Sheet Library', icon: 'learn' },
   { value: 'video_script', label: 'Video Scripts', destination: 'Video Script Bank', icon: 'activity' },
 ];
 
@@ -29,6 +32,8 @@ const AUDIENCES = [
 ];
 
 const DIFFICULTIES = ['Basic', 'Intermediate', 'Advanced'];
+const KENYA_COUNTIES = ['Nairobi', 'Mombasa', 'Kisumu', 'Nakuru', 'Uasin Gishu', 'Kakamega', 'Kiambu', 'Machakos', 'Other'];
+const aiGeneratorV2Enabled = import.meta.env.VITE_AI_GENERATOR_V2_ENABLED === 'true';
 
 const QUESTION_TYPES = [
   { key: 'multipleChoice', label: 'Multiple Choice', icon: 'question', accent: '#e63935', tint: '#fef2f2' },
@@ -74,6 +79,11 @@ export default function AiGenerator() {
   const [includeFeedback, setIncludeFeedback] = useState(true);
   const [suggestDiagramPlaceholders, setSuggestDiagramPlaceholders] = useState(false);
   const [autoTagByTopic, setAutoTagByTopic] = useState(true);
+  const [kenyaSpecific, setKenyaSpecific] = useState(false);
+  const [county, setCounty] = useState('');
+  const [historicalYear, setHistoricalYear] = useState('');
+  const [extendedProcessing, setExtendedProcessing] = useState(false);
+  const [citation, setCitation] = useState('');
   const [publishDestination, setPublishDestination] = useState('question_bank');
   const [schoolAccess, setSchoolAccess] = useState('all');
   const [selectedSchoolIds, setSelectedSchoolIds] = useState('');
@@ -405,6 +415,11 @@ export default function AiGenerator() {
       payload.set('includeFeedback', String(includeFeedback));
       payload.set('suggestDiagramPlaceholders', String(suggestDiagramPlaceholders));
       payload.set('autoTagByTopic', String(autoTagByTopic));
+      payload.set('kenyaSpecific', String(kenyaSpecific));
+      payload.set('county', county);
+      payload.set('historicalYear', historicalYear);
+      payload.set('extendedProcessing', String(extendedProcessing));
+      payload.set('citation', citation);
       payload.set('publishDestination', publishDestination);
       payload.set('schoolAccess', schoolAccess);
       payload.set('selectedSchoolIds', selectedSchoolIds);
@@ -459,7 +474,7 @@ export default function AiGenerator() {
     setStatus(`${selectedReviewIds.length} question${selectedReviewIds.length === 1 ? '' : 's'} ${nextStatus}.`);
   }
 
-  function handlePublishSelected() {
+  async function handlePublishSelected() {
     if (publishDestination === 'independent_student' && !assignmentTitle.trim()) {
       setStatus('Assignment title is required before publishing to independent students.');
       return;
@@ -471,6 +486,23 @@ export default function AiGenerator() {
 
     setPublishBusy(true);
     setStatus('');
+    if (aiGeneratorV2Enabled && job?.jobId) {
+      try {
+        const decisions = normalizedReviewQueue.map((item) => ({
+          itemId: item.id,
+          decision: item.status,
+          duplicateAction: 'skip',
+        }));
+        const response = await api(`/ai/v2/jobs/${job.jobId}/publish`, { method: 'POST', body: { decisions } });
+        setPublishBusy(false);
+        setCurrentStep(4);
+        setPublishConfirmation(`Published ${response.published?.length || 0} approved item${response.published?.length === 1 ? '' : 's'} to ${destinationSummary.label}.`);
+      } catch (error) {
+        setPublishBusy(false);
+        setStatus(error.message);
+      }
+      return;
+    }
     setTimeout(() => {
       setPublishBusy(false);
       setCurrentStep(4);
@@ -686,6 +718,17 @@ export default function AiGenerator() {
                 <label>Question count: {questionCount}</label>
                 <input type="range" min="10" max="100" step="5" value={questionCount} onChange={(event) => setQuestionCount(Number(event.target.value))} />
               </div>
+              <label className="checkbox-field">
+                <input type="checkbox" checked={kenyaSpecific} onChange={(event) => setKenyaSpecific(event.target.checked)} />
+                <span>Kenya-specific content</span>
+              </label>
+              {kenyaSpecific ? <div className="field"><label>County</label><select value={county} onChange={(event) => setCounty(event.target.value)}><option value="">Select county</option>{KENYA_COUNTIES.map((item) => <option key={item}>{item}</option>)}</select></div> : null}
+              {kenyaSpecific ? <div className="field"><label>Historical year</label><input type="number" min="1990" max="2027" value={historicalYear} onChange={(event) => setHistoricalYear(event.target.value)} placeholder="1990–2027" /></div> : null}
+              <label className="checkbox-field">
+                <input type="checkbox" checked={extendedProcessing} onChange={(event) => setExtendedProcessing(event.target.checked)} />
+                <span>Extended processing (up to 50,000 characters)</span>
+              </label>
+              <div className="field"><label>Source citation</label><input value={citation} onChange={(event) => setCitation(event.target.value)} placeholder="Kenya MOH, NREMT, or source publication" /></div>
             </div>
 
             <div className="field">

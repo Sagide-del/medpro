@@ -11,6 +11,7 @@ import {
   saveCustomizedContent,
   startGeneration,
 } from '../controllers/aiGeneratorController.js';
+import { getJob, listJobs, publishJob, reviewJob } from '../controllers/aiGeneratorV2Controller.js';
 
 const router = Router();
 const { upload } = createUploader('ai-generator-sources');
@@ -24,5 +25,9 @@ router.post('/customize/save', requireRole('teacher', 'institution_admin', 'supe
 router.post('/bulk-approve', requireRole('super_admin'), bulkApproveContent);
 router.post('/bulk-reject', requireRole('super_admin'), bulkRejectContent);
 router.post('/export/pdf', requireRole('teacher', 'institution_admin', 'super_admin'), exportPdf);
+router.get('/v2/jobs', requireRole('teacher', 'institution_admin', 'super_admin'), listJobs);
+router.get('/v2/jobs/:jobId', requireRole('teacher', 'institution_admin', 'super_admin'), getJob);
+router.post('/v2/jobs/:jobId/review', requireRole('teacher', 'institution_admin', 'super_admin'), reviewJob);
+router.post('/v2/jobs/:jobId/publish', requireRole('teacher', 'institution_admin', 'super_admin'), publishJob);
 
 export default router;

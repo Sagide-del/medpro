@@ -8,12 +8,16 @@ import {
   updateGenerationJob,
 } from '../services/masterAiGeneratorService.js';
 import { getSignedPdfUrl } from '../services/storage.js';
+import { AI_GENERATOR_V2_ENABLED, createPersistentJob, getPersistentJob, updatePersistentJob } from '../services/aiGeneratorV2Service.js';
 
 const CONTENT_DESTINATIONS = {
-  case_study: 'Question Bank',
+  case_study: 'Kenya EMS Cases',
   simulation: 'Simulation Library',
   assignment: 'Assignment Bank',
   exam: 'Exam Center',
+  essay: 'Essay Bank',
+  learning_path: 'Learning Paths',
+  cheat_sheet: 'Cheat Sheet Library',
   video_script: 'Video Script Bank',
   worksheet: 'Worksheet Bank',
 };
@@ -28,6 +32,9 @@ function normalizeContentType(value) {
   if (['simulation', 'skill_simulation', 'skill-simulation'].includes(next)) return 'simulation';
   if (['assignment', 'assignments'].includes(next)) return 'assignment';
   if (['exam', 'mcq_exam', 'mcq', 'assessment'].includes(next)) return 'exam';
+  if (['essay', 'essays'].includes(next)) return 'essay';
+  if (['learning_path', 'learning path', 'path'].includes(next)) return 'learning_path';
+  if (['cheat_sheet', 'cheat sheet', 'cheatsheet'].includes(next)) return 'cheat_sheet';
   if (['video_script', 'video script', 'video'].includes(next)) return 'video_script';
   if (['worksheet'].includes(next)) return 'worksheet';
   return 'case_study';
@@ -63,6 +70,14 @@ function safeJsonParse(value, fallback = null) {
   } catch {
     return fallback;
   }
+}
+
+function sourceChunks(sourceText, size = 12000) {
+  const text = String(sourceText || '');
+  if (!text) return [''];
+  const chunks = [];
+  for (let offset = 0; offset < text.length; offset += size) chunks.push(text.slice(offset, offset + size));
+  return chunks;
 }
 
 function normalizeTopic(value) {
@@ -239,7 +254,7 @@ async function analyzeSourceContent({ sourceType, sourceText, sourceTitle, sourc
     `Source type: ${sourceType}`,
     '',
     'SOURCE MATERIAL:',
-    sourceText.slice(0, 12000) || 'No source text available.',
+    sourceText || 'No source text available.',
     '',
     'Return strict JSON with keys:',
     '{',
@@ -288,7 +303,7 @@ async function generateSourceDrivenDraft({ contentType, title, sourceText, analy
     JSON.stringify(analysis || {}, null, 2),
     '',
     'SOURCE MATERIAL:',
-    sourceText.slice(0, 12000) || 'No source text available.',
+    sourceText || 'No source text available.',
     '',
     'Return strict JSON with keys:',
     '{',
@@ -496,7 +511,8 @@ export const startGeneration = asyncHandler(async (req, res) => {
     sourceOrigin,
     sourceDate,
   });
-  const sourceExcerpt = cleanText(extractedSource.sourceText || sourceText || sourceUrl || sourceFileName || title).slice(0, 12000);
+  const maxSourceCharacters = parseJsonBoolean(body.extendedProcessing, false) ? 50000 : 12000;
+  const sourceExcerpt = cleanText(extractedSource.sourceText || sourceText || sourceUrl || sourceFileName || title).slice(0, maxSourceCharacters);
   const summary = buildSourceSummary({
     sourceType,
     sourceTitle,
@@ -547,6 +563,17 @@ export const startGeneration = asyncHandler(async (req, res) => {
     },
   });
 
+  if (AI_GENERATOR_V2_ENABLED) {
+    await createPersistentJob({
+      id: job.jobId,
+      adminId: req.user.sub,
+      contentType,
+      title,
+      request: { audience, topic, difficulty, questionCount, publishDestination, schoolAccess, selectedSchoolIds, questionTypes: parsedQuestionTypes, extendedProcessing: parseJsonBoolean(body.extendedProcessing, false), kenyaSpecific: parseJsonBoolean(body.kenyaSpecific, false), county: body.county, historicalYear: body.historicalYear },
+      source: { type: sourceType, url: sourceUrl, excerpt: sourceExcerpt, citation: body.citation || body.sourceCitation || null },
+    });
+  }
+
   updateGenerationJob(job.jobId, {
     status: 'running',
     progress: 15,
@@ -561,9 +588,9 @@ export const startGeneration = asyncHandler(async (req, res) => {
         description: 'Analyzing source material',
       });
 
-      const analysis = await analyzeSourceContent({
+      const analyses = await Promise.all(sourceChunks(sourceExcerpt).map((chunk) => analyzeSourceContent({
         sourceType,
-        sourceText: sourceExcerpt,
+        sourceText: chunk,
         sourceTitle,
         sourceOrigin,
         sourceDate,
@@ -572,7 +599,15 @@ export const startGeneration = asyncHandler(async (req, res) => {
         audience,
         topic,
         difficulty,
-      });
+      })));
+      const analysis = analyses.reduce((merged, item) => ({
+        ...merged,
+        ...item,
+        key_facts: [...new Set([...(merged.key_facts || []), ...(item.key_facts || [])])],
+        education_focus: [...new Set([...(merged.education_focus || []), ...(item.education_focus || [])])],
+        recommended_tags: [...new Set([...(merged.recommended_tags || []), ...(item.recommended_tags || [])])],
+        warnings: [...new Set([...(merged.warnings || []), ...(item.warnings || [])])],
+      }), {});
 
       updateGenerationJob(job.jobId, {
         status: 'running',
@@ -636,8 +671,10 @@ export const startGeneration = asyncHandler(async (req, res) => {
         contentNotes,
         draft: previewDraft,
       });
+      if (AI_GENERATOR_V2_ENABLED) await updatePersistentJob(job.jobId, { status: 'completed', result: { title: cleanText(generated.title || title), contentType, destination, generationProfile, sourceType, sourceUrl: sourceUrl || null, sourceTitle: sourceTitle || null, sourceOrigin: sourceOrigin || null, sourceDate: sourceDate || null, sourceFileUrl, sourceFileName, prompt, sourceExcerpt, sourceNote: extractedSource.sourceNote, analysis, previewQuestions, answerKey, contentNotes, draft: previewDraft } });
     } catch (error) {
       failGenerationJob(job.jobId, error.message);
+      if (AI_GENERATOR_V2_ENABLED) await updatePersistentJob(job.jobId, { status: 'failed', result: { error: error.message } });
       updateGenerationJob(job.jobId, {
         status: 'failed',
         description: error.message,
@@ -668,6 +705,10 @@ export const startGeneration = asyncHandler(async (req, res) => {
 });
 
 export const getGenerationProgress = asyncHandler(async (req, res) => {
+  if (AI_GENERATOR_V2_ENABLED) {
+    const persisted = await getPersistentJob(req.params.jobId, req.user.role === 'super_admin' ? null : req.user.sub);
+    if (persisted) return res.json({ job: { ...persisted, jobId: persisted.id, result: persisted.result_json, createdAt: persisted.created_at, updatedAt: persisted.updated_at } });
+  }
   const job = getGenerationJob(req.params.jobId);
   if (!job) return res.status(404).json({ error: 'Generation job not found.' });
   res.json({ job });

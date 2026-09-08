@@ -17,6 +17,7 @@ import StudentSpacedRepetition from './components/student/SpacedRepetition';
 import StudentBookmarks from './components/student/Bookmarks';
 import StudentKenyaEMSHub from './components/student/KenyaEMSHub';
 import StudentMyContent from './components/student/MyContent';
+import StudentLearningPaths from './components/student/LearningPaths';
 import StudentAssignments from './components/student/Assignments';
 import StudentClinicalReferenceCards from './components/student/ClinicalReferenceCards';
 import StudentExamPreparation from './components/student/ExamPreparation';
@@ -307,7 +308,7 @@ function AppRoutes() {
           <Route path="/student" element={<Navigate to={lecturioNavEnabled ? '/student/study-planner' : '/student/mcq-questions'} replace />} />
           <Route path="/student/study-planner" element={<StudentStudyPlanner />} />
           <Route path="/student/my-content" element={<StudentMyContent />} />
-          <Route path="/student/learning-paths" element={<StudentAssessments />} />
+          <Route path="/student/learning-paths" element={<StudentLearningPaths />} />
           <Route path="/student/spaced-repetition" element={<StudentSpacedRepetition />} />
           <Route path="/student/bookmarks" element={<StudentBookmarks />} />
           <Route path="/student/kenya-ems-hub" element={<StudentKenyaEMSHub />} />

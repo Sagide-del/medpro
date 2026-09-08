@@ -5424,6 +5424,38 @@ button:disabled { opacity: 0.5; cursor: default; }
 .new-resource-row { display: flex; justify-content: space-between; gap: 12px; padding: 13px 0; border-top: 1px solid #edf1f3; }
 .new-resource-row span { color: #78909c; font-size: 13px; text-align: right; }
 .new-section > .new-button { margin-top: 18px; }
+.new-learning-header { display: flex; align-items: center; justify-content: space-between; gap: 20px; }
+.new-learning-title { display: flex; align-items: center; gap: 18px; }
+.new-learning-title h1 { margin-top: 3px; color: #1b2733; font-size: clamp(30px, 4vw, 42px); letter-spacing: -0.04em; }
+.new-learning-icon { display: inline-flex; align-items: center; justify-content: center; width: 58px; height: 58px; background: #147ec2; color: #fff; border-radius: 10px; box-shadow: 0 5px 12px rgba(20,126,194,.2); }
+.new-learning-progress { display: grid; text-align: right; }
+.new-learning-progress strong { color: #1b2733; font-size: 21px; }
+.new-learning-progress span { color: #78909c; font-size: 12px; }
+.new-learning-rule { height: 1px; background: #dce5ea; margin: 28px 0 24px; }
+.new-learning-overview { display: flex; align-items: center; justify-content: space-between; gap: 24px; padding: 20px 0 8px; }
+.new-learning-overview h2 { color: #1b2733; font-size: 22px; }
+.new-learning-overview p { color: #607d8b; margin-top: 4px; }
+.new-learning-progress-bar { width: min(300px, 40%); height: 7px; background: #dce5ea; overflow: hidden; }
+.new-learning-progress-bar span { display: block; height: 100%; background: #147ec2; }
+.new-learning-tabs { display: flex; gap: 8px; margin: 22px 0 18px; }
+.new-learning-tabs button { min-height: 38px; padding: 0 16px; border: 1px solid #dce5ea; border-radius: 999px; background: #e7eaed; color: #455a64; font: inherit; cursor: pointer; }
+.new-learning-tabs button.is-active { background: #147ec2; border-color: #147ec2; color: #fff; }
+.new-learning-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; }
+.new-learning-card { min-width: 0; background: #fff; border: 1px solid #e2e8ec; box-shadow: 0 2px 4px rgba(38,50,56,.05); }
+.new-learning-card-art { display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 8px; min-height: 165px; background: #f1f7fb; color: #147ec2; border-bottom: 1px solid #e2e8ec; }
+.new-learning-card-art .ui-icon { width: 54px; height: 54px; }
+.new-learning-card-art span { color: #607d8b; font-size: 11px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
+.new-learning-card-body { padding: 18px; }
+.new-learning-card-kicker { color: #78909c; font-size: 11px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; }
+.new-learning-card h2 { min-height: 52px; margin-top: 7px; color: #1b2733; font-size: 21px; line-height: 1.25; }
+.new-learning-card-meta { display: flex; flex-wrap: wrap; gap: 12px; margin: 15px 0; color: #607d8b; font-size: 12px; }
+.new-learning-card-status { display: flex; align-items: center; gap: 7px; margin-bottom: 14px; color: #455a64; font-size: 12px; font-weight: 700; }
+.new-status-dot { width: 8px; height: 8px; border-radius: 50%; background: #90a4ae; }
+.new-status-dot.available { background: #147ec2; }
+.new-status-dot.completed { background: #10b981; }
+.new-status-dot.locked { background: #b0bec5; }
+.new-learning-card .new-button { width: 100%; }
+.new-button-disabled { background: #eef1f3; border-color: #dce5ea; color: #78909c; pointer-events: none; }
 .new-content-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
 .new-content-item { display: flex; align-items: center; gap: 14px; min-height: 78px; padding: 16px; background: #fff; border: 1px solid #e2e8ec; color: #263238; text-decoration: none; }
 .new-content-item:hover { border-color: #b9d9ea; background: #fbfdfe; }
@@ -5469,6 +5501,10 @@ button:disabled { opacity: 0.5; cursor: default; }
   .new-bookmark-form input { min-height: 42px; }
   .new-resource-row { align-items: flex-start; flex-direction: column; }
   .new-resource-row span { text-align: left; }
+  .new-learning-header, .new-learning-overview { align-items: flex-start; flex-direction: column; }
+  .new-learning-progress { text-align: left; }
+  .new-learning-progress-bar { width: 100%; }
+  .new-learning-grid { grid-template-columns: 1fr; }
 }
 .ref-library-layout { display: grid; grid-template-columns: 240px minmax(0, 1fr); gap: 22px; align-items: start; }
 .ref-library-categories { background: #fff; border: 1px solid #e2e8ec; padding: 8px 0; }

@@ -3,6 +3,7 @@ import { useLocation, useNavigate, useParams, useSearchParams } from 'react-rout
 import { api } from '../../services/api';
 import Loading from '../shared/Loading';
 import SubscriptionPrompt from '../student/SubscriptionPrompt';
+import UiIcon from '../shared/UiIcon';
 
 const MODE_META = {
   student: {
@@ -155,6 +156,7 @@ function CardBrowser({ mode }) {
   const [error, setError] = useState('');
   const [viewerCard, setViewerCard] = useState(null);
   const [selectedCategory, setSelectedCategory] = useState(searchParams.get('category') || '');
+  const [search, setSearch] = useState('');
 
   useEffect(() => {
     const params = new URLSearchParams();
@@ -186,8 +188,15 @@ function CardBrowser({ mode }) {
 
   const activeCards = useMemo(() => {
     if (!selectedCategory) return [];
-    return categories.find((entry) => entry.category === selectedCategory)?.items || [];
-  }, [categories, selectedCategory]);
+    const categoryCards = categories.find((entry) => entry.category === selectedCategory)?.items || [];
+    const query = search.trim().toLowerCase();
+    return query ? categoryCards.filter((card) => `${card.title} ${normalizeCategory(card)} ${card.difficulty || ''}`.toLowerCase().includes(query)) : categoryCards;
+  }, [categories, selectedCategory, search]);
+  const allFilteredCards = useMemo(() => {
+    const query = search.trim().toLowerCase();
+    if (!query) return cards || [];
+    return (cards || []).filter((card) => `${card.title} ${normalizeCategory(card)} ${card.difficulty || ''}`.toLowerCase().includes(query));
+  }, [cards, search]);
 
   useEffect(() => {
     const queryCategory = searchParams.get('category') || '';
@@ -211,8 +220,8 @@ function CardBrowser({ mode }) {
   if (!cards) return <Loading label="Loading clinical reference cards..." />;
 
   return (
-    <>
-      <div className="page-head">
+    <div className="ref-library-page">
+      <div className="page-head ref-library-header">
         <div>
           <h1>{meta.title}</h1>
           <div className="sub">{meta.subtitle}</div>
@@ -231,51 +240,39 @@ function CardBrowser({ mode }) {
         )}
       </div>
 
-      {!selectedCategory ? (
-        <div className="ref-card-category-grid">
+      <div className="ref-library-layout">
+        <aside className="ref-library-categories" aria-label="Cheat sheet categories">
+          <div className="ref-library-rail-title">All Cheat Sheets</div>
+          <button className={!selectedCategory ? 'is-active' : ''} onClick={() => { setSelectedCategory(''); setSearchParams({}); }}>All cards <span>{cards.length}</span></button>
           {categories.map((entry) => (
-            <button
-              key={entry.category}
-              className="ref-card-category-card ref-card-category-card--doc"
-              onClick={() => {
-                setSelectedCategory(entry.category);
-                setSearchParams({ category: entry.category });
-              }}
-            >
-              <div className="ref-card-category-body">
-                <div className="ref-card-kicker">Category</div>
-                <h2>{entry.category}</h2>
-                <p>{entry.items.length} card{entry.items.length === 1 ? '' : 's'}</p>
-              </div>
+            <button key={entry.category} className={selectedCategory === entry.category ? 'is-active' : ''} onClick={() => { setSelectedCategory(entry.category); setSearchParams({ category: entry.category }); }}>
+              {entry.category} <span>{entry.items.length}</span>
             </button>
           ))}
-          {categories.length === 0 && <div className="card"><p style={{ marginBottom: 0 }}>No clinical reference cards have been uploaded yet.</p></div>}
-        </div>
-      ) : (
-        <>
-          <div className="ref-card-section-head">
-            <div>
-              <div className="ref-card-kicker">Category</div>
-              <h2>{selectedCategory}</h2>
+        </aside>
+        <section className="ref-library-results">
+          <div className="ref-library-results-head">
+            <div><h2>{selectedCategory || 'All Cheat Sheets'}</h2><p>{selectedCategory ? `${activeCards.length} card${activeCards.length === 1 ? '' : 's'}` : `${cards.length} card${cards.length === 1 ? '' : 's'}`}</p></div>
+            <UiIcon name="document" />
+          </div>
+          <label className="ref-library-search"><span className="sr-only">Search cheat sheets</span><UiIcon name="question" /><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search Cheat Sheets" /></label>
+          {!selectedCategory ? (
+            search.trim() ? <div className="ref-card-document-list">{allFilteredCards.map((card) => <CardRow key={card.clinical_card_id || card.id} card={card} onOpen={() => setViewerCard(card)} />)}</div> :
+            <div className="ref-card-category-grid">
+              {categories.map((entry) => <button key={entry.category} className="ref-card-category-card ref-card-category-card--doc" onClick={() => { setSelectedCategory(entry.category); setSearchParams({ category: entry.category }); }}><div className="ref-card-category-body"><div className="ref-card-kicker">Category</div><h2>{entry.category}</h2><p>{entry.items.length} card{entry.items.length === 1 ? '' : 's'}</p></div></button>)}
             </div>
-            <div className="ref-card-section-meta">{activeCards.length} card{activeCards.length === 1 ? '' : 's'}</div>
-          </div>
-          <div className="ref-card-document-list">
-            {activeCards.map((card) => (
-              <CardRow
-                key={card.clinical_card_id || card.id}
-                card={card}
-                onOpen={() => setViewerCard(card)}
-              />
-            ))}
-          </div>
-        </>
-      )}
+          ) : (
+            <div className="ref-card-document-list">{activeCards.map((card) => <CardRow key={card.clinical_card_id || card.id} card={card} onOpen={() => setViewerCard(card)} />)}</div>
+          )}
+          {selectedCategory && !activeCards.length && <div className="ref-library-empty">No matching cheat sheets.</div>}
+          {!categories.length && <div className="ref-library-empty">No clinical reference cards have been uploaded yet.</div>}
+        </section>
+      </div>
 
       {viewerCard && (
         <PdfModal card={viewerCard} onClose={() => setViewerCard(null)} />
       )}
-    </>
+    </div>
   );
 }
 

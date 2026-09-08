@@ -143,9 +143,6 @@ const LECTURIO_STUDENT_LINKS = [
     { to: '/student/learning-paths', label: 'Learning Paths', icon: 'result' },
     { to: '/student/spaced-repetition', label: 'Spaced Repetition', icon: 'simulation' },
   ] },
-  { group: 'Clinical Practice', items: [
-    { to: '/student/learn/kenya-ems', label: 'Clinical Cases', icon: 'cases' },
-  ] },
   { group: 'Kenya EMS Cases', items: [
     { to: '/student/kenya-ems-hub', label: 'Local Case Studies', icon: 'cases' },
     { to: '/student/kenya-ems-hub#protocols', label: 'Regional Protocols', icon: 'document' },

@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import ErrorBoundary from './ErrorBoundary';
@@ -27,19 +28,35 @@ function MedProMark() {
 export default function Layout({ links, roleLabel }) {
   const { user, logout, setProgram } = useAuth();
   const navigate = useNavigate();
+  const [navigationOpen, setNavigationOpen] = useState(false);
   const visibleLinks = links.filter((item) => item.group !== 'Aliases');
 
   return (
     <div className={`shell${roleLabel === 'EMS revision workspace' ? ' role-student' : ''}`}>
 
-      <aside className="sidebar">
+      <aside className={`sidebar${navigationOpen ? ' open' : ''}`}>
 
         <div className="sidebar-top">
           <Link to="/" className="brand" style={{ textDecoration: 'none' }}>
             <span className="brand-lockup"><MedProMark /></span>
             {roleLabel && <small>{roleLabel}</small>}
           </Link>
+          <button
+            type="button"
+            className="nav-toggle"
+            aria-label={navigationOpen ? 'Close navigation' : 'Open navigation'}
+            aria-expanded={navigationOpen}
+            onClick={() => setNavigationOpen((current) => !current)}
+          >
+            <span /><span /><span />
+          </button>
+        </div>
 
+        <div className="sidebar-account-actions">
+          <span className="sidebar-account-name">{user?.name || user?.full_name || 'Account'}</span>
+          <button type="button" className="sidebar-signout" onClick={() => { logout(); navigate('/login'); }}>
+            Sign out
+          </button>
         </div>
 
         {user?.role === 'student' && (
@@ -52,7 +69,7 @@ export default function Layout({ links, roleLabel }) {
                   type="button"
                   className={user.program === program ? 'is-selected' : ''}
                   aria-pressed={user.program === program}
-                  onClick={() => setProgram(program)}
+                      onClick={() => setProgram(program)}
                 >
                   {program}
                 </button>
@@ -82,6 +99,7 @@ export default function Layout({ links, roleLabel }) {
                       key={link.to}
                       to={link.to}
                       end={link.end}
+                      onClick={() => setNavigationOpen(false)}
                     >
                       {link.icon && <UiIcon name={link.icon} className="nav-link-icon" />}
                       <span className="nav-link-copy">{link.label}</span>
@@ -99,6 +117,7 @@ export default function Layout({ links, roleLabel }) {
                 key={item.to}
                 to={item.to}
                 end={item.end}
+                onClick={() => setNavigationOpen(false)}
               >
                 <span className="nav-link-copy">{item.label}</span>
               </NavLink>
@@ -115,28 +134,8 @@ export default function Layout({ links, roleLabel }) {
           <div className="foot-user">{user?.name || user?.full_name}</div>
 
 
-          <button
-            className="ghost"
-            onClick={() => navigate('/')}
-          >
-            Back to home
-          </button>
-
-
-          <button
-            className="ghost"
-            onClick={() => {
-              logout();
-              navigate('/login');
-            }}
-            style={{ marginTop: 6 }}
-          >
-            Sign out
-          </button>
-
-
           <div style={{ marginTop: 14 }}>
-            MedProHub &copy; 2026. All rights reserved.
+            Andolih EdTech Studios
           </div>
 
 

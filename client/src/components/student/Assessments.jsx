@@ -143,8 +143,6 @@ function ModuleList() {
               <span className={`badge ${badgeForStatus(module.status)}`}>{labelForStatus(module.status)}</span>
             </div>
 
-            <p className="mcq-module-description">{module.description}</p>
-
             <div className="mcq-module-meta">
               <span>{module.total_questions} questions</span>
               <span>70% pass mark</span>

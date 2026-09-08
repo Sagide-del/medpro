@@ -88,9 +88,9 @@ export default function Home() {
         <div className="brand-block">
           <div className="brand-line1">
             <PulseIcon />
-            <span>MedPro</span>
+            <span>Med<span>Pro</span></span>
           </div>
-          <div className="brand-line2">EMS LEARNING PLATFORM</div>
+          <div className="brand-line2">EMS REVISION PLATFORM</div>
         </div>
         <div className="nav-actions">
           <Link to="/register" className="btn-solid">

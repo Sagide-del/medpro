@@ -303,7 +303,7 @@ function AppRoutes() {
         <Route path="/register" element={<Register />} />
 
 
-        <Route element={<RequireRole role="student"><RequireStudentSubscription><Layout links={STUDENT_LINKS} roleLabel="EMS competency dashboard" /></RequireStudentSubscription></RequireRole>}>
+        <Route element={<RequireRole role="student"><RequireStudentSubscription><Layout links={STUDENT_LINKS} roleLabel="EMS revision workspace" /></RequireStudentSubscription></RequireRole>}>
           <Route path="/student" element={<Navigate to="/student/dashboard" replace />} />
           <Route path="/student/dashboard" element={<StudentDashboard />} />
           <Route path="/student/exam-preparation" element={<StudentExamPreparation />} />

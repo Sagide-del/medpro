@@ -6,6 +6,15 @@ import ErrorBoundary from './ErrorBoundary';
 import PlatformFooter from './shared/PlatformFooter';
 import UiIcon from './shared/UiIcon';
 
+function MedProMark() {
+  return (
+    <svg className="brand-mark" viewBox="0 0 32 32" aria-hidden="true">
+      <circle cx="16" cy="16" r="14" />
+      <path d="M5.5 16h5l2-5 3.1 10 2.1-5h8.8" />
+    </svg>
+  );
+}
+
 /**
  * Shared authenticated-app shell: sidebar + <Outlet/>.
  * Supports both:
@@ -34,13 +43,13 @@ export default function Layout({ links, roleLabel }) {
   }, [location.pathname]);
 
   return (
-    <div className={`shell${roleLabel === 'EMS competency dashboard' ? ' role-student' : ''}`}>
+    <div className={`shell${roleLabel === 'EMS revision workspace' ? ' role-student' : ''}`}>
 
       <aside className={`sidebar${navOpen ? ' open' : ''}`}>
 
         <div className="sidebar-top">
           <Link to="/" className="brand" style={{ textDecoration: 'none' }}>
-            Med<span>Pro</span>
+            <span className="brand-lockup"><MedProMark /><span className="brand-wordmark">Med<span>Pro</span></span></span>
             <small>{roleLabel}</small>
           </Link>
 

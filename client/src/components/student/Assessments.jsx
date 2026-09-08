@@ -38,6 +38,7 @@ function ModuleList() {
   const navigate = useNavigate();
   const [modules, setModules] = useState(null);
   const [subscription, setSubscription] = useState(null);
+  const [essays, setEssays] = useState([]);
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -47,7 +48,12 @@ function ModuleList() {
         setSubscription(data.subscription || null);
       })
       .catch((err) => setError(err.message));
-  }, []);
+    if (location.pathname.startsWith('/student/question-bank')) {
+      api('/assignment-workflow/student/assignments')
+        .then((data) => setEssays((data.assignments || []).filter((item) => String(item.assignment_type || '').toLowerCase() === 'essay')))
+        .catch(() => {});
+    }
+  }, [location.pathname]);
 
   if (error) return <div className="alert">{error}</div>;
   if (!modules) return <Loading label="Loading EMT-B modules..." />;
@@ -66,6 +72,21 @@ function ModuleList() {
           <div className="sub">{meta.subtitle}</div>
         </div>
       </div>
+
+      {location.pathname === '/student/question-bank' && (
+        <div className="question-bank-hub">
+          <section className="question-bank-section">
+            <div className="question-bank-section-head"><div><div className="mcq-progress-kicker">Timed practice</div><h2>Mock Exams</h2></div><span>3 exams</span></div>
+            <div className="mock-exam-grid">
+              {[1, 2, 3].map((number) => <Link className="mock-exam-entry" to={`/student/mcq/mock-pretest?exam=${number}`} key={number}><span className="mock-exam-number">0{number}</span><span><strong>EMT Mock Exam {number}</strong><small>Mixed-topic timed practice</small></span><UiIcon name="arrowRight" /></Link>)}
+            </div>
+          </section>
+          <section className="question-bank-section">
+            <div className="question-bank-section-head"><div><div className="mcq-progress-kicker">Written clinical reasoning</div><h2>Essays</h2></div><span>{essays.length} assigned</span></div>
+            <div className="essay-preview-grid">{essays.slice(0, 3).map((essay) => <Link className="essay-preview-entry" to={`/student/assignments/${essay.assignment_id}`} key={essay.assignment_id}>{essay.image_url ? <img src={essay.image_url} alt="" /> : <span className="essay-preview-art"><UiIcon name="document" /></span>}<span><strong>{essay.title}</strong><small>{essay.topic || 'Critical thinking and decision-making'}</small></span><UiIcon name="arrowRight" /></Link>)}{essays.length === 0 && <div className="question-bank-empty">Published essay prompts will appear here.</div>}</div>
+          </section>
+        </div>
+      )}
 
       <div className="mcq-course-progress">
         <div>
@@ -101,6 +122,7 @@ function ModuleList() {
         </div>
       )}
 
+      <div className="mcq-topic-heading"><div><div className="mcq-progress-kicker">Organised by topic</div><h2>MCQ Questions</h2></div><span>{modules.length} topic paths</span></div>
       <div className="mcq-module-grid">
         {modules.map((module) => (
           <div key={module.id} className="card mcq-module-card">

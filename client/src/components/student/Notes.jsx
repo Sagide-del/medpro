@@ -6,12 +6,13 @@ const emptyForm = { title: '', topic: '', body: '' };
 
 export default function Notes() {
   const [notes, setNotes] = useState(null);
+  const [library, setLibrary] = useState([]);
   const [form, setForm] = useState(emptyForm);
   const [editingId, setEditingId] = useState(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
 
-  function load() { api('/student-notes').then((data) => setNotes(data.notes || [])).catch((err) => setError(err.message)); }
+  function load() { api('/student-notes').then((data) => { setNotes(data.notes || []); setLibrary(data.library || []); }).catch((err) => { setError(err.message); setNotes([]); setLibrary([]); }); }
   useEffect(load, []);
 
   async function save(event) {
@@ -34,6 +35,7 @@ export default function Notes() {
     <div className="new-breadcrumb"><span>My Content</span><span>/</span><strong>Notes</strong></div>
     <header className="new-library-header"><div><div className="new-eyebrow">Personal revision</div><h1>Notes</h1><p>Capture explanations, protocols, and reminders as you study.</p></div><span className="new-notes-count">{notes.length} {notes.length === 1 ? 'note' : 'notes'}</span></header>
     {error && <div className="alert">{error}</div>}
+    {library.length > 0 && <section className="new-notes-library"><div className="new-section-heading"><div><h2>Revision notes</h2><p className="new-muted">Tutor-reviewed summaries for quick review.</p></div><span className="new-notes-count">{library.length} available</span></div><div className="new-notes-library-grid">{library.map((note) => { const content = note.content_json || {}; const summary = content.summary || content.overview || content.description || content.body || content.text || (Array.isArray(content.sections) ? content.sections.map((section) => section.text || section.body || section.content).filter(Boolean).join('\n\n') : ''); return <article key={note.id}><div className="new-note-topic">{note.topic || 'EMT revision'}</div><h3>{note.title}</h3><p>{typeof summary === 'string' ? summary : JSON.stringify(summary)}</p>{note.source_citation && <small>Source: {note.source_citation}</small>}</article>; })}</div></section>}
     <div className="new-notes-layout">
       <form className="new-note-editor" onSubmit={save}><div className="new-section-heading"><h2>{editingId ? 'Edit note' : 'Add a note'}</h2></div><label>Title<input value={form.title} onChange={(event) => setForm({ ...form, title: event.target.value })} placeholder="e.g. Airway assessment sequence" required /></label><label>Topic <span>(optional)</span><input value={form.topic} onChange={(event) => setForm({ ...form, topic: event.target.value })} placeholder="Airway, trauma, pharmacology..." /></label><label>Note<textarea value={form.body} onChange={(event) => setForm({ ...form, body: event.target.value })} rows="10" placeholder="Write your explanation or recall cue here..." required /></label><div className="new-note-actions"><button type="submit" className="new-button" disabled={busy}>{busy ? 'Saving...' : editingId ? 'Update note' : 'Save note'}</button>{editingId && <button type="button" className="new-button new-button-secondary" onClick={() => { setEditingId(null); setForm(emptyForm); }}>Cancel</button>}</div></form>
       <section className="new-notes-list"><div className="new-section-heading"><h2>Saved notes</h2></div>{notes.length ? notes.map((note) => <article className="new-note-row" key={note.id}><div><div className="new-note-topic">{note.topic || 'General revision'}</div><h3>{note.title}</h3><p>{note.body}</p><small>Updated {new Date(note.updated_at).toLocaleDateString('en-KE')}</small></div><div className="new-note-row-actions"><button type="button" onClick={() => { setEditingId(note.id); setForm({ title: note.title, topic: note.topic || '', body: note.body }); }}>Edit</button><button type="button" onClick={() => remove(note.id)}>Delete</button></div></article>) : <div className="new-empty-panel"><h2>No notes yet</h2><p>Create a note while reviewing a difficult topic.</p></div>}</section>

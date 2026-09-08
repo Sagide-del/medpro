@@ -2,7 +2,10 @@ import { StudentNote } from '../models/StudentNote.js';
 import { asyncHandler } from '../utils/helpers.js';
 
 export const listNotes = asyncHandler(async (req, res) => {
-  res.json({ notes: await StudentNote.list(req.user.sub) });
+  const notes = await StudentNote.list(req.user.sub);
+  let library = [];
+  try { library = await StudentNote.library(); } catch (_error) { /* Content migration may not be deployed yet. */ }
+  res.json({ notes, library });
 });
 
 export const createNote = asyncHandler(async (req, res) => {

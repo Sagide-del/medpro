@@ -33,4 +33,14 @@ export const StudentNote = {
     const { rowCount } = await query('DELETE FROM student_notes WHERE id = $1 AND student_id = $2', [noteId, studentId]);
     return rowCount > 0;
   },
+
+  async library() {
+    const { rows } = await query(
+      `SELECT id, title, topic, content_json, source_citation, created_at
+       FROM ai_published_content
+       WHERE content_type IN ('cheat_sheet', 'notes', 'summary')
+       ORDER BY created_at DESC LIMIT 100`
+    );
+    return rows;
+  },
 };

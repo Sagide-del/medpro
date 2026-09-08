@@ -205,7 +205,7 @@ export default function StudentDashboard() {
       <div className="page-head dashboard-head">
         <div>
           <h1>Welcome back, {firstName}</h1>
-          <div className="sub">Continue building your EMS expertise.</div>
+          <div className="sub">Pick up your next revision session.</div>
         </div>
       </div>
 
@@ -229,7 +229,7 @@ export default function StudentDashboard() {
         <div className="card">
           <div className="dashboard-section-head">
             <div>
-              <h2>Continue Learning</h2>
+              <h2>Continue Revision</h2>
             </div>
           </div>
           <div className="dashboard-stack">
@@ -249,7 +249,7 @@ export default function StudentDashboard() {
         <div className="card">
           <div className="dashboard-section-head">
             <div>
-              <h2>Upcoming Tasks</h2>
+              <h2>Recommended Next</h2>
             </div>
           </div>
           <div className="dashboard-stack">

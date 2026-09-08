@@ -75,18 +75,23 @@ import SuperAdminUserCommunications from './components/superadmin/UserCommunicat
 
 const STUDENT_LINKS = [
   {
-    group: 'Dashboard',
+    group: 'Home',
     items: [
       { to: '/student/dashboard', label: 'Dashboard', end: true, icon: 'dashboard' },
-      { to: '/student/subscription', label: 'Subscription', icon: 'subscription' },
     ],
   },
   {
-    group: 'Study',
+    group: 'Exam Prep',
     items: [
-      { to: '/student/exam-center', label: 'Exam Center', icon: 'exam' },
-      { to: '/student/assignments', label: 'Assignments', icon: 'document' },
-      { to: '/student/reference-cards', label: 'Revision Library', icon: 'learn' },
+      { to: '/student/mcq-questions', label: 'Question Bank', icon: 'exam' },
+      { to: '/student/mock-prep-tests', label: 'Mock Tests', icon: 'result' },
+      { to: '/student/learn/kenya-ems', label: 'Clinical Cases', icon: 'cases' },
+    ],
+  },
+  {
+    group: 'Revision',
+    items: [
+      { to: '/student/reference-cards', label: 'Cheat Sheets', icon: 'learn' },
       { to: '/student/elibrary', label: 'Notes & E-Library', icon: 'document' },
     ],
   },
@@ -94,14 +99,6 @@ const STUDENT_LINKS = [
     group: 'Clinical Practice',
     items: [
       { to: '/student/simulations', label: 'Skill Simulations', icon: 'simulation' },
-      { to: '/student/learn/kenya-ems', label: 'Kenya EMS Cases', icon: 'cases' },
-      { to: '/student/videos', label: 'Practical Skills', icon: 'practice' },
-    ],
-  },
-  {
-    group: 'Clinical Record',
-    items: [
-      { to: '/student/logbook', label: 'Clinical Logbook', icon: 'document' },
     ],
   },
   {

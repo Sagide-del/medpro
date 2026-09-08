@@ -171,6 +171,17 @@ const ICONS = {
       <path d="M8 12h5" />
     </svg>
   ),
+  play: (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <rect x="5" y="4" width="14" height="16" rx="2" />
+      <path d="m10 8 5 4-5 4V8Z" />
+    </svg>
+  ),
+  bookmark: (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M6 4.5A1.5 1.5 0 0 1 7.5 3h9A1.5 1.5 0 0 1 18 4.5V21l-6-3.5L6 21V4.5Z" />
+    </svg>
+  ),
   trash: (
     <svg viewBox="0 0 24 24" aria-hidden="true">
       <path d="M4.5 6h15" />

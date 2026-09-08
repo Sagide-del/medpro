@@ -12,6 +12,10 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 
 import StudentAssessments from './components/student/Assessments';
+import StudentStudyPlanner from './components/student/StudyPlanner';
+import StudentSpacedRepetition from './components/student/SpacedRepetition';
+import StudentBookmarks from './components/student/Bookmarks';
+import StudentKenyaEMSHub from './components/student/KenyaEMSHub';
 import StudentAssignments from './components/student/Assignments';
 import StudentClinicalReferenceCards from './components/student/ClinicalReferenceCards';
 import StudentExamPreparation from './components/student/ExamPreparation';
@@ -22,6 +26,8 @@ import StudentLogbook from './components/student/Logbook';
 import StudentVideos from './components/student/Videos';
 import StudentPayments from './components/student/Payments';
 import StudentResearch from './components/student/Research';
+import StudentSimulations from './components/student/Simulations';
+import StudentGroups from './components/student/Groups';
 import StudentProctoredExams from './components/student/ProctoredExams';
 import StudentKenyaEmsCases from './pages/student/KenyaEmsCases';
 import StudentMockPreTest from './components/student/exams/mockPreTest/MockPreTestPage';
@@ -124,6 +130,34 @@ const ADMIN_LINKS = [
   { to: '/admin/users', label: 'Users' },
   { to: '/admin/revenue', label: 'Revenue' },
 ];
+
+const LECTURIO_STUDENT_LINKS = [
+  { group: 'Home', items: [
+    { to: '/student/study-planner', label: 'Study Planner', end: true, icon: 'calendar' },
+    { to: '/student/my-content', label: 'My Content', icon: 'learn' },
+  ] },
+  { group: 'Revision Tools', items: [
+    { to: '/student/videos', label: 'Videos', icon: 'play' },
+    { to: '/student/reference-cards', label: 'Cheat Sheets', icon: 'learn' },
+    { to: '/student/question-bank', label: 'Question Bank', icon: 'exam' },
+    { to: '/student/learning-paths', label: 'Learning Paths', icon: 'result' },
+    { to: '/student/spaced-repetition', label: 'Spaced Repetition', icon: 'simulation' },
+    { to: '/student/bookmarks', label: 'Bookmarks', icon: 'bookmark' },
+  ] },
+  { group: 'Clinical Practice', items: [
+    { to: '/student/simulations', label: 'Skill Simulations', icon: 'simulation' },
+    { to: '/student/learn/kenya-ems', label: 'Clinical Cases', icon: 'cases' },
+  ] },
+  { group: 'Kenya EMS Cases', items: [
+    { to: '/student/kenya-ems-hub', label: 'Local Case Studies', icon: 'cases' },
+    { to: '/student/kenya-ems-hub#protocols', label: 'Regional Protocols', icon: 'document' },
+    { to: '/student/kenya-ems-hub#comparison', label: 'KEMS / NREMT Comparison', icon: 'progress' },
+  ] },
+  { group: 'Community', items: [{ to: '/student/community', label: 'My Study Group', icon: 'community' }] },
+  { group: 'Support', items: [{ to: '/', label: 'About Us', icon: 'community' }, { to: '/', label: 'Help Center', icon: 'question' }] },
+];
+
+const lecturioNavEnabled = import.meta.env.VITE_LECTURIO_NAV_ENABLED === 'true';
 
 
 const SUPERADMIN_LINKS = [
@@ -273,8 +307,14 @@ function AppRoutes() {
         <Route path="/register" element={<Register />} />
 
 
-        <Route element={<RequireRole role="student"><RequireStudentSubscription><Layout links={STUDENT_LINKS} roleLabel="" /></RequireStudentSubscription></RequireRole>}>
-          <Route path="/student" element={<Navigate to="/student/mcq-questions" replace />} />
+        <Route element={<RequireRole role="student"><RequireStudentSubscription><Layout links={lecturioNavEnabled ? LECTURIO_STUDENT_LINKS : STUDENT_LINKS} roleLabel="" /></RequireStudentSubscription></RequireRole>}>
+          <Route path="/student" element={<Navigate to={lecturioNavEnabled ? '/student/study-planner' : '/student/mcq-questions'} replace />} />
+          <Route path="/student/study-planner" element={<StudentStudyPlanner />} />
+          <Route path="/student/my-content" element={<StudentAssessments />} />
+          <Route path="/student/learning-paths" element={<StudentAssessments />} />
+          <Route path="/student/spaced-repetition" element={<StudentSpacedRepetition />} />
+          <Route path="/student/bookmarks" element={<StudentBookmarks />} />
+          <Route path="/student/kenya-ems-hub" element={<StudentKenyaEMSHub />} />
           <Route path="/student/dashboard" element={<Navigate to="/student/mcq-questions" replace />} />
           <Route path="/student/exam-preparation" element={<StudentExamPreparation />} />
           <Route path="/student/exam-center" element={<StudentExamPreparation />} />
@@ -321,11 +361,11 @@ function AppRoutes() {
           <Route path="/student/progress-analytics" element={<Navigate to="/student/mcq-questions" replace />} />
           <Route path="/student/logbook" element={<StudentLogbook />} />
           <Route path="/student/videos" element={<StudentVideos />} />
-          <Route path="/student/community" element={<Navigate to="/student/mcq-questions" replace />} />
+          <Route path="/student/community" element={<StudentGroups />} />
           <Route path="/student/groups" element={<Navigate to="/student/mcq-questions" replace />} />
           <Route path="/student/subscription" element={<StudentPayments />} />
           <Route path="/student/payments" element={<StudentPayments />} />
-          <Route path="/student/simulations" element={<Navigate to="/student/mcq-questions" replace />} />
+          <Route path="/student/simulations" element={<StudentSimulations />} />
           <Route path="/student/proctored-exams" element={<StudentProctoredExams />} />
           <Route path="/student/elibrary" element={<Navigate to="/student/mcq-questions" replace />} />
           <Route path="/student/elibrary/:id" element={<Navigate to="/student/mcq-questions" replace />} />

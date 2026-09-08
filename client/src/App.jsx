@@ -309,6 +309,8 @@ function AppRoutes() {
           <Route path="/student/study-planner" element={<StudentStudyPlanner />} />
           <Route path="/student/my-content" element={<StudentMyContent />} />
           <Route path="/student/learning-paths" element={<StudentLearningPaths />} />
+          <Route path="/student/learning-paths/:id" element={<StudentLearningPaths />} />
+          <Route path="/student/learning-paths/:id/topic/:topic" element={<StudentLearningPaths />} />
           <Route path="/student/spaced-repetition" element={<StudentSpacedRepetition />} />
           <Route path="/student/bookmarks" element={<StudentBookmarks />} />
           <Route path="/student/kenya-ems-hub" element={<StudentKenyaEMSHub />} />

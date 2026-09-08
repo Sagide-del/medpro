@@ -15,7 +15,7 @@ function DashboardSkeleton() {
 
 function TopicDashboard({ modules, questionCountOptions, subscription, onStart, starting, startError }) {
   const [selectedModule, setSelectedModule] = useState(null);
-  const [selectedCount, setSelectedCount] = useState(questionCountOptions?.[0] || 20);
+  const [selectedCount, setSelectedCount] = useState(questionCountOptions?.includes(50) ? 50 : (questionCountOptions?.[0] || 20));
 
   const selectedModuleData = modules.find((m) => m.key === selectedModule);
   const canStart = Boolean(selectedModuleData?.enabled) && !starting;
@@ -109,6 +109,7 @@ export default function MockPreTestPage() {
   const [startError, setStartError] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [result, setResult] = useState(null);
+  const [timeRemaining, setTimeRemaining] = useState(3600);
 
   function loadModules() {
     setError('');
@@ -138,6 +139,7 @@ export default function MockPreTestPage() {
       setQuestions(session.questions);
       setCurrentIndex(0);
       setAnswers({});
+      setTimeRemaining(3600);
       setResult(null);
       setView('running');
     } catch (err) {
@@ -167,6 +169,21 @@ export default function MockPreTestPage() {
       setSubmitting(false);
     }
   }
+
+  useEffect(() => {
+    if (view !== 'running' || !questions.length || result) return undefined;
+    const timer = window.setInterval(() => {
+      setTimeRemaining((current) => {
+        if (current <= 1) {
+          window.clearInterval(timer);
+          handleSubmit();
+          return 0;
+        }
+        return current - 1;
+      });
+    }, 1000);
+    return () => window.clearInterval(timer);
+  }, [view, questions.length, result]);
 
   function handleBackToDashboard() {
     setView('dashboard');
@@ -205,6 +222,7 @@ export default function MockPreTestPage() {
         onJumpTo={(index) => setCurrentIndex(index)}
         onSubmit={handleSubmit}
         submitting={submitting}
+        timeRemaining={timeRemaining}
       />
     );
   }

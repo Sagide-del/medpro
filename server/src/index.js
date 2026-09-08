@@ -40,6 +40,7 @@ import kenyaEmsRoutes from './routes/kenyaEms.js';
 import mockPreTestRoutes from './routes/mockPreTest.js';
 import aiGeneratorRoutes from './routes/aiGenerator.js';
 import medprohubEmsRoutes from './routes/medprohubEms.js';
+import questionBankRoutes from './routes/questionBank.js';
 
 function assertRequiredEnv() {
   const missing = ['DATABASE_URL', 'JWT_SECRET'].filter((key) => !process.env[key]);
@@ -141,6 +142,7 @@ app.use('/api/communications', communicationRoutes);
 app.use('/api/proctored-exams', proctoredExamRoutes);
 app.use('/api/ai', aiGeneratorRoutes);
 app.use('/api/v1', medprohubEmsRoutes);
+app.use('/api', questionBankRoutes);
 // Kenya EMS: content is hard-coded in React/backend data files (no DB-backed
 // case content) -- this route only serves per-student progress (case number,
 // score, lock/complete status). See server/src/models/KenyaEmsProgress.js.

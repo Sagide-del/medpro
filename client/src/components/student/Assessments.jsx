@@ -47,6 +47,7 @@ const LOCK_INSTRUCTIONS = {
 
 // V2 is the active experience by default; set VITE_QUESTION_BANK_V2_ENABLED=false to roll back.
 const questionBankV2Enabled = import.meta.env.VITE_QUESTION_BANK_V2_ENABLED !== 'false';
+const questionBankSaaSEnabled = import.meta.env.VITE_QUESTION_BANK_SAAS_ENABLED === 'true';
 
 function masteryForModule(module) {
   const value = Number(module.best_percentage ?? module.score ?? 0);
@@ -57,6 +58,86 @@ function masteryBand(value) {
   if (value < 60) return { key: 'critical', label: 'CRITICAL', action: 'Practice Now' };
   if (value < 80) return { key: 'review', label: 'NEEDS REVIEW', action: 'Improve Score' };
   return { key: 'mastered', label: 'MASTERED', action: 'Practice Again' };
+}
+
+function ThreeModeQuestionBank({ modules, baseRoute, subscription }) {
+  const navigate = useNavigate();
+  const [mode, setMode] = useState('practice');
+  const [progress, setProgress] = useState({});
+  const [mockExams, setMockExams] = useState([]);
+  const [browse, setBrowse] = useState({ questions: [], pagination: { page: 1, limit: 20, total: 0 } });
+  const [topic, setTopic] = useState('');
+  const [difficulty, setDifficulty] = useState('');
+  const [answerIds, setAnswerIds] = useState(new Set());
+  const [loadingBrowse, setLoadingBrowse] = useState(false);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    Promise.all([api('/progress'), api('/mock-exams')])
+      .then(([progressData, examData]) => {
+        setProgress(progressData.progress || {});
+        setMockExams(examData.mockExams || []);
+      })
+      .catch((err) => setError(err.message));
+  }, []);
+
+  useEffect(() => {
+    if (mode !== 'browse') return undefined;
+    setLoadingBrowse(true);
+    const params = new URLSearchParams({ page: String(browse.pagination.page || 1), limit: '20' });
+    if (topic) params.set('topic', topic);
+    if (difficulty) params.set('difficulty', difficulty);
+    api(`/questions?${params.toString()}`)
+      .then(setBrowse)
+      .catch((err) => setError(err.message))
+      .finally(() => setLoadingBrowse(false));
+    return undefined;
+  }, [mode, topic, difficulty, browse.pagination.page]);
+
+  function changeBrowseFilter(setter, value) {
+    setter(value);
+    setBrowse((current) => ({ ...current, pagination: { ...current.pagination, page: 1 } }));
+  }
+
+  async function revealAnswer(question) {
+    if (answerIds.has(question.id)) return;
+    try {
+      const data = await api(`/questions?includeAnswer=true&limit=1&questionId=${encodeURIComponent(question.id)}`);
+      const revealed = data.questions?.find((item) => item.id === question.id);
+      if (revealed) setBrowse((current) => ({ ...current, questions: current.questions.map((item) => item.id === question.id ? revealed : item) }));
+      setAnswerIds((current) => new Set([...current, question.id]));
+    } catch (err) { setError(err.message); }
+  }
+
+  async function toggleBookmark(question) {
+    try {
+      const bookmarked = !question.bookmarked;
+      await api('/questions/bookmark', { method: 'POST', body: { questionId: question.id, bookmarked } });
+      setBrowse((current) => ({ ...current, questions: current.questions.map((item) => item.id === question.id ? { ...item, bookmarked } : item) }));
+    } catch (err) { setError(err.message); }
+  }
+
+  const totalQuestions = Number(progress.total_questions || modules.reduce((sum, item) => sum + Number(item.total_questions || 0), 0));
+  const totalAnswered = Number(progress.answered || 0);
+  const accuracy = Number(progress.accuracy || 0);
+  const topics = [...new Set(modules.flatMap((item) => item.topics || []))].sort();
+
+  return (
+    <div className="mcq-page question-bank-saas">
+      <div className="question-bank-v2-breadcrumbs">Home <span>/</span> My Content <span>/</span> <strong>Question Bank</strong></div>
+      <header className="question-bank-saas-header"><div><div className="mcq-progress-kicker">EMT revision workspace</div><h1>Question Bank</h1><p>Practice by topic, sit a timed mock, or browse the full bank.</p></div><div className="question-bank-saas-countdown"><span>Exam countdown</span><strong>Plan your next session</strong></div></header>
+      {subscription && !subscription.allowed && <div className="alert info">Your subscription is {subscription.status}. Renew your plan to continue.</div>}
+      {error && <div className="alert">{error}</div>}
+      <div className="question-bank-saas-stats"><div><span>Total questions</span><strong>{totalQuestions}</strong></div><div><span>Done</span><strong>{totalAnswered}</strong></div><div><span>Accuracy</span><strong>{accuracy}%</strong></div><div><span>Today</span><strong>15 min</strong></div></div>
+      <nav className="question-bank-saas-tabs" aria-label="Question Bank modes">{[['practice', 'Practice'], ['mock', 'Mock Exams'], ['browse', 'Browse']].map(([key, label]) => <button type="button" key={key} className={mode === key ? 'is-active' : ''} aria-pressed={mode === key} onClick={() => setMode(key)}>{label}</button>)}</nav>
+
+      {mode === 'practice' && <section className="question-bank-saas-panel"><div className="question-bank-saas-panel-head"><div><span className="mcq-progress-kicker">Focused revision</span><h2>Choose a topic</h2></div><span>{modules.length} topics</span></div><div className="question-bank-saas-topic-grid">{modules.map((module) => { const mastery = masteryForModule(module); const band = masteryBand(mastery); return <article className="question-bank-saas-topic" key={module.id}><div><span className="question-bank-saas-topic-number">{String(module.order_number).padStart(2, '0')}</span><h3>{MODULE_LABELS[module.order_number] || module.title}</h3><p>{module.total_questions} questions · {module.attempt_count || 0} attempts</p></div><strong>{mastery}%</strong><div className="question-bank-saas-progress"><span style={{ width: `${mastery}%` }} /></div><div className="question-bank-saas-topic-foot"><span className={`question-bank-saas-status ${band.key}`}>{module.attempt_count ? band.label : 'START'}</span><button type="button" onClick={() => navigate(`${baseRoute}/${module.id}?mode=practice`)}>{module.attempt_count ? 'Practice again' : 'Start practice'}</button></div></article>; })}</div></section>}
+
+      {mode === 'mock' && <section className="question-bank-saas-panel"><div className="question-bank-saas-panel-head"><div><span className="mcq-progress-kicker">Timed practice</span><h2>Mock Exams</h2></div><span>50 questions · 60 minutes</span></div><div className="question-bank-saas-exam-list">{mockExams.map((exam) => <article key={exam.id}><div><span className="question-bank-saas-topic-number">Mock {exam.exam_number}</span><h3>{exam.title || `EMT Mock Exam ${exam.exam_number}`}</h3><p>Mixed-topic timed practice · {exam.question_count} questions</p></div><div><strong>{exam.best_score || 0}%</strong><small>Best score</small></div><button type="button" onClick={() => navigate('/student/mcq/mock-pretest')}>Start exam</button></article>)}</div></section>}
+
+      {mode === 'browse' && <section className="question-bank-saas-panel"><div className="question-bank-saas-panel-head"><div><span className="mcq-progress-kicker">Reference view</span><h2>Browse questions</h2></div><span>{browse.pagination.total || 0} questions</span></div><div className="question-bank-saas-filters"><label>Topic<select value={topic} onChange={(event) => changeBrowseFilter(setTopic, event.target.value)}><option value="">All topics</option>{topics.map((item) => <option key={item} value={item}>{item}</option>)}</select></label><label>Difficulty<select value={difficulty} onChange={(event) => changeBrowseFilter(setDifficulty, event.target.value)}><option value="">All levels</option><option value="basic">Basic</option><option value="intermediate">Intermediate</option><option value="advanced">Advanced</option></select></label></div>{loadingBrowse ? <Loading label="Loading questions..." /> : <div className="question-bank-saas-browse-list">{browse.questions.map((question, index) => <article key={question.id}><div className="question-bank-saas-browse-top"><span>Question {((browse.pagination.page - 1) * 20) + index + 1}</span><span>{question.topic}</span></div><h3>{question.question_text}</h3><ol>{['option_a', 'option_b', 'option_c', 'option_d'].map((key) => question[key] && <li key={key}>{question[key]}</li>)}</ol><div className="question-bank-saas-browse-actions"><button type="button" onClick={() => revealAnswer(question)}>{answerIds.has(question.id) ? `Answer: ${question.correct_option}` : 'Show answer'}</button><button type="button" className={question.bookmarked ? 'is-saved' : ''} onClick={() => toggleBookmark(question)}>{question.bookmarked ? 'Bookmarked' : 'Bookmark'}</button></div>{answerIds.has(question.id) && <div className="question-bank-saas-answer"><strong>Explanation</strong><p>{question.explanation || 'Review the topic notes for this question.'}</p></div>}</article>)}</div>}{browse.pagination.total > 20 && <div className="question-bank-saas-pagination"><button type="button" disabled={browse.pagination.page <= 1} onClick={() => setBrowse((current) => ({ ...current, pagination: { ...current.pagination, page: current.pagination.page - 1 } }))}>Previous</button><span>Page {browse.pagination.page} of {Math.ceil(browse.pagination.total / 20)}</span><button type="button" disabled={browse.pagination.page >= Math.ceil(browse.pagination.total / 20)} onClick={() => setBrowse((current) => ({ ...current, pagination: { ...current.pagination, page: current.pagination.page + 1 } }))}>Next</button></div>}</section>}
+    </div>
+  );
 }
 
 function LearningQuestionBank({ modules, baseRoute, subscription }) {
@@ -129,6 +210,9 @@ function ModuleList() {
   const availableModules = modules.filter((module) => module.status === 'available').length;
   const overallProgress = modules.length ? Math.round((completedModules / modules.length) * 100) : 0;
 
+  if (questionBankSaaSEnabled && location.pathname === '/student/question-bank') {
+    return <ThreeModeQuestionBank modules={modules} baseRoute={baseRoute} subscription={subscription} />;
+  }
   if (questionBankV2Enabled && location.pathname === '/student/question-bank') {
     return <LearningQuestionBank modules={modules} baseRoute={baseRoute} subscription={subscription} />;
   }
@@ -256,17 +340,18 @@ function ModuleExam() {
   const [busy, setBusy] = useState(false);
 
   const baseRoute = getBaseRoute(location.pathname);
+  const practiceMode = new URLSearchParams(location.search).get('mode') === 'practice';
 
   useEffect(() => {
     setBusy(true);
     api(`/assessments/modules/${id}/questions`)
       .then((data) => {
         setModule(data.module);
-        setQuestions(data.questions);
+        setQuestions(practiceMode ? data.questions.slice(0, 15) : data.questions);
       })
       .catch((err) => setError(err.message))
       .finally(() => setBusy(false));
-  }, [id]);
+  }, [id, practiceMode]);
 
   const answeredCount = useMemo(() => Object.values(answers).filter(Boolean).length, [answers]);
 

@@ -11,6 +11,7 @@ export default function QuestionRunner({
   onJumpTo,
   onSubmit,
   submitting,
+  timeRemaining,
 }) {
   const total = questions.length;
   const question = questions[currentIndex];
@@ -25,6 +26,7 @@ export default function QuestionRunner({
           <span className="mpt-mini-chip">Question {currentIndex + 1} of {total}</span>
           <span className="mpt-mini-chip">{answeredCount}/{total} answered</span>
           <span className="mpt-mini-chip">{progressPct}% complete</span>
+          {timeRemaining != null && <span className="mpt-mini-chip">Time {Math.floor(timeRemaining / 60)}:{String(timeRemaining % 60).padStart(2, '0')}</span>}
         </div>
         <div className="mpt-progress-track">
           <div className="mpt-progress-fill" style={{ width: `${progressPct}%` }} />

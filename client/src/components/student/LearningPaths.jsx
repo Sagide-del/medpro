@@ -18,7 +18,9 @@ function topicSlug(topic) {
 }
 
 function moduleTopics(module) {
-  if (Array.isArray(module.topics) && module.topics.length) return module.topics;
+  if (Array.isArray(module.learning_path_topics) && module.learning_path_topics.length) return module.learning_path_topics;
+  if (Array.isArray(module.learningPathTopics) && module.learningPathTopics.length) return module.learningPathTopics;
+  if (Array.isArray(module.topics) && module.topics.length) return module.topics.map((item) => typeof item === 'string' ? { title: item } : item);
   return DEFAULT_TOPICS.map((title) => ({ title }));
 }
 
@@ -27,14 +29,19 @@ function TopicStudy({ module, program, topic }) {
   const keyConcepts = topic?.key_concepts || topic?.keyConcepts || [];
   const recallPrompts = topic?.recall_prompts || topic?.recallPrompts || [];
   const bloomActivities = topic?.bloom_activities || topic?.bloomActivities || [];
+  const visualResources = topic?.visuals || topic?.images || topic?.visual_resources || [];
+  const sections = topic?.sections || topic?.content_blocks || [];
+  const application = topic?.clinical_reasoning || topic?.application || topic?.case_application || '';
   return (
     <div className="new-page new-topic-study">
       <div className="new-breadcrumb"><Link to="/student/learning-paths"><UiIcon name="result" /> Learning Paths</Link><span>/</span><Link to={`/student/learning-paths/${module.id}`}>{module.title}</Link><span>/</span><strong>{topicTitle}</strong></div>
       <header className="new-topic-header"><div><div className="new-eyebrow">{program} · topic mastery</div><h1>{topicTitle}</h1><p className="new-muted">Study the concept, test your recall, then apply it at the next level.</p></div><Link className="new-button new-button-secondary" to="/student/study-planner"><UiIcon name="calendar" /> Add to planner</Link></header>
       <section className="new-topic-layout">
         <main className="new-topic-content">
-          <section className="new-topic-panel"><div className="new-section-heading"><h2>Deep review</h2><span className="new-date-label">Core concepts</span></div><p>{topic?.overview || topic?.description || module.description || 'Review the essential concepts for this topic before moving to recall practice.'}</p>{keyConcepts.length > 0 && <ul>{keyConcepts.map((item) => <li key={item}>{item}</li>)}</ul>}</section>
-          <section className="new-topic-panel"><div className="new-section-heading"><h2>Recall practice</h2><span className="new-date-label">Active recall</span></div>{recallPrompts.length > 0 ? <ol>{recallPrompts.map((item) => <li key={item}>{item}</li>)}</ol> : <div className="new-topic-empty">Recall prompts for this topic will appear here once the path content is published.</div>}</section>
+          <section className="new-topic-panel"><div className="new-section-heading"><h2>Deep review</h2><span className="new-date-label">Core concepts</span></div><p>{topic?.overview || topic?.description || module.description || 'Review the essential concepts for this topic before moving to application.'}</p>{keyConcepts.length > 0 && <ul>{keyConcepts.map((item) => <li key={item}>{item}</li>)}</ul>}{sections.map((section, index) => <div className="new-topic-content-block" key={section.id || index}><h3>{section.heading || section.title}</h3><p>{section.body || section.text || section.content}</p></div>)}</section>
+          {visualResources.length > 0 && <section className="new-topic-panel new-topic-visual-panel"><div className="new-section-heading"><h2>Visual review</h2><span className="new-date-label">Reinforce understanding</span></div><div className="new-topic-visual-grid">{visualResources.map((visual, index) => { const source = typeof visual === 'string' ? visual : visual.url || visual.image_url || visual.imageUrl; return source ? <figure key={source}><img src={source} alt={typeof visual === 'string' ? `${topicTitle} visual ${index + 1}` : (visual.alt || visual.title || topicTitle)} /><figcaption>{typeof visual === 'string' ? '' : (visual.caption || visual.title || '')}</figcaption></figure> : null; })}</div></section>}
+          {application && <section className="new-topic-panel"><div className="new-section-heading"><h2>Clinical reasoning</h2><span className="new-date-label">Apply the concept</span></div><p>{application}</p></section>}
+          {recallPrompts.length > 0 && <section className="new-topic-panel"><div className="new-section-heading"><h2>Active recall</h2><span className="new-date-label">Remember and explain</span></div><ol>{recallPrompts.map((item) => <li key={item}>{item}</li>)}</ol></section>}
           <section className="new-topic-panel"><div className="new-section-heading"><h2>Bloom&apos;s application</h2><span className="new-date-label">Higher-order thinking</span></div><div className="new-bloom-levels">{['Remember', 'Understand', 'Apply', 'Analyse', 'Evaluate', 'Create'].map((level) => <span key={level}>{level}</span>)}</div>{bloomActivities.length > 0 && <ul>{bloomActivities.map((item) => <li key={item}>{item}</li>)}</ul>}</section>
         </main>
         <aside className="new-topic-outline"><h2>{module.title}</h2><div className="new-eyebrow">Topic outline</div>{moduleTopics(module).map((item) => { const title = item.title || item.name || item; return <Link className={title === topicTitle ? 'is-active' : ''} to={`/student/learning-paths/${module.id}/topic/${topicSlug(title)}`} key={title}><span>{title}</span><UiIcon name="arrowRight" /></Link>; })}</aside>
@@ -50,7 +57,7 @@ function PathDetail({ module, program }) {
       <div className="new-breadcrumb"><Link to="/student/learning-paths"><UiIcon name="result" /> Learning Paths</Link><span>/</span><strong>{module.title}</strong></div>
       <section className="new-path-hero"><div><div className="new-eyebrow">{program} curriculum</div><h1>{module.title}</h1><h3>Choose a topic to begin your review</h3><div className="new-path-hero-actions"><Link className="new-button" to={`/student/learning-paths/${module.id}/topic/${topicSlug(topics[0].title || topics[0].name || topics[0])}`}>Start</Link><Link className="new-button new-button-secondary" to="/student/study-planner"><UiIcon name="calendar" /> Add to planner</Link></div></div><div className="new-path-hero-icon"><UiIcon name="learn" /><span>{program}</span></div></section>
       <section className="new-topic-library"><div className="new-section-heading"><div><h2>Review {module.title}</h2><p className="new-muted">Select a topic for a structured review, recall practice, and Bloom&apos;s application.</p></div><span className="new-date-label">{topics.length} topics</span></div><div className="new-topic-grid">{topics.map((item, index) => { const title = item.title || item.name || item; return <Link className="new-topic-card" to={`/student/learning-paths/${module.id}/topic/${topicSlug(title)}`} key={title}><span className="new-topic-number">{String(index + 1).padStart(2, '0')}</span><div><h3>{title}</h3><span>{item.estimated_minutes || item.estimatedMinutes || 20} min review</span></div><UiIcon name="arrowRight" /></Link>; })}</div></section>
-      <Link className="new-path-exam-link" to={`/student/mcq-questions/${module.id}`}><UiIcon name="exam" /><h2>Ready to test this path?</h2><span>Open practice questions</span><UiIcon name="arrowRight" /></Link>
+      <section className="new-path-next-step"><UiIcon name="learn" /><div><h2>Build mastery before testing</h2><p>Complete each concept review and Bloom&apos;s activity. Topic questions remain in the Question Bank so your practice stays fresh.</p></div></section>
     </div>
   );
 }

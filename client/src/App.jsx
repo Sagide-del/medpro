@@ -157,7 +157,8 @@ const LECTURIO_STUDENT_LINKS = [
   { group: 'Support', items: [{ to: '/', label: 'About Us', icon: 'community' }, { to: '/', label: 'Help Center', icon: 'question' }] },
 ];
 
-const lecturioNavEnabled = import.meta.env.VITE_LECTURIO_NAV_ENABLED === 'true';
+// New study navigation is the default; set VITE_LECTURIO_NAV_ENABLED=false only to roll back.
+const lecturioNavEnabled = import.meta.env.VITE_LECTURIO_NAV_ENABLED !== 'false';
 
 
 const SUPERADMIN_LINKS = [

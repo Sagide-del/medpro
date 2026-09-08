@@ -54,20 +54,30 @@ function ModuleList() {
 
   const meta = getMeta(location.pathname);
   const baseRoute = getBaseRoute(location.pathname);
+  const completedModules = modules.filter((module) => module.status === 'completed').length;
+  const availableModules = modules.filter((module) => module.status === 'available').length;
+  const overallProgress = modules.length ? Math.round((completedModules / modules.length) * 100) : 0;
 
   return (
-    <>
+    <div className="mcq-page">
       <div className="page-head">
         <div>
-          <h1>{meta.title}</h1>
+          <h1>{location.pathname.startsWith('/student/mock-prep-tests') ? 'Mock Tests' : 'Question Bank'}</h1>
           <div className="sub">{meta.subtitle}</div>
         </div>
       </div>
 
-      <div className="mcq-landing-meta">
-        <div className="mcq-landing-chip"><span>Module flow</span><strong>Locked by progression</strong></div>
-        <div className="mcq-landing-chip"><span>Review</span><strong>Available after submit</strong></div>
-        <div className="mcq-landing-chip"><span>Scores</span><strong>Saved to your account</strong></div>
+      <div className="mcq-course-progress">
+        <div>
+          <div className="mcq-progress-kicker">EMT-B revision</div>
+          <strong>{completedModules} of {modules.length} modules complete</strong>
+        </div>
+        <div className="mcq-progress-track" aria-label={`${overallProgress}% complete`}>
+          <span style={{ width: `${overallProgress}%` }} />
+        </div>
+        <div className="mcq-progress-next">
+          {availableModules ? `${availableModules} ready to practice` : 'Keep reviewing your results'}
+        </div>
       </div>
 
       {location.pathname.startsWith('/student/mcq-questions') && (
@@ -97,7 +107,7 @@ function ModuleList() {
             <div className="mcq-module-top">
               <div>
                 <div className="mcq-module-order">Module {module.order_number}</div>
-                <h2>{module.title}</h2>
+                <h2 title={module.title}>{module.title}</h2>
               </div>
               <span className={`badge ${badgeForStatus(module.status)}`}>{labelForStatus(module.status)}</span>
             </div>
@@ -127,10 +137,16 @@ function ModuleList() {
                 {module.status === 'completed' ? 'Review Module' : module.status === 'available' ? 'Start Module' : 'Locked'}
               </button>
             </div>
+            {module.status === 'locked' && (
+              <div className="mcq-lock-note">
+                <UiIcon name="lock" />
+                <span>Pass the previous module to unlock this test.</span>
+              </div>
+            )}
           </div>
         ))}
       </div>
-    </>
+    </div>
   );
 }
 

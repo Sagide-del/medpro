@@ -1224,6 +1224,68 @@ input:focus, select:focus, textarea:focus, button:focus-visible, a:focus-visible
   grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
   gap: 12px;
 }
+.mcq-page {
+  --mcq-accent: #0f766e;
+  --mcq-accent-soft: #ecfdf5;
+  --mcq-ink: #12343b;
+}
+.mcq-page .page-head h1,
+.mcq-page .mcq-module-card h2 { color: var(--mcq-ink); }
+.mcq-page .mcq-module-card { border-top: 3px solid var(--mcq-accent); }
+.mcq-page .primary { background: var(--mcq-accent); border-color: var(--mcq-accent); }
+.mcq-page .primary:hover { background: #115e59; border-color: #115e59; }
+.mcq-page .mcq-module-card h2 {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  min-height: 2.7em;
+}
+.mcq-course-progress {
+  display: grid;
+  grid-template-columns: minmax(190px, .8fr) minmax(180px, 1.5fr) auto;
+  align-items: center;
+  gap: 18px;
+  padding: 16px 18px;
+  margin-bottom: 16px;
+  background: #fff;
+  border: 1px solid #cfe5e2;
+  border-left: 4px solid var(--mcq-accent);
+  border-radius: 12px;
+}
+.mcq-progress-kicker {
+  color: var(--mcq-accent);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  margin-bottom: 3px;
+}
+.mcq-progress-track {
+  height: 8px;
+  border-radius: 99px;
+  background: #e7efee;
+  overflow: hidden;
+}
+.mcq-progress-track span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--mcq-accent);
+  transition: width .25s ease;
+}
+.mcq-progress-next { color: #557176; font-size: 12px; text-align: right; }
+.mcq-lock-note {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid var(--line);
+  color: #6b7d80;
+  font-size: 12px;
+}
+.mcq-lock-note .ui-icon { width: 15px; height: 15px; color: #7b8b8d; flex: 0 0 auto; }
 .mcq-landing-meta {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -2276,6 +2338,7 @@ button:disabled { opacity: 0.5; cursor: default; }
   .form-grid,
   .student-action-grid,
   .exam-center-grid,
+  .mcq-course-progress,
   .student-subscription-grid,
   .student-feature-list,
   .mcq-module-grid,

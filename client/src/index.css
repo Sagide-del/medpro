@@ -5293,7 +5293,7 @@ button:disabled { opacity: 0.5; cursor: default; }
 .shell .sidebar .brand small,
 .shell .nav-group-title { color: #78909c; }
 .shell .brand-lockup { display: block; }
-.shell .brand-logo-image { display: block; width: 198px; max-width: 100%; height: auto; }
+.shell .brand-logo-image { display: block; width: 226px; max-width: 100%; height: auto; }
 .shell .sidebar .brand small { margin: 7px 0 0; }
 .shell .sidebar-top { flex-direction: row-reverse; justify-content: flex-end; align-items: center; }
 .shell .nav-toggle { display: inline-flex; flex: 0 0 40px; }
@@ -5366,5 +5366,5 @@ button:disabled { opacity: 0.5; cursor: default; }
 @media (max-width: 720px) {
   .shell .sidebar { border-right: 0; border-bottom: 1px solid #e6ebef; }
   .shell .main { padding: 20px 16px 40px; }
-  .shell .brand-logo-image { width: 174px; }
+  .shell .brand-logo-image { width: 210px; }
 }

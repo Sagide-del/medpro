@@ -2,6 +2,18 @@ import { useEffect, useState } from 'react';
 import { api } from '../../services/api';
 import Loading from '../shared/Loading';
 
+const PODCASTS = [
+  ['01-preparatory', 'Preparatory Care for EMS', 'Foundations', 'Safety, communication, consent, documentation, and professional practice.'],
+  ['02-airway-management', 'Airway Management Across Age Groups', 'Airway', 'Toddlers, adults, injured patients, suction, adjuncts, and nasopharyngeal airways.'],
+  ['03-patient-assessment', 'Patient Assessment', 'Assessment', 'Scene size-up, primary assessment, history, examination, trends, and reassessment.'],
+  ['04-medical-obstetric', 'Medical, Behavioral, and Obstetric Emergencies', 'Medical', 'Time-critical illness, behavioral safety, pregnancy, postpartum haemorrhage, and eclampsia.'],
+  ['05-trauma', 'Trauma Care', 'Trauma', 'Bleeding control, road traffic injury, shock, spinal considerations, and handover.'],
+  ['06-infants-children', 'Infants and Children', 'Paediatrics', 'Recognition, age-appropriate equipment, respiratory distress, and early escalation.'],
+  ['07-operations', 'EMS Operations', 'Operations', 'Dispatch, communications, readiness, mass-casualty coordination, and patient tracking.'],
+  ['08-advanced-airway', 'Advanced Airway Concepts', 'Airway', 'Preparation, oxygenation, backup plans, monitoring, and escalation within scope.'],
+  ['09-additional-review', 'Integrated EMT Review', 'Exam readiness', 'Prioritisation, clinical reasoning, time pressure, and Kenya-specific context.'],
+];
+
 function getScriptFocus(assignment) {
   const title = (assignment.title || '').trim();
   if (!title) return 'Clinical skill demonstration';
@@ -14,6 +26,7 @@ export default function Videos() {
   const [files, setFiles] = useState({});
   const [notes, setNotes] = useState({});
   const [busyId, setBusyId] = useState('');
+  const [selectedPodcast, setSelectedPodcast] = useState(PODCASTS[1]);
 
   async function load() {
     const data = await api('/practical-videos');
@@ -55,19 +68,21 @@ export default function Videos() {
         </div>
       </div>
 
-      <section className="podcast-feature" aria-labelledby="toddler-airway-title">
-        <div className="podcast-feature-art" aria-hidden="true"><span>01</span><strong>EMS<br />Audio Review</strong></div>
+      <section className="podcast-feature" aria-labelledby="podcast-title">
+        <div className="podcast-feature-art" aria-hidden="true"><span>{selectedPodcast[0].slice(0, 2)}</span><strong>EMS<br />Audio Review</strong></div>
         <div className="podcast-feature-content">
-          <div className="podcast-kicker">Airway management · Pediatrics</div>
-          <h2 id="toddler-airway-title">Airway Management in Toddlers</h2>
-          <p>Scene priorities, foreign-body obstruction, oxygenation, and rapid reassessment in a deteriorating toddler.</p>
+          <div className="podcast-kicker">{selectedPodcast[2]} · Module audio</div>
+          <h2 id="podcast-title">{selectedPodcast[1]}</h2>
+          <p>{selectedPodcast[3]}</p>
           <audio className="podcast-player" controls preload="metadata">
-            <source src="/audio/airway-management-toddlers.wav" type="audio/wav" />
+            <source src={`/audio/${selectedPodcast[0]}.wav`} type="audio/wav" />
             Your browser does not support audio playback.
           </audio>
-          <details className="podcast-transcript"><summary>Open transcript and key takeaways</summary><p>Start with scene safety and assess responsiveness. Call for help early and use the pediatric assessment triangle: appearance, work of breathing, and circulation to skin. Keep the child with the caregiver where possible and avoid unnecessary agitation. Assess breathing and oxygen saturation, then provide oxygen according to the child&apos;s condition and local protocol.</p><p>For a responsive child with a suspected foreign body, encourage an effective cough. If the cough becomes ineffective, use age-appropriate back blows and chest thrusts for an infant, or back blows and abdominal thrusts for a child older than one year. Do not perform blind finger sweeps. If the child becomes unresponsive, begin CPR and inspect the mouth only when opening the airway for ventilation.</p><ul><li>Use appropriately sized equipment and gentle ventilations.</li><li>Remember toddlers have smaller airways and limited respiratory reserve.</li><li>Reassess continuously and transport rapidly when the child remains unstable.</li></ul></details>
+          <details className="podcast-transcript"><summary>Open transcript and key takeaways</summary><p>Use the audio review as a focused revision aid, then return to the relevant Learning Path for deeper topic explanation and Bloom&apos;s activities.</p><ul><li>Listen once for the clinical sequence.</li><li>Pause and explain the reasoning in your own words.</li><li>Use the Question Bank separately to test recall after review.</li></ul></details>
         </div>
       </section>
+
+      <section className="podcast-library" aria-labelledby="podcast-library-title"><div className="podcast-library-head"><div><div className="podcast-kicker">Module library</div><h2 id="podcast-library-title">Audio revision by module</h2></div><span>{PODCASTS.length} episodes</span></div><div className="podcast-list">{PODCASTS.map((podcast, index) => <button type="button" className={selectedPodcast[0] === podcast[0] ? 'is-selected' : ''} key={podcast[0]} onClick={() => setSelectedPodcast(podcast)}><span className="podcast-list-number">{String(index + 1).padStart(2, '0')}</span><span><strong>{podcast[1]}</strong><small>{podcast[2]} · {podcast[3]}</small></span><span className="podcast-list-action">Listen</span></button>)}</div></section>
 
       {status && <div className="ok-note">{status}</div>}
 

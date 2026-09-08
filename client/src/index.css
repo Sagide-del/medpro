@@ -11,6 +11,10 @@
   --red: #e63935;
   --red-dark: #cc2e2a;
   --red-tint: #fef2f2;
+  --brand-blue: #147ec2;
+  --brand-blue-dark: #0d5f99;
+  --brand-blue-tint: #eaf4fb;
+  --workspace: #f5f7f9;
   --white: #ffffff;
   --paper: #f8f9fb;
   --line: #e5e7eb;
@@ -20,7 +24,7 @@
   --success-tint: #ecfdf5;
   --amber: #b3790a;
   --amber-tint: #fdf2dc;
-  --radius: 14px;
+  --radius: 10px;
   --font-display: 'Inter', 'Roboto', system-ui, sans-serif;
   --font-body: 'Inter', 'Roboto', system-ui, sans-serif;
   --font-mono: 'Inter', 'Roboto', system-ui, sans-serif;
@@ -43,8 +47,8 @@ a { color: var(--red); }
 
 .sidebar {
   width: 268px;
-  background: var(--black);
-  color: #dbe3ee;
+  background: #ffffff;
+  color: #263238;
   padding: 24px 16px;
   display: flex;
   flex-direction: column;
@@ -5266,4 +5270,62 @@ button:disabled { opacity: 0.5; cursor: default; }
   .superadmin-stat-grid {
     grid-template-columns: 1fr;
   }
+}
+.shell {
+  --red: var(--brand-blue);
+  --red-dark: var(--brand-blue-dark);
+  --red-tint: var(--brand-blue-tint);
+}
+
+/* Lecturio-inspired study shell: quiet workspace, clear blue actions, compact navigation. */
+.shell .sidebar {
+  background: #fff;
+  color: #263238;
+  border-right: 1px solid #e6ebef;
+}
+.shell .sidebar .brand,
+.shell .brand-lockup,
+.shell .brand-wordmark { color: #263238 !important; }
+.shell .sidebar .brand span,
+.shell .brand-wordmark span,
+.shell .brand-mark { color: var(--brand-blue); }
+.shell .sidebar .brand small,
+.shell .nav-group-title { color: #78909c; }
+.shell .sidebar a { color: #455a64; border-radius: 8px; }
+.shell .sidebar a:hover { background: #f3f7fa; color: #263238; }
+.shell .sidebar a.active {
+  background: var(--brand-blue-tint);
+  border-color: #d4eaf8;
+  color: var(--brand-blue-dark);
+  box-shadow: inset 3px 0 0 var(--brand-blue);
+}
+.shell .sidebar .foot { color: #78909c; border-top-color: #e6ebef; }
+.shell .foot-user { color: #263238; }
+.shell .main { min-width: 0; max-width: none; background: var(--workspace); }
+.shell .nav-toggle { background: #fff; border-color: #dce5ea; }
+.shell .nav-toggle span { background: #455a64; }
+.shell .card,
+.shell .panel,
+.shell .source-mode-card,
+.shell .mcq-course-progress { box-shadow: 0 1px 2px rgba(38, 50, 56, 0.04); }
+.shell .wizard-step { border-radius: 8px; }
+.shell .wizard-step-index { border-radius: 7px; }
+.shell .review-tab.is-active { background: var(--brand-blue); border-color: var(--brand-blue); }
+.shell .app-footer-inner { background: #fff; border: 1px solid #e6ebef; }
+.shell .app-footer-divider { background: #e6ebef; }
+.shell .app-footer-line { color: #78909c; }
+.shell .app-footer-powered { color: #263238; }
+.shell .app-footer-product { color: var(--brand-blue-dark); }
+.shell .app-footer-copyright { color: #90a4ae; }
+.shell .progress-bar > div { background: var(--brand-blue); }
+.shell button.primary,
+.shell a.primary,
+.shell .btn-primary { background: var(--brand-blue); border-color: var(--brand-blue); }
+.shell button.primary:hover,
+.shell a.primary:hover,
+.shell .btn-primary:hover { background: var(--brand-blue-dark); border-color: var(--brand-blue-dark); }
+
+@media (max-width: 720px) {
+  .shell .sidebar { border-right: 0; border-bottom: 1px solid #e6ebef; }
+  .shell .main { padding: 20px 16px 40px; }
 }

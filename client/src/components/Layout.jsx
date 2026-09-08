@@ -66,7 +66,7 @@ export default function Layout({ links, roleLabel }) {
           </button>
         </div>
 
-        <PulseLine color="#cc0000" />
+        <PulseLine color="#147ec2" />
 
         <nav>
 

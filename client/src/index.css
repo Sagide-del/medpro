@@ -5923,6 +5923,41 @@ button:disabled { opacity: 0.5; cursor: default; }
   .question-bank-v2-module-actions button { flex: 1; }
 }
 
+/* Pastel study-tile treatment inspired by the supplied reference dashboard. */
+.question-bank-v2 {
+  background: #f8fbff;
+  border-color: #edf2f7;
+  box-shadow: 0 14px 34px rgba(58, 78, 104, .06);
+}
+.question-bank-v2-header { padding-bottom: 20px; }
+.question-bank-v2-header h1 { color: #17233d; }
+.question-bank-v2-header p { color: #8994a8; }
+.question-bank-v2-countdown { background: #edf4ff; }
+.question-bank-v2-stats { background: #fff; border: 1px solid #edf1f5; border-radius: 18px; box-shadow: 0 5px 16px rgba(58, 78, 104, .035); }
+.question-bank-v2-stats div { border-right-color: #edf1f5; }
+.question-bank-v2-modules { padding: 20px; background: #fff; border: 1px solid #edf1f5; border-radius: 20px; box-shadow: 0 5px 16px rgba(58, 78, 104, .035); }
+.question-bank-v2 .question-bank-v2-section-heading h2 { color: #17233d; }
+.question-bank-v2-filters { margin: 0 0 8px; padding: 0; }
+.question-bank-v2-list { gap: 12px; }
+.question-bank-v2 .question-bank-v2-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.question-bank-v2-module { min-width: 0; padding: 18px; border: 0; border-radius: 18px; background: #e8f3ff; }
+.question-bank-v2-module:nth-child(3n + 2) { background: #f4e9ff; }
+.question-bank-v2-module:nth-child(3n + 3) { background: #fff0e4; }
+.question-bank-v2-module-title h3 { color: #17233d; }
+.question-bank-v2-module-title span { color: #73839a; }
+.question-bank-v2-module-score strong { color: #17233d; }
+.question-bank-v2-module-score span { color: #5d6c83; }
+.question-bank-v2-module-meta { color: #6d7c91; }
+.question-bank-v2-bar { background: rgba(255,255,255,.65); }
+.question-bank-v2-module-actions button { background: #252431; border-color: #252431; }
+.question-bank-v2-weaknesses, .question-bank-v2-plan { padding: 18px; background: #fff; border: 1px solid #edf1f5; border-radius: 18px; box-shadow: 0 5px 16px rgba(58, 78, 104, .035); }
+
+@media (max-width: 820px) {
+  .question-bank-v2 .question-bank-v2-list { grid-template-columns: 1fr; }
+  .question-bank-v2-modules { padding: 15px; }
+  .question-bank-v2-weaknesses, .question-bank-v2-plan { padding: 15px; }
+}
+
 /* Reference-inspired finish: one composed workspace, generous breathing room, clear actions. */
 .question-bank-v2 {
   padding: clamp(22px, 4vw, 42px);

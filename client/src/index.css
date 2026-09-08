@@ -5621,6 +5621,14 @@ button:disabled { opacity: 0.5; cursor: default; }
 .essay-preview-art { display: grid; place-items: center; color: #147ec2; }
 .question-bank-empty { color: #607d8b; font-size: 14px; }
 .mcq-topic-heading { display: flex; justify-content: space-between; align-items: end; gap: 16px; margin: 22px 0 12px; }
+.progress-overview-section { margin-bottom: 16px; }
+.progress-overview-section .mcq-progress-track { margin: 4px 0 10px; }
+.progress-overview-next { color: #607d8b; font-size: 13px; }
+.essay-example-list { display: grid; gap: 10px; margin-top: 12px; }
+.essay-example-entry { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 14px; background: #f7fbfe; border: 1px solid #e2e8ec; }
+.essay-example-entry > div { display: grid; gap: 4px; min-width: 0; }
+.essay-example-entry strong { color: #1b2733; font-size: 14px; }
+.essay-example-entry span { overflow: hidden; color: #607d8b; font-size: 13px; text-overflow: ellipsis; white-space: nowrap; }
 @media (max-width: 820px) {
   .new-path-columns { grid-template-columns: 1fr; }
   .new-path-hero { padding: 20px; }
@@ -5632,4 +5640,5 @@ button:disabled { opacity: 0.5; cursor: default; }
   .new-essays-intro { align-items: flex-start; flex-direction: column; }
   .new-essay-row { align-items: flex-start; }
   .mock-exam-grid, .essay-preview-grid { grid-template-columns: 1fr; }
+  .essay-example-entry { align-items: flex-start; flex-direction: column; }
 }

@@ -33,6 +33,18 @@ function labelForStatus(status) {
   return 'Locked';
 }
 
+const MODULE_LABELS = {
+  4: 'MEDICAL, BEHAVIORAL & OB/GYN',
+  5: 'TRAUMA',
+};
+
+const LOCK_INSTRUCTIONS = {
+  2: 'Locked - Complete Module 1 to unlock',
+  3: 'Locked - Complete Module 2 to unlock',
+  4: 'Locked - Complete Module 3 to unlock',
+  5: 'Locked - Complete Module 4 to unlock',
+};
+
 function ModuleList() {
   const location = useLocation();
   const navigate = useNavigate();
@@ -74,32 +86,29 @@ function ModuleList() {
       </div>
 
       {location.pathname === '/student/question-bank' && (
+        <section className="question-bank-section progress-overview-section">
+          <div className="question-bank-section-head"><div><div className="mcq-progress-kicker">Progress Overview</div><h2>0 of 9 modules complete</h2></div><span>11%</span></div>
+          <div className="mcq-progress-track" aria-label="11% complete"><span style={{ width: '11%' }} /></div>
+          <div className="progress-overview-next">Next: Module 1 - Preparatory</div>
+        </section>
+      )}
+
+      {location.pathname === '/student/question-bank' && (
         <div className="question-bank-hub">
           <section className="question-bank-section">
-            <div className="question-bank-section-head"><div><div className="mcq-progress-kicker">Timed practice</div><h2>Mock Exams</h2></div><span>3 exams</span></div>
+            <div className="question-bank-section-head"><div><div className="mcq-progress-kicker">Mock Exams</div><h2>Mock Exams</h2></div><span>3 exams</span></div>
             <div className="mock-exam-grid">
               {[1, 2, 3].map((number) => <Link className="mock-exam-entry" to={`/student/mcq/mock-pretest?exam=${number}`} key={number}><span className="mock-exam-number">0{number}</span><span><strong>EMT Mock Exam {number}</strong><small>Mixed-topic timed practice</small></span><UiIcon name="arrowRight" /></Link>)}
             </div>
           </section>
-          <section className="question-bank-section">
-            <div className="question-bank-section-head"><div><div className="mcq-progress-kicker">Written clinical reasoning</div><h2>Essays</h2></div><span>{essays.length} assigned</span></div>
-            <div className="essay-preview-grid">{essays.slice(0, 3).map((essay) => <Link className="essay-preview-entry" to={`/student/assignments/${essay.assignment_id}`} key={essay.assignment_id}>{essay.image_url ? <img src={essay.image_url} alt="" /> : <span className="essay-preview-art"><UiIcon name="document" /></span>}<span><strong>{essay.title}</strong><small>{essay.topic || 'Critical thinking and decision-making'}</small></span><UiIcon name="arrowRight" /></Link>)}{essays.length === 0 && <div className="question-bank-empty">Published essay prompts will appear here.</div>}</div>
-          </section>
         </div>
       )}
 
-      <div className="mcq-course-progress">
-        <div>
-          <div className="mcq-progress-kicker">EMT-B revision</div>
-          <strong>{completedModules} of {modules.length} modules complete</strong>
-        </div>
-        <div className="mcq-progress-track" aria-label={`${overallProgress}% complete`}>
-          <span style={{ width: `${overallProgress}%` }} />
-        </div>
-        <div className="mcq-progress-next">
-          {availableModules ? `${availableModules} ready to practice` : 'Keep reviewing your results'}
-        </div>
-      </div>
+      {location.pathname !== '/student/question-bank' && <div className="mcq-course-progress">
+        <div><div className="mcq-progress-kicker">Progress Overview</div><strong>{completedModules} of {modules.length} modules complete</strong></div>
+        <div className="mcq-progress-track" aria-label={`${overallProgress}% complete`}><span style={{ width: `${overallProgress}%` }} /></div>
+        <div className="mcq-progress-next">{availableModules ? `${availableModules} ready to practice` : 'Keep reviewing your results'}</div>
+      </div>}
 
       {location.pathname.startsWith('/student/mcq-questions') && (
         <button
@@ -122,14 +131,14 @@ function ModuleList() {
         </div>
       )}
 
-      <div className="mcq-topic-heading"><div><div className="mcq-progress-kicker">Organised by topic</div><h2>MCQ Questions</h2></div><span>{modules.length} topic paths</span></div>
+      <div className="mcq-topic-heading"><div><div className="mcq-progress-kicker">Learning Paths</div><h2>MCQ Questions</h2></div><span>9 topic paths</span></div>
       <div className="mcq-module-grid">
         {modules.map((module) => (
           <div key={module.id} className="card mcq-module-card">
             <div className="mcq-module-top">
               <div>
                 <div className="mcq-module-order">Module {module.order_number}</div>
-                <h2 title={module.title}>{module.title}</h2>
+                <h2 title={module.title}>{MODULE_LABELS[module.order_number] || module.title}</h2>
               </div>
               <span className={`badge ${badgeForStatus(module.status)}`}>{labelForStatus(module.status)}</span>
             </div>
@@ -138,7 +147,7 @@ function ModuleList() {
 
             <div className="mcq-module-meta">
               <span>{module.total_questions} questions</span>
-              <span>{module.passing_score}% pass mark</span>
+              <span>70% pass mark</span>
             </div>
 
             <div className="progress-bar mcq-module-progress">
@@ -162,12 +171,20 @@ function ModuleList() {
             {module.status === 'locked' && (
               <div className="mcq-lock-note">
                 <UiIcon name="lock" />
-                <span>Pass the previous module to unlock this test.</span>
+                <span>{LOCK_INSTRUCTIONS[module.order_number] || 'Complete the previous module to unlock'}</span>
               </div>
             )}
           </div>
         ))}
       </div>
+      {location.pathname === '/student/question-bank' && <section className="question-bank-section written-reasoning-section">
+        <div className="question-bank-section-head"><div><div className="mcq-progress-kicker">Written Clinical Reasoning</div><h2>Essays</h2></div><span>{essays.length} assigned</span></div>
+        <div className="essay-preview-grid">{essays.slice(0, 3).map((essay) => <Link className="essay-preview-entry" to={`/student/assignments/${essay.assignment_id}`} key={essay.assignment_id}>{essay.image_url ? <img src={essay.image_url} alt="" /> : <span className="essay-preview-art"><UiIcon name="document" /></span>}<span><strong>{essay.title}</strong><small>{essay.topic || 'Critical thinking and decision-making'}</small></span><UiIcon name="arrowRight" /></Link>)}{essays.length === 0 && <div className="question-bank-empty">Published essay prompts will appear here.</div>}</div>
+        <div className="essay-example-list">
+          <div className="essay-example-entry"><div><strong>Essay 1: Kenya Matatu Accident Case</strong><span>Describe your approach to a multi-casualty incident in Nairobi...</span></div><Link className="new-button new-button-link" to="/student/essays">Start Essay</Link></div>
+          <div className="essay-example-entry"><div><strong>Essay 2: Snakebite in Rural Kenya</strong><span>Outline the assessment and treatment for a snakebite patient in Kisumu...</span></div><Link className="new-button new-button-link" to="/student/essays">Start Essay</Link></div>
+        </div>
+      </section>}
     </div>
   );
 }

@@ -40,6 +40,13 @@ a { color: var(--red); }
 
 /* ---------- app shell (role dashboards) ---------- */
 .shell { display: flex; min-height: 100vh; }
+.role-student {
+  --red: #0f766e;
+  --red-dark: #115e59;
+  --red-tint: #ecfdf5;
+  --black: #102a31;
+  --black-soft: #1f4148;
+}
 
 .sidebar {
   width: 268px;

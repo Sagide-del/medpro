@@ -34,7 +34,7 @@ export default function Layout({ links, roleLabel }) {
   }, [location.pathname]);
 
   return (
-    <div className="shell">
+    <div className={`shell${roleLabel === 'EMS competency dashboard' ? ' role-student' : ''}`}>
 
       <aside className={`sidebar${navOpen ? ' open' : ''}`}>
 

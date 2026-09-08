@@ -21,8 +21,6 @@ export default function StudentDashboard() {
   const { user } = useAuth();
   const [progress, setProgress] = useState(null);
   const [attempts, setAttempts] = useState([]);
-  const [logbook, setLogbook] = useState(null);
-  const [subscription, setSubscription] = useState(null);
   const [assignments, setAssignments] = useState([]);
   const [simulationResults, setSimulationResults] = useState([]);
   const [error, setError] = useState('');
@@ -31,8 +29,6 @@ export default function StudentDashboard() {
     Promise.all([
       api(`/analytics/students/${user.id}/progress`).then((data) => setProgress(data.progress)),
       api('/assessments/my-attempts').then((data) => setAttempts(data.attempts.slice(0, 8))),
-      api('/logbook').then((data) => setLogbook(data)),
-      api('/payments/subscription').then((data) => setSubscription(data)),
       api('/assignment-workflow/student/assignments').then((data) => setAssignments(data.assignments.slice(0, 8))).catch(() => setAssignments([])),
       api('/simulations/my-results').then((data) => setSimulationResults(data.results.slice(0, 6))).catch(() => setSimulationResults([])),
     ]).catch((err) => setError(err.message));
@@ -41,81 +37,65 @@ export default function StudentDashboard() {
   const readinessScore = useMemo(() => (
     progress?.length
       ? Math.round(progress.reduce((sum, item) => sum + Number(item.avg_score || 0), 0) / progress.length)
-      : 62
+      : 0
   ), [progress]);
-
-  const logbookCounts = useMemo(() => {
-    const approved = Number(logbook?.progress?.approved_count || 0);
-    const required = Number(logbook?.progress?.required_entries || 0);
-    return { approved, required };
-  }, [logbook]);
-
-  const logbookPct = useMemo(() => (
-    logbookCounts.required ? Math.round((logbookCounts.approved / logbookCounts.required) * 100) : 0
-  ), [logbookCounts]);
 
   const clinicalProgress = useMemo(() => (
     simulationResults.length
       ? Math.round(simulationResults.reduce((sum, item) => sum + Number(item.overall_competency_score || 0), 0) / simulationResults.length)
-      : 35
+      : 0
   ), [simulationResults]);
 
-  const firstName = user.name?.split(' ')?.[0] || 'Student';
-  const renewalDate = subscription?.subscription?.expiresAt
-    ? new Date(subscription.subscription.expiresAt).toLocaleDateString('en-KE')
-    : 'Not active';
+  const practiceScore = useMemo(() => {
+    const scored = attempts.filter((attempt) => attempt.score_pct != null);
+    return scored.length
+      ? Math.round(scored.reduce((sum, attempt) => sum + Number(attempt.score_pct || 0), 0) / scored.length)
+      : 0;
+  }, [attempts]);
 
+  const firstName = user.name?.split(' ')?.[0] || 'Student';
   const kpis = useMemo(() => ([
-    {
-      title: 'Subscription',
-      value: subscription?.active ? 'ACTIVE' : 'INACTIVE',
-      meta: `Renewal date ${renewalDate}`,
-      progress: subscription?.active ? 100 : 20,
-      tone: subscription?.active ? 'success' : 'danger',
-      icon: 'subscription',
-    },
     {
       title: 'Exam Readiness',
       value: `${clampPercent(readinessScore)}%`,
-      meta: 'Based on assessments and practice',
+      meta: progress?.length ? 'Across completed topics' : 'Start your first practice set',
       progress: clampPercent(readinessScore),
       tone: 'accent',
       icon: 'exam',
     },
     {
-      title: 'Clinical Progress',
-      value: `${clampPercent(clinicalProgress)}%`,
-      meta: 'Based on simulations and logbook',
-      progress: clampPercent(clinicalProgress),
+      title: 'Practice Score',
+      value: `${clampPercent(practiceScore)}%`,
+      meta: `${attempts.length} question set${attempts.length === 1 ? '' : 's'} attempted`,
+      progress: clampPercent(practiceScore),
       tone: 'accent',
-      icon: 'activity',
+      icon: 'result',
     },
     {
-      title: 'Logbook Completion',
-      value: `${logbookCounts.approved}/${logbookCounts.required}`,
-      meta: 'Clinical entries completed',
-      progress: clampPercent(logbookPct),
+      title: 'Clinical Progress',
+      value: `${clampPercent(clinicalProgress)}%`,
+      meta: `${simulationResults.length} simulation${simulationResults.length === 1 ? '' : 's'} completed`,
+      progress: clampPercent(clinicalProgress),
       tone: 'neutral',
-      icon: 'document',
+      icon: 'activity',
     },
-  ]), [clinicalProgress, logbookCounts, logbookPct, readinessScore, renewalDate, subscription?.active]);
+  ]), [attempts.length, clinicalProgress, practiceScore, progress?.length, readinessScore, simulationResults.length]);
 
   const continueLearning = useMemo(() => {
     const mcqCount = attempts.filter((attempt) => ['graded', 'submitted', 'completed'].includes(String(attempt.status || '').toLowerCase())).length;
-    const nextAssignment = assignments.find((assignment) => !['submitted', 'graded', 'released'].includes(String(assignment.submission_status || '').toLowerCase()));
     const latestSimulation = simulationResults[0];
 
     return [
       {
-        title: 'Trauma Assessment',
-        meta: `MCQ practice | ${mcqCount || 0} attempts`,
+        title: 'Question Bank',
+        meta: `${mcqCount} practice attempt${mcqCount === 1 ? '' : 's'}`,
         action: 'Practice',
         to: '/student/mcq-questions',
         icon: 'exam',
       },
       {
-        title: 'Clinical Reference Cards',
-        meta: 'Airway, trauma and emergency care',
+        title: 'Cheat Sheets',
+        meta: 'Fast clinical revision',
         action: 'Review',
         to: '/student/reference-cards',
         icon: 'document',
@@ -128,14 +108,14 @@ export default function StudentDashboard() {
         icon: 'simulation',
       },
       {
-        title: nextAssignment?.title || 'Assignments',
-        meta: nextAssignment?.due_date ? `Due ${formatDate(nextAssignment.due_date)}` : 'Review assigned work',
+        title: 'Clinical Cases',
+        meta: 'Decision-making practice',
         action: 'Open',
-        to: nextAssignment ? `/student/assignments/${nextAssignment.assignment_id}` : '/student/assignments',
-        icon: 'document',
+        to: '/student/learn/kenya-ems',
+        icon: 'cases',
       },
     ];
-  }, [assignments, attempts, simulationResults]);
+  }, [attempts, simulationResults]);
 
   const upcomingTasks = useMemo(() => ([
     {
@@ -145,24 +125,12 @@ export default function StudentDashboard() {
       to: '/student/exam-center',
     },
     {
-      title: 'Log Clinical Cases',
-      area: 'Clinical Logbook',
-      due: logbookCounts.required > logbookCounts.approved ? `${logbookCounts.required - logbookCounts.approved} entries pending` : 'All required entries complete',
-      to: '/student/logbook',
-    },
-    {
-      title: 'Review practical assignment',
-      area: 'Assignments',
-      due: assignments[0]?.due_date ? formatDate(assignments[0].due_date) : 'Due soon',
-      to: '/student/assignments',
-    },
-    {
       title: 'Run a clinical scenario',
       area: 'Skill Simulation',
       due: simulationResults[0]?.completed_at ? `Last attempt ${formatDate(simulationResults[0].completed_at)}` : 'Ready to start',
       to: '/student/simulations',
     },
-  ]), [assignments, attempts, logbookCounts, simulationResults]);
+  ]), [attempts, simulationResults]);
 
   const recentActivity = useMemo(() => {
     const examItems = attempts.slice(0, 3).map((attempt) => ({
@@ -198,7 +166,7 @@ export default function StudentDashboard() {
   }, [assignments, attempts, simulationResults]);
 
   if (error) return <div className="alert">{error}</div>;
-  if (!progress || !subscription || !logbook) return <Loading label="Loading your dashboard..." />;
+  if (!progress) return <Loading label="Loading your revision workspace..." />;
 
   return (
     <>

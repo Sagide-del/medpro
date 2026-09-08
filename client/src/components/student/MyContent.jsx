@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 import UiIcon from '../shared/UiIcon';
 
 const CONTENT = [
-  { title: 'Notes', label: 'Your saved study notes and summaries.', to: '/student/research', icon: 'response' },
+  { title: 'Notes', label: 'Your saved study notes and summaries.', to: '/student/notes', icon: 'response' },
   { title: 'Flashcards, Files & Questions', label: 'Organise flashcards, files, and question sets in one place.', to: '/student/flashcards', icon: 'learn' },
   { title: 'Podcasts', label: 'Audio revision will appear here when available.', to: '/student/videos', icon: 'play', beta: true },
 ];

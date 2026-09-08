@@ -107,29 +107,29 @@ export default function StudentDashboard() {
 
     return [
       {
-        title: 'Trauma Assessment MCQs',
-        meta: `MCQ practice | ${mcqCount || 12} questions completed`,
-        action: 'Continue',
+        title: 'Trauma Assessment',
+        meta: `MCQ practice | ${mcqCount || 0} attempts`,
+        action: 'Practice',
         to: '/student/mcq-questions',
         icon: 'exam',
       },
       {
-        title: 'Airway Management',
-        meta: 'Clinical reference card',
+        title: 'Clinical Reference Cards',
+        meta: 'Airway, trauma and emergency care',
         action: 'Review',
         to: '/student/reference-cards',
         icon: 'document',
       },
       {
-        title: 'Cardiac Emergencies Mock Test',
-        meta: latestSimulation ? `Mock prep test | ${latestSimulation.category || '100 questions'}` : 'Mock prep test | 100 questions',
-        action: 'Continue',
+        title: 'Mock Prep Tests',
+        meta: latestSimulation ? `Latest focus | ${latestSimulation.category || 'Ready to start'}` : 'Timed exam preparation',
+        action: 'Start',
         to: '/student/mock-prep-tests',
         icon: 'simulation',
       },
       {
-        title: nextAssignment?.title || 'Patient Assessment Assignment',
-        meta: nextAssignment?.due_date ? `Assignment | Due ${formatDate(nextAssignment.due_date)}` : 'Assignment | Due in 2 days',
+        title: nextAssignment?.title || 'Assignments',
+        meta: nextAssignment?.due_date ? `Due ${formatDate(nextAssignment.due_date)}` : 'Review assigned work',
         action: 'Open',
         to: nextAssignment ? `/student/assignments/${nextAssignment.assignment_id}` : '/student/assignments',
         icon: 'document',
@@ -139,7 +139,7 @@ export default function StudentDashboard() {
 
   const upcomingTasks = useMemo(() => ([
     {
-      title: 'Complete Cardiology Module',
+      title: 'Complete cardiology practice',
       area: 'Exam Center',
       due: attempts[0]?.submitted_at ? formatDate(attempts[0].submitted_at) : 'Due this week',
       to: '/student/exam-center',
@@ -151,13 +151,13 @@ export default function StudentDashboard() {
       to: '/student/logbook',
     },
     {
-      title: 'Trauma Practical Assignment',
+      title: 'Review practical assignment',
       area: 'Assignments',
       due: assignments[0]?.due_date ? formatDate(assignments[0].due_date) : 'Due soon',
       to: '/student/assignments',
     },
     {
-      title: 'Practice Airway Scenario',
+      title: 'Run a clinical scenario',
       area: 'Skill Simulation',
       due: simulationResults[0]?.completed_at ? `Last attempt ${formatDate(simulationResults[0].completed_at)}` : 'Ready to start',
       to: '/student/simulations',

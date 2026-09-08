@@ -82,26 +82,26 @@ const STUDENT_LINKS = [
     ],
   },
   {
-    group: 'My Learning',
+    group: 'Study',
     items: [
       { to: '/student/exam-center', label: 'Exam Center', icon: 'exam' },
       { to: '/student/assignments', label: 'Assignments', icon: 'document' },
+      { to: '/student/reference-cards', label: 'Revision Library', icon: 'learn' },
+      { to: '/student/elibrary', label: 'Notes & E-Library', icon: 'document' },
+    ],
+  },
+  {
+    group: 'Clinical Practice',
+    items: [
       { to: '/student/simulations', label: 'Skill Simulations', icon: 'simulation' },
       { to: '/student/learn/kenya-ems', label: 'Kenya EMS Cases', icon: 'cases' },
+      { to: '/student/videos', label: 'Practical Skills', icon: 'practice' },
     ],
   },
   {
-    group: 'Study Materials',
-    items: [
-      { to: '/student/reference-cards', label: 'Clinical Reference Cards', icon: 'document' },
-      { to: '/student/elibrary', label: 'E-Library', icon: 'learn' },
-    ],
-  },
-  {
-    group: 'Practical Training',
+    group: 'Clinical Record',
     items: [
       { to: '/student/logbook', label: 'Clinical Logbook', icon: 'document' },
-      { to: '/student/videos', label: 'Practical Skills', icon: 'practice' },
     ],
   },
   {

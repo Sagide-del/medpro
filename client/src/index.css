@@ -5424,6 +5424,12 @@ button:disabled { opacity: 0.5; cursor: default; }
 .new-resource-row { display: flex; justify-content: space-between; gap: 12px; padding: 13px 0; border-top: 1px solid #edf1f3; }
 .new-resource-row span { color: #78909c; font-size: 13px; text-align: right; }
 .new-section > .new-button { margin-top: 18px; }
+.new-content-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.new-content-item { display: flex; align-items: center; gap: 14px; min-height: 78px; padding: 16px; background: #fff; border: 1px solid #e2e8ec; color: #263238; text-decoration: none; }
+.new-content-item:hover { border-color: #b9d9ea; background: #fbfdfe; }
+.new-content-item > span:nth-child(2) { display: grid; gap: 3px; flex: 1; }
+.new-content-item small { color: #78909c; font-size: 12px; }
+.new-content-item > .ui-icon { color: #78909c; }
 
 @media (max-width: 820px) {
   .shell .sidebar nav { display: flex; }
@@ -5437,6 +5443,7 @@ button:disabled { opacity: 0.5; cursor: default; }
   .new-section, .new-empty-panel, .new-review-hero { padding: 16px; }
   .new-hub-grid { grid-template-columns: 1fr; }
   .new-hub-primary, .new-resource-panel { grid-row: auto; grid-column: auto; }
+  .new-content-grid { grid-template-columns: 1fr; }
   .new-bookmark-form > div { align-items: stretch; flex-direction: column; }
   .new-bookmark-form input { min-height: 42px; }
   .new-resource-row { align-items: flex-start; flex-direction: column; }

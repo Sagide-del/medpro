@@ -16,6 +16,7 @@ import StudentStudyPlanner from './components/student/StudyPlanner';
 import StudentSpacedRepetition from './components/student/SpacedRepetition';
 import StudentBookmarks from './components/student/Bookmarks';
 import StudentKenyaEMSHub from './components/student/KenyaEMSHub';
+import StudentMyContent from './components/student/MyContent';
 import StudentAssignments from './components/student/Assignments';
 import StudentClinicalReferenceCards from './components/student/ClinicalReferenceCards';
 import StudentExamPreparation from './components/student/ExamPreparation';
@@ -137,15 +138,12 @@ const LECTURIO_STUDENT_LINKS = [
     { to: '/student/my-content', label: 'My Content', icon: 'learn' },
   ] },
   { group: 'Revision Tools', items: [
-    { to: '/student/videos', label: 'Videos', icon: 'play' },
     { to: '/student/reference-cards', label: 'Cheat Sheets', icon: 'learn' },
     { to: '/student/question-bank', label: 'Question Bank', icon: 'exam' },
     { to: '/student/learning-paths', label: 'Learning Paths', icon: 'result' },
     { to: '/student/spaced-repetition', label: 'Spaced Repetition', icon: 'simulation' },
-    { to: '/student/bookmarks', label: 'Bookmarks', icon: 'bookmark' },
   ] },
   { group: 'Clinical Practice', items: [
-    { to: '/student/simulations', label: 'Skill Simulations', icon: 'simulation' },
     { to: '/student/learn/kenya-ems', label: 'Clinical Cases', icon: 'cases' },
   ] },
   { group: 'Kenya EMS Cases', items: [
@@ -311,7 +309,7 @@ function AppRoutes() {
         <Route element={<RequireRole role="student"><RequireStudentSubscription><Layout links={lecturioNavEnabled ? LECTURIO_STUDENT_LINKS : STUDENT_LINKS} roleLabel="" /></RequireStudentSubscription></RequireRole>}>
           <Route path="/student" element={<Navigate to={lecturioNavEnabled ? '/student/study-planner' : '/student/mcq-questions'} replace />} />
           <Route path="/student/study-planner" element={<StudentStudyPlanner />} />
-          <Route path="/student/my-content" element={<StudentAssessments />} />
+          <Route path="/student/my-content" element={<StudentMyContent />} />
           <Route path="/student/learning-paths" element={<StudentAssessments />} />
           <Route path="/student/spaced-repetition" element={<StudentSpacedRepetition />} />
           <Route path="/student/bookmarks" element={<StudentBookmarks />} />

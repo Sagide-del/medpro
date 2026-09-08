@@ -1628,6 +1628,7 @@ button:disabled { opacity: 0.5; cursor: default; }
 .home-navbar .brand-block { display: flex; flex-direction: column; line-height: 1.1; }
 .home-navbar .brand-line1 { display: flex; align-items: center; gap: 10px; }
 .home-navbar .brand-line1 svg { width: 26px; height: 22px; flex-shrink: 0; }
+.home-navbar .home-brand-logo { display: block; width: 168px; max-width: 48vw; height: auto; }
 .home-navbar .brand-line1 span {
   font-family: var(--font-display);
   font-weight: 800;
@@ -5291,6 +5292,9 @@ button:disabled { opacity: 0.5; cursor: default; }
 .shell .brand-mark { color: var(--brand-blue); }
 .shell .sidebar .brand small,
 .shell .nav-group-title { color: #78909c; }
+.shell .brand-lockup { display: block; }
+.shell .brand-logo-image { display: block; width: 194px; max-width: 100%; height: auto; }
+.shell .sidebar .brand small { margin: 7px 0 0; }
 .shell .sidebar a { color: #455a64; border-radius: 8px; }
 .shell .sidebar a:hover { background: #f3f7fa; color: #263238; }
 .shell .sidebar a.active {

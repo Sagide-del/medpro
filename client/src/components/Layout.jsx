@@ -7,12 +7,7 @@ import PlatformFooter from './shared/PlatformFooter';
 import UiIcon from './shared/UiIcon';
 
 function MedProMark() {
-  return (
-    <svg className="brand-mark" viewBox="0 0 32 32" aria-hidden="true">
-      <circle cx="16" cy="16" r="14" />
-      <path d="M5.5 16h5l2-5 3.1 10 2.1-5h8.8" />
-    </svg>
-  );
+  return <img className="brand-logo-image" src="/medpro-logo.png" alt="MedPro" />;
 }
 
 /**
@@ -49,7 +44,7 @@ export default function Layout({ links, roleLabel }) {
 
         <div className="sidebar-top">
           <Link to="/" className="brand" style={{ textDecoration: 'none' }}>
-            <span className="brand-lockup"><MedProMark /><span className="brand-wordmark">Med<span>Pro</span></span></span>
+            <span className="brand-lockup"><MedProMark /></span>
             <small>{roleLabel}</small>
           </Link>
 

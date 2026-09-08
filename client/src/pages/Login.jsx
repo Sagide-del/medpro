@@ -102,7 +102,7 @@ export default function Login() {
           </div>
         )}
         <div style={{ marginTop: 22, fontSize: 11, color: 'var(--ink-soft)' }}>
-          MedProHub © 2026. All rights reserved.
+          Andolih EdTech Studios
         </div>
         </div>
       </div>

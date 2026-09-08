@@ -3,7 +3,7 @@ export default function PlatformFooter() {
     <footer className="app-footer">
       <div className="app-footer-divider" aria-hidden="true" />
       <div className="app-footer-inner">
-        <p className="app-footer-line app-footer-copyright">MedProHub © 2026. All rights reserved.</p>
+        <p className="app-footer-line app-footer-copyright">Andolih EdTech Studios</p>
       </div>
     </footer>
   );

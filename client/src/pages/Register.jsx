@@ -70,7 +70,7 @@ export default function Register() {
           Already have an account? <Link to="/login">Sign in</Link>
         </div>
         <div style={{ marginTop: 22, fontSize: 11, color: 'var(--ink-soft)' }}>
-          MedProHub © 2026. All rights reserved.
+          Andolih EdTech Studios
         </div>
       </div>
     </div>

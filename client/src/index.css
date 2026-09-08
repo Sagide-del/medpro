@@ -5814,6 +5814,46 @@ button:disabled { opacity: 0.5; cursor: default; }
   .shell .sidebar.open nav { display: flex; }
 }
 
+/* Give the Question Bank a calm two-column working layout on larger screens. */
+.question-bank-v2 {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  grid-template-areas:
+    "header header"
+    "alert alert"
+    "stats stats"
+    "modules weakness"
+    "modules plan";
+  gap: 18px;
+  align-items: start;
+}
+.question-bank-v2-header { grid-area: header; margin-bottom: 0; }
+.question-bank-v2 > .alert { grid-area: alert; margin-bottom: 0; }
+.question-bank-v2-stats { grid-area: stats; margin-bottom: 0; }
+.question-bank-v2-weaknesses { grid-area: weakness; margin-bottom: 0; padding: 18px; }
+.question-bank-v2-plan { grid-area: plan; margin-bottom: 0; padding: 18px; }
+.question-bank-v2-modules { grid-area: modules; margin-bottom: 0; min-width: 0; }
+.question-bank-v2 .question-bank-v2-section-heading h2 { font-size: 20px; }
+.question-bank-v2 .question-bank-v2-weakness-list { grid-template-columns: 1fr; }
+.question-bank-v2 .question-bank-v2-list { grid-template-columns: 1fr; }
+.question-bank-v2 .question-bank-v2-stats strong { font-size: 18px; }
+.question-bank-v2 .question-bank-v2-plan-item { align-items: flex-start; flex-direction: column; }
+.question-bank-v2 .question-bank-v2-plan-item button { width: 100%; }
+
+@media (max-width: 820px) {
+  .question-bank-v2 {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "header"
+      "alert"
+      "stats"
+      "weakness"
+      "plan"
+      "modules";
+  }
+  .question-bank-v2 .question-bank-v2-list { grid-template-columns: 1fr; }
+}
+
 /* Question Bank V2: utility-first learning workspace, not a promotional grid. */
 .question-bank-v2 { max-width: 1120px; }
 .question-bank-v2-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 24px; margin-bottom: 22px; }

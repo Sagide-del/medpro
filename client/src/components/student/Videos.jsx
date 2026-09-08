@@ -50,11 +50,28 @@ export default function Videos() {
     <>
       <div className="page-head">
         <div>
-          <h1>Clinical skills videos</h1>
+          <h1>Podcasts</h1>
+          <div className="sub">Short audio reviews for EMT and Paramedic revision.</div>
         </div>
       </div>
 
+      <section className="podcast-feature" aria-labelledby="toddler-airway-title">
+        <div className="podcast-feature-art" aria-hidden="true"><span>01</span><strong>EMS<br />Audio Review</strong></div>
+        <div className="podcast-feature-content">
+          <div className="podcast-kicker">Airway management · Pediatrics</div>
+          <h2 id="toddler-airway-title">Airway Management in Toddlers</h2>
+          <p>Scene priorities, foreign-body obstruction, oxygenation, and rapid reassessment in a deteriorating toddler.</p>
+          <audio className="podcast-player" controls preload="metadata">
+            <source src="/audio/airway-management-toddlers.wav" type="audio/wav" />
+            Your browser does not support audio playback.
+          </audio>
+          <details className="podcast-transcript"><summary>Open transcript and key takeaways</summary><p>Start with scene safety and assess responsiveness. Call for help early and use the pediatric assessment triangle: appearance, work of breathing, and circulation to skin. Keep the child with the caregiver where possible and avoid unnecessary agitation. Assess breathing and oxygen saturation, then provide oxygen according to the child&apos;s condition and local protocol.</p><p>For a responsive child with a suspected foreign body, encourage an effective cough. If the cough becomes ineffective, use age-appropriate back blows and chest thrusts for an infant, or back blows and abdominal thrusts for a child older than one year. Do not perform blind finger sweeps. If the child becomes unresponsive, begin CPR and inspect the mouth only when opening the airway for ventilation.</p><ul><li>Use appropriately sized equipment and gentle ventilations.</li><li>Remember toddlers have smaller airways and limited respiratory reserve.</li><li>Reassess continuously and transport rapidly when the child remains unstable.</li></ul></details>
+        </div>
+      </section>
+
       {status && <div className="ok-note">{status}</div>}
+
+      {assignments.length > 0 && <h2 className="podcast-assignment-heading">Clinical video assignments</h2>}
 
       {assignments.map((assignment) => (
         <div className="card" key={assignment.assignment_id}>

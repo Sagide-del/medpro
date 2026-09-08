@@ -62,62 +62,39 @@ function masteryBand(value) {
 function LearningQuestionBank({ modules, baseRoute, subscription }) {
   const navigate = useNavigate();
   const [filter, setFilter] = useState('all');
+  const [search, setSearch] = useState('');
   const enriched = modules.map((module) => ({ ...module, mastery: masteryForModule(module) }));
-  const critical = enriched.filter((module) => module.mastery < 60);
   const filtered = enriched.filter((module) => {
-    if (filter === 'critical') return module.mastery < 60;
-    if (filter === 'mastered') return module.mastery >= 70;
-    if (filter === 'progress') return module.mastery >= 60 && module.mastery < 70;
-    return true;
+    const title = (MODULE_LABELS[module.order_number] || module.title || '').toLowerCase();
+    const matchesSearch = !search.trim() || title.includes(search.trim().toLowerCase());
+    const matchesFilter = filter === 'all' || filter === String(module.id)
+      || (filter === 'critical' && module.mastery < 60)
+      || (filter === 'mastered' && module.mastery > 80)
+      || (filter === 'progress' && module.mastery >= 60 && module.mastery <= 79);
+    return matchesSearch && matchesFilter;
   });
   const totalQuestions = enriched.reduce((sum, module) => sum + Number(module.total_questions || 0), 0);
   const totalAnswered = enriched.reduce((sum, module) => sum + (module.attempt_count ? Number(module.total_questions || 0) : 0), 0);
   const overallAccuracy = enriched.length ? Math.round(enriched.reduce((sum, module) => sum + module.mastery, 0) / enriched.length) : 0;
-  const plan = [...enriched].sort((a, b) => a.mastery - b.mastery).slice(0, 3);
 
   return (
     <div className="mcq-page question-bank-v2">
+      <div className="question-bank-v2-breadcrumbs">Home <span>/</span> My Content <span>/</span> <strong>Question Bank</strong></div>
       <header className="question-bank-v2-header">
-        <div>
-          <div className="mcq-progress-kicker">Revision workspace</div>
-          <h1>Question Bank</h1>
-          <p>Practice by topic, strengthen weak areas, and build exam readiness.</p>
-        </div>
-        <div className="question-bank-v2-countdown"><strong>Exam countdown</strong><span>Exam date not set</span><small>Today&apos;s goal: 30 questions · 45 minutes</small></div>
+        <div><div className="mcq-progress-kicker">{enriched.length} topic paths</div><h1>Question Bank</h1><p>Choose a topic to start focused practice.</p></div>
+        <label className="question-bank-v2-search"><span className="sr-only">Search topics</span><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search topics" /><UiIcon name="search" /></label>
       </header>
-
       {subscription && !subscription.allowed && <div className="alert info">Your subscription is {subscription.status}. Renew your plan to continue.</div>}
-
-      <section className="question-bank-v2-stats" aria-label="Question bank statistics">
-        <div><span>Total questions</span><strong>{totalQuestions}</strong></div>
-        <div><span>Questions answered</span><strong>{totalAnswered}</strong></div>
-        <div><span>Overall accuracy</span><strong>{overallAccuracy}%</strong></div>
-        <div><span>Study streak</span><strong>0 days</strong></div>
-        <div><span>Critical modules</span><strong>{critical.length}</strong></div>
-        <div><span>Mastered modules</span><strong>{enriched.filter((module) => module.mastery >= 80).length}</strong></div>
-      </section>
-
-      {critical.length > 0 && <section className="question-bank-v2-weaknesses" aria-labelledby="critical-weaknesses-title">
-        <div className="question-bank-v2-section-heading"><div><div className="mcq-progress-kicker">Priority review</div><h2 id="critical-weaknesses-title">Critical weaknesses</h2></div><span>{critical.length} topic{critical.length === 1 ? '' : 's'}</span></div>
-        <div className="question-bank-v2-weakness-list">{critical.map((module) => <button type="button" key={module.id} onClick={() => navigate(`${baseRoute}/${module.id}`)}><span>{MODULE_LABELS[module.order_number] || module.title} - {module.mastery}% (Need 70%)</span><strong>{module.mastery}% Mastery</strong><em>Needs urgent practice</em></button>)}</div>
-      </section>}
-
-      <section className="question-bank-v2-plan" aria-labelledby="today-plan-title">
-        <div className="question-bank-v2-section-heading"><div><div className="mcq-progress-kicker">Personalized review</div><h2 id="today-plan-title">Today&apos;s question plan</h2></div><span>3 sessions · 15 min each</span></div>
-        <div className="question-bank-v2-plan-grid">{plan.map((module) => <div key={module.id} className="question-bank-v2-plan-item"><div><strong>{MODULE_LABELS[module.order_number] || module.title}</strong><span>{module.mastery}% mastery <b>→ 70% target</b></span></div><button type="button" onClick={() => navigate(`${baseRoute}/${module.id}`)}>Start Practice</button></div>)}</div>
-      </section>
-
-      <section className="question-bank-v2-modules" aria-labelledby="mastery-overview-title">
-        <div className="question-bank-v2-section-heading"><div><div className="mcq-progress-kicker">Topic practice</div><h2 id="mastery-overview-title">Mastery overview</h2></div><span>{enriched.length} modules</span></div>
-        <div className="question-bank-v2-filters" role="group" aria-label="Filter modules">{[['all', 'All Modules'], ['critical', 'Critical'], ['mastered', 'Mastered'], ['progress', 'In Progress']].map(([value, label]) => <button type="button" key={value} className={filter === value ? 'is-active' : ''} aria-pressed={filter === value} onClick={() => setFilter(value)}>{label}</button>)}</div>
-        <div className="question-bank-v2-list">{filtered.map((module) => { const band = masteryBand(module.mastery); return <article key={module.id} className={`question-bank-v2-module ${band.key}`}>
-          <div className="question-bank-v2-module-title"><span>Module {module.order_number}</span><h3>{MODULE_LABELS[module.order_number] || module.title}</h3></div>
-          <div className="question-bank-v2-module-score"><strong>{module.mastery}% Mastery</strong><span>{module.attempt_count ? band.label : 'START'}</span></div>
+      <div className="question-bank-v2-summary"><span><strong>{totalQuestions}</strong> questions</span><span><strong>{totalAnswered}</strong> answered</span><span><strong>{overallAccuracy}%</strong> average accuracy</span></div>
+      <div className="question-bank-v2-content">
+        <aside className="question-bank-v2-topics" aria-label="Question bank topics"><h2>Topics</h2><button type="button" className={filter === 'all' ? 'is-active' : ''} onClick={() => setFilter('all')}>All topics <span>{enriched.length}</span></button>{enriched.map((module) => <button type="button" key={module.id} className={filter === String(module.id) ? 'is-active' : ''} onClick={() => setFilter(String(module.id))}>{MODULE_LABELS[module.order_number] || module.title}<span>{module.mastery}%</span></button>)}</aside>
+        <main className="question-bank-v2-results"><div className="question-bank-v2-results-head"><h2>Available topics</h2><div className="question-bank-v2-filters" role="group" aria-label="Filter topics">{[['all', 'All'], ['critical', 'Critical'], ['mastered', 'Mastered'], ['progress', 'Progress']].map(([value, label]) => <button type="button" key={value} className={filter === value ? 'is-active' : ''} aria-pressed={filter === value} onClick={() => setFilter(value)}>{label}</button>)}</div></div><div className="question-bank-v2-list">{filtered.map((module) => { const band = masteryBand(module.mastery); return <article key={module.id} className={`question-bank-v2-module ${band.key}`}>
+          <div className="question-bank-v2-module-title"><span>Module {module.order_number}</span><h3>{MODULE_LABELS[module.order_number] || module.title}</h3><small>{module.total_questions} questions · {module.attempt_count || 0} attempts</small></div>
+          <div className="question-bank-v2-module-score"><strong>{module.mastery}%</strong><span>{module.attempt_count ? band.label : 'START'}</span></div>
           <div className="question-bank-v2-bar" role="progressbar" aria-label={`${module.mastery}% mastery`} aria-valuenow={module.mastery} aria-valuemin="0" aria-valuemax="100"><span style={{ width: `${module.mastery}%` }} /></div>
-          <div className="question-bank-v2-module-meta"><span>{module.total_questions} questions</span><span>{module.attempt_count || 0} attempts</span><div className="question-bank-v2-module-actions"><button type="button" onClick={() => navigate(`${baseRoute}/${module.id}`)}>{module.attempt_count ? band.action : 'Start Module'}</button>{module.attempt_count > 0 && <button type="button" className="is-secondary" onClick={() => navigate(`${baseRoute}/${module.id}`)}>Review Summary</button>}</div></div>
-        </article>; })}</div>
-        {filtered.length === 0 && <div className="question-bank-empty">No modules match this filter.</div>}
-      </section>
+          <div className="question-bank-v2-module-actions"><button type="button" onClick={() => navigate(`${baseRoute}/${module.id}`)}>{module.attempt_count ? band.action : 'Start Module'}</button>{module.attempt_count > 0 && <button type="button" className="is-secondary" onClick={() => navigate(`${baseRoute}/${module.id}`)}>Review</button>}</div>
+        </article>; })}</div>{filtered.length === 0 && <div className="question-bank-empty">No topics match your search.</div>}</main>
+      </div>
     </div>
   );
 }

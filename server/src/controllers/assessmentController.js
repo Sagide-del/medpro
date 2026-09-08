@@ -138,7 +138,8 @@ export const getMcqModuleQuestions = asyncHandler(async (req, res) => {
 
   const payload = await Assessment.randomizedMcqQuestions(req.user.sub, req.params.moduleId);
   if (!payload) return res.status(404).json({ error: 'Module not found.' });
-  if (payload.module.status === 'locked') return res.status(403).json({ error: 'This module is currently locked.' });
+  const questionBankV2Enabled = process.env.QUESTION_BANK_V2_ENABLED === 'true';
+  if (payload.module.status === 'locked' && !questionBankV2Enabled) return res.status(403).json({ error: 'This module is currently locked.' });
 
   res.json(payload);
 });

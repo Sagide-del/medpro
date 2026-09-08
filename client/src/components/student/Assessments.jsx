@@ -45,6 +45,81 @@ const LOCK_INSTRUCTIONS = {
   5: 'Locked - Complete Module 4 to unlock',
 };
 
+const questionBankV2Enabled = import.meta.env.VITE_QUESTION_BANK_V2_ENABLED === 'true';
+
+function masteryForModule(module) {
+  const value = Number(module.best_percentage ?? module.score ?? 0);
+  return Math.max(0, Math.min(100, Number.isFinite(value) ? value : 0));
+}
+
+function masteryBand(value) {
+  if (value < 60) return { key: 'critical', label: 'Critical weakness', action: 'Practice Now' };
+  if (value < 80) return { key: 'review', label: 'Needs review', action: 'Improve Score' };
+  return { key: 'mastered', label: 'Mastered', action: 'Practice Again' };
+}
+
+function LearningQuestionBank({ modules, baseRoute, subscription }) {
+  const navigate = useNavigate();
+  const [filter, setFilter] = useState('all');
+  const enriched = modules.map((module) => ({ ...module, mastery: masteryForModule(module) }));
+  const critical = enriched.filter((module) => module.mastery < 60);
+  const filtered = enriched.filter((module) => {
+    if (filter === 'critical') return module.mastery < 60;
+    if (filter === 'mastered') return module.mastery >= 70;
+    if (filter === 'progress') return module.mastery >= 60 && module.mastery < 70;
+    return true;
+  });
+  const totalQuestions = enriched.reduce((sum, module) => sum + Number(module.total_questions || 0), 0);
+  const totalAnswered = enriched.reduce((sum, module) => sum + (Number(module.attempt_count || 0) * Number(module.total_questions || 0)), 0);
+  const overallAccuracy = enriched.length ? Math.round(enriched.reduce((sum, module) => sum + module.mastery, 0) / enriched.length) : 0;
+  const plan = [...enriched].sort((a, b) => a.mastery - b.mastery).slice(0, 3);
+
+  return (
+    <div className="mcq-page question-bank-v2">
+      <header className="question-bank-v2-header">
+        <div>
+          <div className="mcq-progress-kicker">Revision workspace</div>
+          <h1>Question Bank</h1>
+          <p>Practice by topic, strengthen weak areas, and build exam readiness.</p>
+        </div>
+        <div className="question-bank-v2-countdown"><strong>Exam countdown</strong><span>Exam date not set</span><small>Today&apos;s goal: 30 questions · 45 minutes</small></div>
+      </header>
+
+      {subscription && !subscription.allowed && <div className="alert info">Your subscription is {subscription.status}. Renew your plan to continue.</div>}
+
+      <section className="question-bank-v2-stats" aria-label="Question bank statistics">
+        <div><span>Total questions</span><strong>{totalQuestions}</strong></div>
+        <div><span>Questions answered</span><strong>{totalAnswered}</strong></div>
+        <div><span>Overall accuracy</span><strong>{overallAccuracy}%</strong></div>
+        <div><span>Study streak</span><strong>0 days</strong></div>
+        <div><span>Best study day</span><strong>--</strong></div>
+      </section>
+
+      {critical.length > 0 && <section className="question-bank-v2-weaknesses" aria-labelledby="critical-weaknesses-title">
+        <div className="question-bank-v2-section-heading"><div><div className="mcq-progress-kicker">Priority review</div><h2 id="critical-weaknesses-title">Critical weaknesses</h2></div><span>{critical.length} topic{critical.length === 1 ? '' : 's'}</span></div>
+        <div className="question-bank-v2-weakness-list">{critical.map((module) => <button type="button" key={module.id} onClick={() => navigate(`${baseRoute}/${module.id}`)}><span>{MODULE_LABELS[module.order_number] || module.title}</span><strong>{module.mastery}% <small>of 70% target</small></strong><em>Needs urgent practice</em></button>)}</div>
+      </section>}
+
+      <section className="question-bank-v2-plan" aria-labelledby="today-plan-title">
+        <div className="question-bank-v2-section-heading"><div><div className="mcq-progress-kicker">Personalized review</div><h2 id="today-plan-title">Today&apos;s question plan</h2></div><span>3 sessions · 15 min each</span></div>
+        <div className="question-bank-v2-plan-grid">{plan.map((module) => <div key={module.id} className="question-bank-v2-plan-item"><div><strong>{MODULE_LABELS[module.order_number] || module.title}</strong><span>{module.mastery}% mastery <b>→ 70% target</b></span></div><button type="button" onClick={() => navigate(`${baseRoute}/${module.id}`)}>Start Practice</button></div>)}</div>
+      </section>
+
+      <section className="question-bank-v2-modules" aria-labelledby="mastery-overview-title">
+        <div className="question-bank-v2-section-heading"><div><div className="mcq-progress-kicker">Topic practice</div><h2 id="mastery-overview-title">Mastery overview</h2></div><span>{enriched.length} modules</span></div>
+        <div className="question-bank-v2-filters" role="group" aria-label="Filter modules">{[['all', 'All Modules'], ['critical', 'Critical'], ['mastered', 'Mastered'], ['progress', 'In Progress']].map(([value, label]) => <button type="button" key={value} className={filter === value ? 'is-active' : ''} aria-pressed={filter === value} onClick={() => setFilter(value)}>{label}</button>)}</div>
+        <div className="question-bank-v2-list">{filtered.map((module) => { const band = masteryBand(module.mastery); return <article key={module.id} className={`question-bank-v2-module ${band.key}`}>
+          <div className="question-bank-v2-module-title"><span>Module {module.order_number}</span><h3>{MODULE_LABELS[module.order_number] || module.title}</h3></div>
+          <div className="question-bank-v2-module-score"><strong>{module.mastery}%</strong><span>{band.label}</span></div>
+          <div className="question-bank-v2-bar" role="progressbar" aria-label={`${module.mastery}% mastery`} aria-valuenow={module.mastery} aria-valuemin="0" aria-valuemax="100"><span style={{ width: `${module.mastery}%` }} /></div>
+          <div className="question-bank-v2-module-meta"><span>{module.total_questions} questions</span><span>{module.attempt_count || 0} attempts</span><button type="button" onClick={() => navigate(`${baseRoute}/${module.id}`)}>{band.action}</button></div>
+        </article>; })}</div>
+        {filtered.length === 0 && <div className="question-bank-empty">No modules match this filter.</div>}
+      </section>
+    </div>
+  );
+}
+
 function ModuleList() {
   const location = useLocation();
   const navigate = useNavigate();
@@ -75,6 +150,10 @@ function ModuleList() {
   const completedModules = modules.filter((module) => module.status === 'completed').length;
   const availableModules = modules.filter((module) => module.status === 'available').length;
   const overallProgress = modules.length ? Math.round((completedModules / modules.length) * 100) : 0;
+
+  if (questionBankV2Enabled && location.pathname === '/student/question-bank') {
+    return <LearningQuestionBank modules={modules} baseRoute={baseRoute} subscription={subscription} />;
+  }
 
   return (
     <div className="mcq-page">

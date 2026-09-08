@@ -87,7 +87,7 @@ export default function Home() {
       <header className="home-navbar">
         <div className="brand-block">
           <div className="brand-line1">
-            <img className="home-brand-logo" src="/medpro-logo.png" alt="MedPro" />
+            <img className="home-brand-logo" src="/medpro-logo.svg" alt="MedPro" />
           </div>
           <div className="brand-line2">EMS REVISION PLATFORM</div>
         </div>

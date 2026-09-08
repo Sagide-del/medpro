@@ -5,7 +5,7 @@ import PlatformFooter from './shared/PlatformFooter';
 import UiIcon from './shared/UiIcon';
 
 function MedProMark() {
-  return <img className="brand-logo-image" src="/medpro-logo.png" alt="MedPro" />;
+  return <img className="brand-logo-image" src="/medpro-logo.svg" alt="MedPro" />;
 }
 
 /**

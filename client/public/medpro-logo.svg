@@ -1,0 +1,10 @@
+<svg width="244" height="64" viewBox="0 0 244 64" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">MedPro</title>
+  <desc id="desc">MedPro emergency medical education logo</desc>
+  <circle cx="30" cy="32" r="24" fill="#147EC2"/>
+  <path d="M30 12L35 21L45 22L38 29L40 40L30 35L20 40L22 29L15 22L25 21L30 12Z" fill="white"/>
+  <path d="M30 22V45M22 33.5H38" stroke="#147EC2" stroke-width="3" stroke-linecap="round"/>
+  <path d="M62 46V18L78 31L94 18V46" stroke="#1B2733" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="104" y="45" fill="#1B2733" font-family="Arial, Helvetica, sans-serif" font-size="38" font-weight="700" letter-spacing="-2">Med</text>
+  <text x="173" y="45" fill="#147EC2" font-family="Arial, Helvetica, sans-serif" font-size="38" font-weight="700" letter-spacing="-2">Pro</text>
+</svg>

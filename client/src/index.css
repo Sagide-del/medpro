@@ -5304,6 +5304,38 @@ button:disabled { opacity: 0.5; cursor: default; }
 .shell .main { min-width: 0; max-width: none; background: var(--workspace); }
 .shell .nav-toggle { background: #fff; border-color: #dce5ea; }
 .shell .nav-toggle span { background: #455a64; }
+.program-switcher {
+  padding: 12px 10px 14px;
+  border-top: 1px solid #edf1f3;
+  border-bottom: 1px solid #edf1f3;
+}
+.program-switcher-label {
+  color: #78909c;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+.program-switcher-options { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.program-switcher button {
+  min-height: 38px;
+  padding: 7px 6px;
+  border: 1px solid #dce5ea;
+  border-radius: 7px;
+  background: #fff;
+  color: #455a64;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.program-switcher button:hover { border-color: #9fcbe5; background: #f3f8fb; }
+.program-switcher button.is-selected {
+  border-color: var(--brand-blue);
+  background: var(--brand-blue-tint);
+  color: var(--brand-blue-dark);
+}
 .shell .card,
 .shell .panel,
 .shell .source-mode-card,

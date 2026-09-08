@@ -32,7 +32,7 @@ function MedProMark() {
  *    ]
  */
 export default function Layout({ links, roleLabel }) {
-  const { user, logout } = useAuth();
+  const { user, logout, setProgram } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [navOpen, setNavOpen] = useState(false);
@@ -67,6 +67,25 @@ export default function Layout({ links, roleLabel }) {
         </div>
 
         <PulseLine color="#147ec2" />
+
+        {user?.role === 'student' && (
+          <div className="program-switcher" aria-label="Choose revision track">
+            <div className="program-switcher-label">Revision track</div>
+            <div className="program-switcher-options">
+              {['EMT', 'Paramedic'].map((program) => (
+                <button
+                  key={program}
+                  type="button"
+                  className={user.program === program ? 'is-selected' : ''}
+                  aria-pressed={user.program === program}
+                  onClick={() => setProgram(program)}
+                >
+                  {program}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
         <nav>
 

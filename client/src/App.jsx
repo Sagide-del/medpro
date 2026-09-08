@@ -156,6 +156,7 @@ const LECTURIO_STUDENT_LINKS = [
 
 // New study navigation is the default; set VITE_LECTURIO_NAV_ENABLED=false only to roll back.
 const lecturioNavEnabled = import.meta.env.VITE_LECTURIO_NAV_ENABLED !== 'false';
+const typographyV2Enabled = import.meta.env.VITE_TYPOGRAPHY_V2_ENABLED !== 'false';
 
 
 const SUPERADMIN_LINKS = [
@@ -441,9 +442,11 @@ function AppRoutes() {
 export default function App() {
   return (
     <AuthProvider>
-      <BrowserRouter>
-        <AppRoutes />
-      </BrowserRouter>
+      <div className={typographyV2Enabled ? 'typography-v2' : ''}>
+        <BrowserRouter>
+          <AppRoutes />
+        </BrowserRouter>
+      </div>
     </AuthProvider>
   );
 }

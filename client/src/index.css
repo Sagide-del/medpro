@@ -28,6 +28,9 @@
   --font-display: 'Inter', 'Roboto', system-ui, sans-serif;
   --font-body: 'Inter', 'Roboto', system-ui, sans-serif;
   --font-mono: 'Inter', 'Roboto', system-ui, sans-serif;
+  --font-primary: 'Open Sans', sans-serif;
+  --font-heading: 'Merriweather', serif;
+  --font-ui: 'Roboto', sans-serif;
 }
 
 * { box-sizing: border-box; margin: 0; }
@@ -6054,6 +6057,86 @@ button:disabled { opacity: 0.5; cursor: default; }
   .question-bank-v2 .question-bank-v2-results-head { align-items: flex-start; flex-direction: column; gap: 8px; }
   .question-bank-v2 .question-bank-v2-results-head .question-bank-v2-filters { width: 100%; overflow-x: auto; }
   .question-bank-v2 .question-bank-v2-list { grid-template-columns: 1fr; gap: 12px; }
+}
+
+/* Global typography system. Set VITE_TYPOGRAPHY_V2_ENABLED=false to roll back. */
+.typography-v2 {
+  --font-primary: 'Open Sans', sans-serif;
+  --font-heading: 'Merriweather', serif;
+  --font-ui: 'Roboto', sans-serif;
+  --type-primary: #1A1A2E;
+  --type-secondary: #4A4A6A;
+  --type-muted: #8A8AA8;
+  --type-accent: #0D6EFD;
+  --type-critical: #DC3545;
+  --type-success: #28A745;
+  --type-warning: #FFC107;
+  color: var(--type-primary);
+  font-family: var(--font-primary);
+  font-size: 16px;
+  line-height: 1.6;
+}
+.typography-v2 h1,
+.typography-v2 h2,
+.typography-v2 h3,
+.typography-v2 h4,
+.typography-v2 h5,
+.typography-v2 h6 { font-family: var(--font-heading); font-weight: 700; line-height: 1.3; color: var(--type-primary); }
+.typography-v2 h1 { font-size: 32px; }
+.typography-v2 h2 { font-size: 24px; }
+.typography-v2 h3 { font-size: 20px; }
+.typography-v2 p,
+.typography-v2 li,
+.typography-v2 td,
+.typography-v2 dd { font-family: var(--font-primary); font-size: 16px; font-weight: 400; line-height: 1.6; color: var(--type-secondary); }
+.typography-v2 small,
+.typography-v2 th,
+.typography-v2 .sub,
+.typography-v2 .meta,
+.typography-v2 .mcq-module-history,
+.typography-v2 .mcq-module-meta { font-family: var(--font-primary); font-size: 14px; font-weight: 300; line-height: 1.4; color: var(--type-muted); }
+.typography-v2 button,
+.typography-v2 input,
+.typography-v2 select,
+.typography-v2 textarea,
+.typography-v2 label,
+.typography-v2 .badge,
+.typography-v2 .nav-group-title,
+.typography-v2 .nav-link-copy { font-family: var(--font-ui); }
+.typography-v2 button,
+.typography-v2 input,
+.typography-v2 select,
+.typography-v2 textarea { font-size: 16px; }
+.typography-v2 button,
+.typography-v2 .primary,
+.typography-v2 .btn-primary,
+.typography-v2 .new-button { font-weight: 600; }
+.typography-v2 .badge,
+.typography-v2 .nav-group-title,
+.typography-v2 .mcq-progress-kicker,
+.typography-v2 .foot-label { font-size: 12px; font-weight: 300; line-height: 1.4; }
+.typography-v2 a { color: var(--type-accent); }
+.typography-v2 .primary,
+.typography-v2 .btn-primary,
+.typography-v2 .new-button { background: var(--type-accent); border-color: var(--type-accent); color: #fff; }
+.typography-v2 .primary:hover,
+.typography-v2 .btn-primary:hover,
+.typography-v2 .new-button:hover { background: #0b5ed7; border-color: #0b5ed7; }
+.typography-v2 .error-note,
+.typography-v2 .alert:not(.success):not(.info) { color: var(--type-critical); }
+.typography-v2 .ok-note,
+.typography-v2 .badge.approved,
+.typography-v2 .badge.completed { color: var(--type-success); }
+.typography-v2 .badge.pending,
+.typography-v2 .badge.trial { color: #9a7300; }
+.typography-v2 .question-bank-v2-module-title h3 { font-family: var(--font-heading); font-size: 20px; font-weight: 700; color: var(--type-primary); }
+.typography-v2 .question-bank-v2-module-score strong { font-family: var(--font-ui); font-size: 16px; font-weight: 700; color: var(--type-primary); }
+.typography-v2 .question-bank-v2-module-score span { font-family: var(--font-ui); font-size: 12px; font-weight: 700; }
+
+@media (max-width: 720px) {
+  .typography-v2 h1 { font-size: 28px; }
+  .typography-v2 h2 { font-size: 22px; }
+  .typography-v2 h3 { font-size: 19px; }
 }
 
 /* Reference-inspired finish: one composed workspace, generous breathing room, clear actions. */

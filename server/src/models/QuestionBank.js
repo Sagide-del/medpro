@@ -1,7 +1,9 @@
 import { query } from '../config/database.js';
 
 function featureEnabled() {
-  return process.env.QUESTION_BANK_SAAS === 'true';
+  // Active by default so the production workspace is visible immediately;
+  // set QUESTION_BANK_SAAS=false for an instant rollback to legacy routes.
+  return process.env.QUESTION_BANK_SAAS !== 'false';
 }
 
 function featureError() {

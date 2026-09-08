@@ -47,7 +47,8 @@ const LOCK_INSTRUCTIONS = {
 
 // V2 is the active experience by default; set VITE_QUESTION_BANK_V2_ENABLED=false to roll back.
 const questionBankV2Enabled = import.meta.env.VITE_QUESTION_BANK_V2_ENABLED !== 'false';
-const questionBankSaaSEnabled = import.meta.env.VITE_QUESTION_BANK_SAAS_ENABLED === 'true';
+// Active by default; set VITE_QUESTION_BANK_SAAS_ENABLED=false to roll back.
+const questionBankSaaSEnabled = import.meta.env.VITE_QUESTION_BANK_SAAS_ENABLED !== 'false';
 
 function masteryForModule(module) {
   const value = Number(module.best_percentage ?? module.score ?? 0);

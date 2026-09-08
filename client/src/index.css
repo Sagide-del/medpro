@@ -5823,7 +5823,7 @@ button:disabled { opacity: 0.5; cursor: default; }
 .question-bank-v2-countdown strong { color: #0d5f99; font-size: 12px; text-transform: uppercase; letter-spacing: .08em; }
 .question-bank-v2-countdown span { color: #263238; font-size: 14px; font-weight: 700; }
 .question-bank-v2-countdown small { color: #607d8b; font-size: 11px; }
-.question-bank-v2-stats { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); margin-bottom: 18px; background: #fff; border: 1px solid #dce5ea; }
+.question-bank-v2-stats { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); margin-bottom: 18px; background: #fff; border: 1px solid #dce5ea; }
 .question-bank-v2-stats div { display: grid; gap: 4px; min-height: 76px; padding: 14px 16px; border-right: 1px solid #e8eef2; }
 .question-bank-v2-stats div:last-child { border-right: 0; }
 .question-bank-v2-stats span { color: #607d8b; font-size: 11px; }
@@ -5870,7 +5870,10 @@ button:disabled { opacity: 0.5; cursor: default; }
 .question-bank-v2-module.review .question-bank-v2-bar span { background: #d49a2a; }
 .question-bank-v2-module.mastered .question-bank-v2-bar span { background: #10a477; }
 .question-bank-v2-module-meta { grid-column: 1 / -1; display: flex; align-items: center; gap: 12px; color: #607d8b; font-size: 12px; }
-.question-bank-v2-module-meta button { margin-left: auto; }
+.question-bank-v2-module-actions { display: flex; gap: 8px; margin-left: auto; }
+.question-bank-v2-module-actions button { min-height: 36px; }
+.question-bank-v2-module-actions .is-secondary { border: 1px solid #b9d9ea; background: #fff; color: #0d5f99; }
+.question-bank-v2-module-actions .is-secondary:hover { background: #eaf4fb; }
 
 @media (max-width: 720px) {
   .question-bank-v2-header { flex-direction: column; gap: 14px; }
@@ -5883,5 +5886,6 @@ button:disabled { opacity: 0.5; cursor: default; }
   .question-bank-v2-plan-item { align-items: flex-start; flex-direction: column; }
   .question-bank-v2-plan-item button { width: 100%; }
   .question-bank-v2-module-meta { flex-wrap: wrap; }
-  .question-bank-v2-module-meta button { width: 100%; margin-left: 0; }
+  .question-bank-v2-module-actions { width: 100%; margin-left: 0; }
+  .question-bank-v2-module-actions button { flex: 1; }
 }

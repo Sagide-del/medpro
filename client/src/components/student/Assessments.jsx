@@ -53,9 +53,9 @@ function masteryForModule(module) {
 }
 
 function masteryBand(value) {
-  if (value < 60) return { key: 'critical', label: 'Critical weakness', action: 'Practice Now' };
-  if (value < 80) return { key: 'review', label: 'Needs review', action: 'Improve Score' };
-  return { key: 'mastered', label: 'Mastered', action: 'Practice Again' };
+  if (value < 60) return { key: 'critical', label: 'CRITICAL', action: 'Practice Now' };
+  if (value < 80) return { key: 'review', label: 'NEEDS REVIEW', action: 'Improve Score' };
+  return { key: 'mastered', label: 'MASTERED', action: 'Practice Again' };
 }
 
 function LearningQuestionBank({ modules, baseRoute, subscription }) {
@@ -70,7 +70,7 @@ function LearningQuestionBank({ modules, baseRoute, subscription }) {
     return true;
   });
   const totalQuestions = enriched.reduce((sum, module) => sum + Number(module.total_questions || 0), 0);
-  const totalAnswered = enriched.reduce((sum, module) => sum + (Number(module.attempt_count || 0) * Number(module.total_questions || 0)), 0);
+  const totalAnswered = enriched.reduce((sum, module) => sum + (module.attempt_count ? Number(module.total_questions || 0) : 0), 0);
   const overallAccuracy = enriched.length ? Math.round(enriched.reduce((sum, module) => sum + module.mastery, 0) / enriched.length) : 0;
   const plan = [...enriched].sort((a, b) => a.mastery - b.mastery).slice(0, 3);
 
@@ -92,12 +92,13 @@ function LearningQuestionBank({ modules, baseRoute, subscription }) {
         <div><span>Questions answered</span><strong>{totalAnswered}</strong></div>
         <div><span>Overall accuracy</span><strong>{overallAccuracy}%</strong></div>
         <div><span>Study streak</span><strong>0 days</strong></div>
-        <div><span>Best study day</span><strong>--</strong></div>
+        <div><span>Critical modules</span><strong>{critical.length}</strong></div>
+        <div><span>Mastered modules</span><strong>{enriched.filter((module) => module.mastery >= 80).length}</strong></div>
       </section>
 
       {critical.length > 0 && <section className="question-bank-v2-weaknesses" aria-labelledby="critical-weaknesses-title">
         <div className="question-bank-v2-section-heading"><div><div className="mcq-progress-kicker">Priority review</div><h2 id="critical-weaknesses-title">Critical weaknesses</h2></div><span>{critical.length} topic{critical.length === 1 ? '' : 's'}</span></div>
-        <div className="question-bank-v2-weakness-list">{critical.map((module) => <button type="button" key={module.id} onClick={() => navigate(`${baseRoute}/${module.id}`)}><span>{MODULE_LABELS[module.order_number] || module.title}</span><strong>{module.mastery}% <small>of 70% target</small></strong><em>Needs urgent practice</em></button>)}</div>
+        <div className="question-bank-v2-weakness-list">{critical.map((module) => <button type="button" key={module.id} onClick={() => navigate(`${baseRoute}/${module.id}`)}><span>{MODULE_LABELS[module.order_number] || module.title} - {module.mastery}% (Need 70%)</span><strong>{module.mastery}% Mastery</strong><em>Needs urgent practice</em></button>)}</div>
       </section>}
 
       <section className="question-bank-v2-plan" aria-labelledby="today-plan-title">
@@ -110,9 +111,9 @@ function LearningQuestionBank({ modules, baseRoute, subscription }) {
         <div className="question-bank-v2-filters" role="group" aria-label="Filter modules">{[['all', 'All Modules'], ['critical', 'Critical'], ['mastered', 'Mastered'], ['progress', 'In Progress']].map(([value, label]) => <button type="button" key={value} className={filter === value ? 'is-active' : ''} aria-pressed={filter === value} onClick={() => setFilter(value)}>{label}</button>)}</div>
         <div className="question-bank-v2-list">{filtered.map((module) => { const band = masteryBand(module.mastery); return <article key={module.id} className={`question-bank-v2-module ${band.key}`}>
           <div className="question-bank-v2-module-title"><span>Module {module.order_number}</span><h3>{MODULE_LABELS[module.order_number] || module.title}</h3></div>
-          <div className="question-bank-v2-module-score"><strong>{module.mastery}%</strong><span>{band.label}</span></div>
+          <div className="question-bank-v2-module-score"><strong>{module.mastery}% Mastery</strong><span>{module.attempt_count ? band.label : 'START'}</span></div>
           <div className="question-bank-v2-bar" role="progressbar" aria-label={`${module.mastery}% mastery`} aria-valuenow={module.mastery} aria-valuemin="0" aria-valuemax="100"><span style={{ width: `${module.mastery}%` }} /></div>
-          <div className="question-bank-v2-module-meta"><span>{module.total_questions} questions</span><span>{module.attempt_count || 0} attempts</span><button type="button" onClick={() => navigate(`${baseRoute}/${module.id}`)}>{band.action}</button></div>
+          <div className="question-bank-v2-module-meta"><span>{module.total_questions} questions</span><span>{module.attempt_count || 0} attempts</span><div className="question-bank-v2-module-actions"><button type="button" onClick={() => navigate(`${baseRoute}/${module.id}`)}>{module.attempt_count ? band.action : 'Start Module'}</button>{module.attempt_count > 0 && <button type="button" className="is-secondary" onClick={() => navigate(`${baseRoute}/${module.id}`)}>Review Summary</button>}</div></div>
         </article>; })}</div>
         {filtered.length === 0 && <div className="question-bank-empty">No modules match this filter.</div>}
       </section>

@@ -3,7 +3,6 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../services/api';
 import { homeForRole } from '../services/auth';
-import PulseLine from '../components/PulseLine';
 
 const LOGIN_MODES = {
   student: {
@@ -64,10 +63,16 @@ export default function Login() {
   return (
     <div className="auth-wrap">
       <div className="auth-card">
+        <div className="auth-brand-panel">
+          <Link to="/" className="auth-brand-link" aria-label="MedPro home">
+            <img src="/medpro-logo.png" alt="MedPro" />
+          </Link>
+          <p>Focused revision for EMT and Paramedic practice.</p>
+        </div>
+        <div className="auth-form-panel">
         <Link to="/" className="back-link">&larr; Back to home</Link>
-        <h1>Med<span>Pro</span>Hub</h1>
-        <div className="tag">Secure EMS platform access</div>
-        <PulseLine color="#cc0000" width={330} />
+        <h1>Welcome back</h1>
+        <div className="tag">Sign in to your MedPro account</div>
 
         <div className="role-tabs">
           <button type="button" className={`role-tab${mode === 'student' ? ' active' : ''}`} onClick={() => { setMode('student'); setError(''); }}>
@@ -98,6 +103,7 @@ export default function Login() {
         )}
         <div style={{ marginTop: 22, fontSize: 11, color: 'var(--ink-soft)' }}>
           MedProHub © 2026. All rights reserved.
+        </div>
         </div>
       </div>
     </div>

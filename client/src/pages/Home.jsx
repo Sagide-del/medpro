@@ -85,47 +85,32 @@ export default function Home() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
       <header className="home-navbar">
-        <div className="brand-block">
-          <div className="brand-line1">
-            <img className="home-brand-logo" src="/medpro-logo.png" alt="MedPro" />
-          </div>
-          <div className="brand-line2">EMS REVISION PLATFORM</div>
-        </div>
+        <Link to="/" className="public-brand" aria-label="MedPro home">
+          <img className="home-brand-logo" src="/medpro-logo.png" alt="MedPro" />
+        </Link>
         <div className="nav-actions">
-          <Link to="/register" className="btn-solid">
-            <CapIcon /> Get Started <ArrowIcon style={{ width: 14, height: 14 }} />
+          <Link to="/login" className="home-nav-link">
+            Sign in
           </Link>
-          <Link to="/login" className="btn-outline">
-            <UserIcon /> Student or Staff Login
+          <Link to="/register" className="btn-solid">
+            Create account <ArrowIcon style={{ width: 14, height: 14 }} />
           </Link>
         </div>
       </header>
 
       <section className="split-hero">
         <div className="split-hero-text">
-          <h1>
-            Learn. Practice. <b>Save Lives.</b>
-          </h1>
-          <svg className="pulse-divider" viewBox="0 0 300 40" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
-            <path
-              d="M0 20 H110 L125 20 L135 4 L150 36 L162 20 L175 20 H300"
-              fill="none"
-              stroke="#ffffff"
-              strokeWidth="1.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              opacity="0.7"
-            />
-          </svg>
+          <div className="home-eyebrow">EMS revision, built for the field</div>
+          <h1>Build confidence for your next <b>clinical decision.</b></h1>
           <p className="split-hero-sub">
-            Professional education and assessment for EMT and Paramedic students.
+            Focused revision for EMTs and Paramedics: topic mastery, realistic practice, and practical case review in one place.
           </p>
           <div className="cta">
             <Link to="/register" className="btn-solid">
-              <CapIcon /> Get Started <ArrowIcon style={{ width: 14, height: 14 }} />
+              <CapIcon /> Start revising <ArrowIcon style={{ width: 14, height: 14 }} />
             </Link>
             <Link to="/login" className="btn-outline">
-              <UserIcon /> Student or Staff Login
+              <UserIcon /> Sign in
             </Link>
           </div>
         </div>
@@ -147,7 +132,7 @@ export default function Home() {
         })}
       </section>
 
-      <div className="home-footer-line">MedPro &middot; Empowering EMS Professionals Through Education</div>
+      <div className="home-footer-line">MedPro &middot; Practical revision for EMS professionals</div>
 
       <Footer />
     </div>

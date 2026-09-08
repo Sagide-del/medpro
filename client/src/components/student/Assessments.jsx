@@ -88,8 +88,8 @@ function ModuleList() {
         >
           <span className="mpt-entry-icon" aria-hidden="true"><UiIcon name="exam" /></span>
           <span>
-            <div className="mpt-entry-title">EMT Mock Pre-Test</div>
-            <div className="mpt-entry-sub">Timed topic tests with review after submission</div>
+            <div className="mpt-entry-title">EMT Mock Tests</div>
+            <div className="mpt-entry-sub">Mixed-topic timed practice with review after submission</div>
           </span>
           <span className="mpt-entry-arrow" aria-hidden="true"><UiIcon name="arrowRight" /></span>
         </button>

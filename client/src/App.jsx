@@ -19,6 +19,7 @@ import StudentKenyaEMSHub from './components/student/KenyaEMSHub';
 import StudentMyContent from './components/student/MyContent';
 import StudentLearningPaths from './components/student/LearningPaths';
 import StudentAssignments from './components/student/Assignments';
+import StudentEssays from './components/student/Essays';
 import StudentClinicalReferenceCards from './components/student/ClinicalReferenceCards';
 import StudentExamPreparation from './components/student/ExamPreparation';
 import StudentWorksheets from './components/student/Worksheets';
@@ -81,7 +82,6 @@ const STUDENT_LINKS = [
     group: 'Exam Prep',
     items: [
       { to: '/student/mcq-questions', label: 'Question Bank', icon: 'exam' },
-      { to: '/student/mock-prep-tests', label: 'Mock Tests', icon: 'result' },
       { to: '/student/learn/kenya-ems', label: 'Clinical Cases', icon: 'cases' },
     ],
   },
@@ -89,13 +89,13 @@ const STUDENT_LINKS = [
     group: 'Revision',
     items: [
       { to: '/student/reference-cards', label: 'Cheat Sheets', icon: 'learn' },
+      { to: '/student/essays', label: 'Essays', icon: 'document' },
     ],
   },
   {
     group: 'Aliases',
     items: [
       { to: '/student/mcq-questions', label: 'MCQ Questions', icon: 'exam' },
-      { to: '/student/mock-prep-tests', label: 'Mock Prep Tests', icon: 'exam' },
       { to: '/student/kenya-case-studies', label: 'Kenya EMS Cases', icon: 'cases' },
       { to: '/student/case-studies', label: 'Kenya EMS Cases', icon: 'cases' },
       { to: '/student/medprohub/cases', label: 'MedProHub EMS Cases', icon: 'cases' },
@@ -141,6 +141,7 @@ const LECTURIO_STUDENT_LINKS = [
   { group: 'Revision Tools', items: [
     { to: '/student/reference-cards', label: 'Cheat Sheets', icon: 'learn' },
     { to: '/student/question-bank', label: 'Question Bank', icon: 'exam' },
+    { to: '/student/essays', label: 'Essays', icon: 'document' },
     { to: '/student/learning-paths', label: 'Learning Paths', icon: 'result' },
     { to: '/student/spaced-repetition', label: 'Spaced Repetition', icon: 'simulation' },
   ] },
@@ -349,6 +350,7 @@ function AppRoutes() {
           <Route path="/student/assessments/:id" element={<StudentAssessments />} />
           <Route path="/student/assignments" element={<StudentAssignments />} />
           <Route path="/student/assignments/:id" element={<StudentAssignments />} />
+          <Route path="/student/essays" element={<StudentEssays />} />
           <Route path="/student/worksheets" element={<StudentWorksheets />} />
           <Route path="/student/worksheets/:id" element={<StudentWorksheets />} />
           <Route path="/student/flashcards" element={<StudentFlashcards />} />

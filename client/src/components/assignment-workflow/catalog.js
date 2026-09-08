@@ -6,6 +6,7 @@ export const ASSIGNMENT_TYPES = [
   'Multiple Choice',
   'Scenario Based',
   'Short Answer',
+  'Essay',
   'Practical Knowledge',
 ];
 
@@ -14,6 +15,7 @@ export function toQuestionType(assignmentType) {
     case 'Multiple Choice': return 'mcq';
     case 'Scenario Based': return 'scenario_step';
     case 'Short Answer': return 'short_answer';
+    case 'Essay': return 'short_answer';
     default: return 'short_answer';
   }
 }

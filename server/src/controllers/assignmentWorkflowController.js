@@ -8,6 +8,7 @@ function normalizeType(type) {
     'Multiple Choice': 'Multiple Choice',
     'Scenario Based': 'Scenario Based',
     'Short Answer': 'Short Answer',
+    Essay: 'Essay',
     'Practical Knowledge': 'Practical Knowledge',
   };
   return map[type] || 'Multiple Choice';

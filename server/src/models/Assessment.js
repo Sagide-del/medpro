@@ -320,6 +320,11 @@ export const Assessment = {
 
     const { rows } = await query(
       `SELECT m.*,
+              COALESCE((
+                SELECT json_agg(DISTINCT q.topic)
+                FROM mcq_questions q
+                WHERE q.module_id = m.id
+              ), '[]'::json) AS topics,
               p.status,
               p.score,
               p.completed_at,

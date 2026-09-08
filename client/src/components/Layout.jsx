@@ -1,7 +1,5 @@
-import { useEffect, useState } from 'react';
-import { Link, NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom';
+import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import PulseLine from './PulseLine';
 import ErrorBoundary from './ErrorBoundary';
 import PlatformFooter from './shared/PlatformFooter';
 import UiIcon from './shared/UiIcon';
@@ -29,39 +27,20 @@ function MedProMark() {
 export default function Layout({ links, roleLabel }) {
   const { user, logout, setProgram } = useAuth();
   const navigate = useNavigate();
-  const location = useLocation();
-  const [navOpen, setNavOpen] = useState(false);
   const visibleLinks = links.filter((item) => item.group !== 'Aliases');
-
-  useEffect(() => {
-    setNavOpen(false);
-  }, [location.pathname]);
 
   return (
     <div className={`shell${roleLabel === 'EMS revision workspace' ? ' role-student' : ''}`}>
 
-      <aside className={`sidebar${navOpen ? ' open' : ''}`}>
+      <aside className="sidebar">
 
         <div className="sidebar-top">
           <Link to="/" className="brand" style={{ textDecoration: 'none' }}>
             <span className="brand-lockup"><MedProMark /></span>
-            <small>{roleLabel}</small>
+            {roleLabel && <small>{roleLabel}</small>}
           </Link>
 
-          <button
-            type="button"
-            className="nav-toggle"
-            aria-label="Toggle navigation"
-            aria-expanded={navOpen}
-            onClick={() => setNavOpen((current) => !current)}
-          >
-            <span />
-            <span />
-            <span />
-          </button>
         </div>
-
-        <PulseLine color="#147ec2" />
 
         {user?.role === 'student' && (
           <div className="program-switcher" aria-label="Choose revision track">

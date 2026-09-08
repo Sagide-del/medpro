@@ -24,7 +24,7 @@ export function homeForRole(role) {
     case 'super_admin': return '/superadmin/dashboard';
     case 'institution_admin': return '/admin/dashboard';
     case 'teacher': return '/teacher/dashboard';
-    case 'student': return '/student/dashboard';
+    case 'student': return '/student/mcq-questions';
     default: return '/login';
   }
 }

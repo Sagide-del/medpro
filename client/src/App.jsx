@@ -11,7 +11,6 @@ import Home from './pages/Home';
 import Login from './pages/Login';
 import Register from './pages/Register';
 
-import StudentDashboard from './components/student/Dashboard';
 import StudentAssessments from './components/student/Assessments';
 import StudentAssignments from './components/student/Assignments';
 import StudentClinicalReferenceCards from './components/student/ClinicalReferenceCards';
@@ -21,12 +20,8 @@ import StudentFlashcards from './components/student/Flashcards';
 import StudentGraphics from './components/student/Graphics';
 import StudentLogbook from './components/student/Logbook';
 import StudentVideos from './components/student/Videos';
-import StudentGroups from './components/student/Groups';
 import StudentPayments from './components/student/Payments';
-import StudentELibrary from './components/student/ELibrary';
-import StudentProgressAnalytics from './components/student/ProgressAnalytics';
 import StudentResearch from './components/student/Research';
-import StudentSimulations from './components/student/Simulations';
 import StudentProctoredExams from './components/student/ProctoredExams';
 import StudentKenyaEmsCases from './pages/student/KenyaEmsCases';
 import StudentMockPreTest from './components/student/exams/mockPreTest/MockPreTestPage';
@@ -75,12 +70,6 @@ import SuperAdminUserCommunications from './components/superadmin/UserCommunicat
 
 const STUDENT_LINKS = [
   {
-    group: 'Home',
-    items: [
-      { to: '/student/dashboard', label: 'Dashboard', end: true, icon: 'dashboard' },
-    ],
-  },
-  {
     group: 'Exam Prep',
     items: [
       { to: '/student/mcq-questions', label: 'Question Bank', icon: 'exam' },
@@ -92,25 +81,6 @@ const STUDENT_LINKS = [
     group: 'Revision',
     items: [
       { to: '/student/reference-cards', label: 'Cheat Sheets', icon: 'learn' },
-      { to: '/student/elibrary', label: 'Notes & E-Library', icon: 'document' },
-    ],
-  },
-  {
-    group: 'Clinical Practice',
-    items: [
-      { to: '/student/simulations', label: 'Skill Simulations', icon: 'simulation' },
-    ],
-  },
-  {
-    group: 'Progress',
-    items: [
-      { to: '/student/progress-analytics', label: 'Analytics', icon: 'progress' },
-    ],
-  },
-  {
-    group: 'Community',
-    items: [
-      { to: '/student/community', label: 'My Study Group', icon: 'community' },
     ],
   },
   {
@@ -303,9 +273,9 @@ function AppRoutes() {
         <Route path="/register" element={<Register />} />
 
 
-        <Route element={<RequireRole role="student"><RequireStudentSubscription><Layout links={STUDENT_LINKS} roleLabel="EMS revision workspace" /></RequireStudentSubscription></RequireRole>}>
-          <Route path="/student" element={<Navigate to="/student/dashboard" replace />} />
-          <Route path="/student/dashboard" element={<StudentDashboard />} />
+        <Route element={<RequireRole role="student"><RequireStudentSubscription><Layout links={STUDENT_LINKS} roleLabel="" /></RequireStudentSubscription></RequireRole>}>
+          <Route path="/student" element={<Navigate to="/student/mcq-questions" replace />} />
+          <Route path="/student/dashboard" element={<Navigate to="/student/mcq-questions" replace />} />
           <Route path="/student/exam-preparation" element={<StudentExamPreparation />} />
           <Route path="/student/exam-center" element={<StudentExamPreparation />} />
           <Route path="/student/clinical-library" element={<StudentClinicalReferenceCards />} />
@@ -348,17 +318,17 @@ function AppRoutes() {
           <Route path="/student/reference-cards/:id" element={<StudentClinicalReferenceCards />} />
           <Route path="/student/graphics" element={<StudentGraphics />} />
           <Route path="/student/graphics/:id" element={<StudentGraphics />} />
-          <Route path="/student/progress-analytics" element={<StudentProgressAnalytics />} />
+          <Route path="/student/progress-analytics" element={<Navigate to="/student/mcq-questions" replace />} />
           <Route path="/student/logbook" element={<StudentLogbook />} />
           <Route path="/student/videos" element={<StudentVideos />} />
-          <Route path="/student/community" element={<StudentGroups />} />
-          <Route path="/student/groups" element={<StudentGroups />} />
+          <Route path="/student/community" element={<Navigate to="/student/mcq-questions" replace />} />
+          <Route path="/student/groups" element={<Navigate to="/student/mcq-questions" replace />} />
           <Route path="/student/subscription" element={<StudentPayments />} />
           <Route path="/student/payments" element={<StudentPayments />} />
-          <Route path="/student/simulations" element={<StudentSimulations />} />
+          <Route path="/student/simulations" element={<Navigate to="/student/mcq-questions" replace />} />
           <Route path="/student/proctored-exams" element={<StudentProctoredExams />} />
-          <Route path="/student/elibrary" element={<StudentELibrary />} />
-          <Route path="/student/elibrary/:id" element={<StudentELibrary />} />
+          <Route path="/student/elibrary" element={<Navigate to="/student/mcq-questions" replace />} />
+          <Route path="/student/elibrary/:id" element={<Navigate to="/student/mcq-questions" replace />} />
           <Route path="/student/research" element={<StudentResearch />} />
           <Route path="/student/research/:id" element={<StudentResearch />} />
         </Route>

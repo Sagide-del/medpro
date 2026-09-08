@@ -45,7 +45,8 @@ const LOCK_INSTRUCTIONS = {
   5: 'Locked - Complete Module 4 to unlock',
 };
 
-const questionBankV2Enabled = import.meta.env.VITE_QUESTION_BANK_V2_ENABLED === 'true';
+// V2 is the active experience by default; set VITE_QUESTION_BANK_V2_ENABLED=false to roll back.
+const questionBankV2Enabled = import.meta.env.VITE_QUESTION_BANK_V2_ENABLED !== 'false';
 
 function masteryForModule(module) {
   const value = Number(module.best_percentage ?? module.score ?? 0);

@@ -5,7 +5,8 @@ import UiIcon from '../shared/UiIcon';
 const RESOURCES = [
   ['Study Guides', 'High-yield study guides for all topics.', 'learn', 'blue', '/student/notes'],
   ['Quick Notes', 'Condensed notes for last-minute review.', 'document', 'pink', '/student/notes'],
-  ['Video Lectures', 'Visual learning for better retention.', 'play', 'violet', '/student/videos'],
+  ['Cheat Sheets', 'Fast clinical references for focused revision.', 'learn', 'violet', '/student/reference-cards'],
+  ['Podcasts', 'Listen to module audio reviews on the go.', 'activity', 'cyan', '/student/videos'],
   ['Flashcards', 'Practice key terms and concepts.', 'bookmark', 'orange', '/student/flashcards'],
   ['Mnemonics', 'Easy ways to remember important information.', 'result', 'yellow', '/student/notes'],
   ['Images & Diagrams', 'Visual aids for complex topics.', 'cases', 'cyan', '/student/graphics'],

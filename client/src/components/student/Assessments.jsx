@@ -34,10 +34,8 @@ function labelForStatus(status) {
   return 'Locked';
 }
 
-const MODULE_LABELS = {
-  4: 'MEDICAL, BEHAVIORAL & OB/GYN',
-  5: 'TRAUMA',
-};
+// Placeholder Question Bank UI currently uses the source topic names directly.
+const MODULE_LABELS = {};
 
 const LOCK_INSTRUCTIONS = {
   2: 'Locked - Complete Module 1 to unlock',
@@ -47,14 +45,13 @@ const LOCK_INSTRUCTIONS = {
 };
 
 const STATIC_QUESTION_BANK_TOPICS = [
-  ['Preparatory', 100], ['Airway & Breathing', 100], ['Patient Assessment', 150],
-  ['Medical, Behavioral & OB/GYN', 170], ['Trauma', 80], ['Infants & Children', 100],
-  ['Operations', 90], ['Advanced Airway', 110], ['Additional Questions', 100],
+  ['Airway & Breathing'], ['Cardiology'], ['Trauma'], ['Medical'],
+  ['Pediatrics'], ['OB/GYN'], ['Pharmacology'], ['Operations'],
 ].map(([title, total_questions], index) => ({
   id: `static-topic-${index + 1}`,
   order_number: index + 1,
   title,
-  total_questions,
+  total_questions: null,
   attempt_count: 0,
   best_percentage: 0,
   status: 'available',
@@ -229,7 +226,7 @@ function ModuleList() {
   const overallProgress = modules.length ? Math.round((completedModules / modules.length) * 100) : 0;
 
   if (location.pathname === '/student/question-bank') {
-    return <ThreeModeQuestionBank modules={modules} baseRoute={baseRoute} subscription={subscription} />;
+    return <ThreeModeQuestionBank modules={STATIC_QUESTION_BANK_TOPICS} baseRoute={baseRoute} subscription={null} />;
   }
 
   return (

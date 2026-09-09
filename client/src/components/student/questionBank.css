@@ -120,3 +120,23 @@
   .question-bank-saas-apply, .question-bank-saas-reset { display: none; }
   .question-bank-saas-filter-title { padding-bottom: 0; }
 }
+
+/* Keep the reference workspace isolated from legacy Question Bank selectors in index.css. */
+.question-bank-saas-header { background: linear-gradient(90deg, rgba(8, 39, 72, .98) 0%, rgba(8, 39, 72, .9) 50%, rgba(8, 39, 72, .36) 100%), var(--question-bank-hero-image) 78% 44% / cover no-repeat !important; }
+.question-bank-saas-header h1 { color: #fff !important; }
+.question-bank-saas-topic-grid { display: block !important; grid-template-columns: 1fr !important; padding: 0 24px 8px !important; }
+.question-bank-saas-topic { display: grid !important; grid-template-columns: minmax(0, 1fr) auto !important; grid-template-rows: auto auto auto !important; min-height: 0 !important; padding: 18px 0 !important; border: 0 !important; border-top: 1px solid #e8eef4 !important; background: transparent !important; }
+.question-bank-saas-topic-main { display: flex !important; min-width: 0 !important; }
+.question-bank-saas-topic-main > div { min-width: 0 !important; }
+.question-bank-saas-topic h3 { display: inline !important; color: #172b4d !important; font-size: 17px !important; }
+.question-bank-saas-topic p { color: #7a8fa7 !important; font-size: 12px !important; }
+.question-bank-saas-topic small { color: #7890aa !important; font-size: 11px !important; }
+.question-bank-saas-topic-score { display: grid !important; }
+.question-bank-saas-topic-foot { display: flex !important; grid-column: 1 / -1 !important; }
+.question-bank-saas-panel-head { display: flex !important; }
+.question-bank-saas-panel-head h2 { color: #0d2a4a !important; }
+@media (max-width: 760px) {
+  .question-bank-saas-topic-grid { padding: 0 18px 6px !important; }
+  .question-bank-saas-topic { grid-template-columns: minmax(0, 1fr) auto !important; }
+  .question-bank-saas-topic h3 { font-size: 15px !important; }
+}

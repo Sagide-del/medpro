@@ -14,7 +14,7 @@
   padding: 32px 36px;
   overflow: hidden;
   color: #fff;
-  background: #0d2a4a;
+  background: linear-gradient(90deg, rgba(8, 39, 72, .98) 0%, rgba(8, 39, 72, .9) 50%, rgba(8, 39, 72, .36) 100%), var(--question-bank-hero-image) 78% 44% / cover no-repeat;
   border-radius: 14px;
 }
 .question-bank-saas-header::after {
@@ -42,7 +42,42 @@
 .question-bank-saas-tabs button { min-height: 44px; color: #6d829a; }
 .question-bank-saas-tabs button.is-active { color: #147ec2; border-bottom-color: #147ec2; }
 .question-bank-saas-panel { border: 1px solid #e1e8f0; border-radius: 12px; box-shadow: 0 5px 18px rgba(23, 43, 77, .04); }
-.question-bank-saas-panel-head { padding: 20px 24px; }
+.question-bank-saas-panel-head { display: flex; align-items: center; justify-content: space-between; padding: 20px 24px 14px; }
+.question-bank-saas-panel-head h2 { display: flex; align-items: center; gap: 9px; }
+.question-bank-saas-panel-head h2 .ui-icon { width: 20px; height: 20px; color: #167fe0; }
+.question-bank-saas-panel-head > span { color: #7890aa; font-size: 12px; }
+.question-bank-saas-filter { grid-area: filter; align-self: start; padding: 22px 18px; background: #fff; border: 1px solid #e1e8f0; border-radius: 12px; box-shadow: 0 5px 18px rgba(23, 43, 77, .04); }
+.question-bank-saas-filter-title { display: flex; align-items: center; gap: 8px; padding-bottom: 18px; color: #142b49; font-size: 15px; border-bottom: 1px solid #edf1f5; }
+.question-bank-saas-filter-title .ui-icon { width: 18px; height: 18px; color: #167fe0; }
+.question-bank-saas-filter fieldset { margin: 20px 0 0; padding: 0; border: 0; }
+.question-bank-saas-filter legend, .question-bank-saas-select-label { display: block; margin-bottom: 9px; color: #142b49; font-size: 12px; font-weight: 700; }
+.question-bank-saas-filter label { display: flex; align-items: center; gap: 9px; margin: 9px 0; color: #56708e; font-size: 12px; }
+.question-bank-saas-filter input[type="checkbox"] { width: 16px; height: 16px; accent-color: #1685e5; }
+.question-bank-saas-select-label { margin-top: 20px; }
+.question-bank-saas-select-label select { display: block; width: 100%; min-height: 38px; margin-top: 8px; padding: 0 10px; color: #47617d; background: #fff; border: 1px solid #d8e2ec; border-radius: 7px; }
+.question-bank-saas-apply { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; min-height: 38px; margin-top: 24px; color: #fff; background: #087fe3; border: 0; border-radius: 7px; font-size: 12px; font-weight: 700; }
+.question-bank-saas-apply .ui-icon { width: 15px; height: 15px; }
+.question-bank-saas-reset { display: block; width: 100%; margin-top: 12px; color: #087fe3; background: transparent; border: 0; font-size: 12px; cursor: pointer; }
+.question-bank-saas-topic-pills { display: flex; gap: 7px; padding: 0 24px 14px; overflow-x: auto; scrollbar-width: none; }
+.question-bank-saas-topic-pills::-webkit-scrollbar { display: none; }
+.question-bank-saas-topic-pills button { flex: 0 0 auto; min-height: 34px; padding: 7px 14px; color: #557292; background: #f5f8fc; border: 1px solid transparent; border-radius: 18px; font-size: 11px; white-space: nowrap; cursor: pointer; }
+.question-bank-saas-topic-pills button.is-active { color: #fff; background: #1685e5; }
+.question-bank-saas-topic small { display: block; margin-top: 5px; color: #7890aa; font-size: 11px; line-height: 1.45; }
+.question-bank-saas-topic-grid { display: block; }
+.question-bank-saas-topic-icon { border-radius: 50%; }
+.question-bank-saas-topic:nth-child(1) .question-bank-saas-topic-icon { color: #fff; background: #1685e5; }
+.question-bank-saas-topic:nth-child(2) .question-bank-saas-topic-icon { color: #fff; background: #ee4561; }
+.question-bank-saas-topic:nth-child(3) .question-bank-saas-topic-icon { color: #fff; background: #f28b22; }
+.question-bank-saas-topic:nth-child(4) .question-bank-saas-topic-icon { color: #fff; background: #13b978; }
+.question-bank-saas-topic:nth-child(5) .question-bank-saas-topic-icon { color: #fff; background: #7844df; }
+.question-bank-saas-topic:nth-child(6) .question-bank-saas-topic-icon { color: #fff; background: #ee4e80; }
+.question-bank-saas-topic:nth-child(7) .question-bank-saas-topic-icon { color: #fff; background: #0bb7c2; }
+.question-bank-saas-topic:nth-child(8) .question-bank-saas-topic-icon { color: #fff; background: #3c5878; }
+.question-bank-saas-topic:nth-child(9) .question-bank-saas-topic-icon { color: #fff; background: #3c5878; }
+.question-bank-saas:has(.question-bank-saas-filter) { display: grid; grid-template-columns: 236px minmax(0, 1fr); grid-template-areas: 'crumb crumb' 'hero hero' 'filter panel'; gap: 16px; }
+.question-bank-saas:has(.question-bank-saas-filter) .question-bank-v2-breadcrumbs { grid-area: crumb; }
+.question-bank-saas:has(.question-bank-saas-filter) .question-bank-saas-header { grid-area: hero; }
+.question-bank-saas:has(.question-bank-saas-filter) .question-bank-saas-panel { grid-area: panel; }
 .question-bank-saas-panel-head h2 { color: #0d2a4a; font-size: 23px; }
 .question-bank-saas-topic-grid { grid-template-columns: 1fr; gap: 0; padding: 0 24px 8px; }
 .question-bank-saas-topic { grid-template-columns: minmax(0, 1fr) auto; grid-template-rows: auto auto auto; gap: 10px 22px; align-items: center; min-height: 0; padding: 18px 0; border: 0; border-top: 1px solid #e8eef4; background: transparent !important; }
@@ -78,4 +113,10 @@
   .question-bank-saas-topic h3 { font-size: 15px; }
   .question-bank-saas-topic-foot { justify-content: space-between; }
   .question-bank-saas-topic-foot button { flex: 0 0 auto; }
+  .question-bank-saas:has(.question-bank-saas-filter) { display: block; }
+  .question-bank-saas-filter { margin-bottom: 16px; }
+  .question-bank-saas-filter fieldset { display: none; }
+  .question-bank-saas-filter .question-bank-saas-select-label { display: none; }
+  .question-bank-saas-apply, .question-bank-saas-reset { display: none; }
+  .question-bank-saas-filter-title { padding-bottom: 0; }
 }

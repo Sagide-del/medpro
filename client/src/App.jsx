@@ -141,7 +141,7 @@ const LECTURIO_STUDENT_LINKS = [
   { group: 'Home', items: [{ to: '/student/dashboard', label: 'Dashboard', end: true, icon: 'dashboard' }] },
   { group: 'Revision', items: [
     { to: '/student/question-bank', label: 'Question Bank', icon: 'exam' },
-    { to: '/student/mock-prep-tests', label: 'Practice Exams', icon: 'practice' },
+    { to: '/student/mock-prep-tests', label: 'Psychometric Test', icon: 'practice' },
     { to: '/student/study-planner', label: 'Study Plans', icon: 'calendar' },
   ] },
   { group: 'Progress & Resources', items: [

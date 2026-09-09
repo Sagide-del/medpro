@@ -26,10 +26,16 @@ function TopicDashboard({ modules, questionCountOptions, subscription, onStart, 
       <header className="mpt-hero">
         <div className="mpt-hero-icon" aria-hidden="true"><UiIcon name="exam" /></div>
         <div>
-          <h1>EMT Mock Pre-Test</h1>
-          <p>Choose a topic, set your question count, and start a timed test.</p>
+          <h1>Psychometric Test</h1>
+          <p>Assess clinical judgment, situational judgment, and psychological readiness for EMS practice.</p>
         </div>
       </header>
+
+      <section className="psychometric-sections" aria-label="Psychometric test sections">
+        <article><span><UiIcon name="exam" /></span><div><strong>01 · Clinical Judgment</strong><p>Adaptive MCQs covering emergency basics, trauma, and medical emergencies.</p><small>25–35 questions · Adaptive difficulty</small></div></article>
+        <article><span><UiIcon name="cases" /></span><div><strong>02 · Situational Judgment</strong><p>Scenario-based decisions covering ethics, leadership, professionalism, and communication.</p><small>20 questions · Effectiveness scoring</small></div></article>
+        <article><span><UiIcon name="activity" /></span><div><strong>03 · Psychometric Assessment</strong><p>Likert-scale and scenario items assessing resilience, empathy, emotional stability, and stress management.</p><small>20 items · Scale 1–5</small></div></article>
+      </section>
 
       {subscription && !subscription.allowed && (
         <div className="mpt-alert-banner" role="status">
@@ -45,7 +51,7 @@ function TopicDashboard({ modules, questionCountOptions, subscription, onStart, 
 
       <div className="card mpt-card mpt-selector-card">
         <div className="mpt-selector-section">
-          <div className="mpt-selector-label">Choose Topic</div>
+          <div className="mpt-selector-label">Choose assessment area</div>
           <div className="mpt-topic-grid">
             {modules.map((module) => (
               <button

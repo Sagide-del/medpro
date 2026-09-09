@@ -145,6 +145,7 @@
 .question-bank-saas-panel-head h2 { color: #0d2a4a !important; }
 .question-bank-saas-panel-head .mcq-progress-kicker, .question-bank-saas-panel-head > span { display: none !important; }
 .question-bank-saas-panel-head h2 { margin-top: 0 !important; }
+.question-bank-saas:has(.question-bank-saas-filter) .question-bank-saas-panel-head { display: none !important; }
 .question-bank-saas:has(.question-bank-saas-filter) { grid-template-areas: 'toolbar toolbar' 'title title' 'filter panel' !important; }
 .question-bank-saas:has(.question-bank-saas-filter) .question-bank-saas-toolbar { grid-area: toolbar; }
 .question-bank-saas:has(.question-bank-saas-filter) .question-bank-saas-title { grid-area: title; }

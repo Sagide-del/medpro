@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import ErrorBoundary from './ErrorBoundary';
 import PlatformFooter from './shared/PlatformFooter';
 import UiIcon from './shared/UiIcon';
+import '../styles/platform-v2.css';
 
 function MedProMark() {
   return <img className="brand-logo-image" src="/medpro-logo.png" alt="MedPro" />;
@@ -145,6 +146,28 @@ export default function Layout({ links, roleLabel }) {
 
 
       <main className="main">
+
+        <header className="platform-topbar">
+          <button
+            type="button"
+            className="platform-mobile-menu"
+            aria-label={navigationOpen ? 'Close navigation' : 'Open navigation'}
+            aria-expanded={navigationOpen}
+            onClick={() => setNavigationOpen((current) => !current)}
+          >
+            <span className="platform-hamburger" aria-hidden="true"><i /><i /><i /></span>
+          </button>
+          <label className="platform-search">
+            <UiIcon name="search" />
+            <span className="sr-only">Search MedPro</span>
+            <input type="search" placeholder="Search questions, topics, or keywords..." />
+          </label>
+          <div className="platform-topbar-actions">
+            <button type="button" aria-label="Notifications"><UiIcon name="alert" /></button>
+            <span className="platform-user-role">{roleLabel || user?.role || 'Account'}</span>
+            <span className="platform-user-avatar" aria-hidden="true">{String(user?.name || user?.full_name || 'A').charAt(0).toUpperCase()}</span>
+          </div>
+        </header>
 
         <ErrorBoundary key={location.pathname}>
           <Outlet />

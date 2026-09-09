@@ -154,3 +154,18 @@
   .question-bank-saas-toolbar-filter { padding: 0 11px; }
   .question-bank-saas-title { font-size: 23px; }
 }
+
+/* Placeholder directory rows stay compact until real question sets are added. */
+.question-bank-saas-topic-grid { padding-top: 0 !important; padding-bottom: 0 !important; }
+.question-bank-saas-topic { grid-template-columns: 1fr auto !important; grid-template-rows: 1fr !important; gap: 0 14px !important; align-items: center !important; min-height: 60px !important; padding: 10px 0 !important; }
+.question-bank-saas-topic-main { grid-column: 1 !important; grid-row: 1 !important; align-items: center !important; }
+.question-bank-saas-topic-score, .question-bank-saas-progress { display: none !important; }
+.question-bank-saas-topic-foot { grid-column: 2 !important; grid-row: 1 !important; align-items: center !important; justify-content: flex-end !important; }
+.question-bank-saas-topic-foot .question-bank-saas-status { display: none !important; }
+.question-bank-saas-topic-foot button { min-height: 32px !important; padding: 6px 12px !important; white-space: nowrap; }
+.question-bank-saas-topic-main p { margin-top: 3px !important; }
+@media (max-width: 520px) {
+  .question-bank-saas-topic { min-height: 58px !important; gap: 0 8px !important; }
+  .question-bank-saas-topic-icon { flex-basis: 36px !important; width: 36px !important; height: 36px !important; }
+  .question-bank-saas-topic-foot button { padding: 6px 9px !important; font-size: 11px !important; }
+}

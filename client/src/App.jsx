@@ -38,6 +38,7 @@ import StudentGroups from './components/student/Groups';
 import StudentProctoredExams from './components/student/ProctoredExams';
 import StudentKenyaEmsCases from './pages/student/KenyaEmsCases';
 import StudentMockPreTest from './components/student/exams/mockPreTest/MockPreTestPage';
+import StudentPsychometricTest from './components/student/PsychometricTest';
 import MedProhubEmsAssignments from './components/medprohub/student/EmsAssignments';
 import MedProhubEmsPlayer from './components/medprohub/student/EmsPlayer';
 
@@ -338,7 +339,7 @@ function AppRoutes() {
           <Route path="/student/mcq-questions" element={<StudentAssessments />} />
           <Route path="/student/mcq-questions/:id" element={<StudentAssessments />} />
           <Route path="/student/mcq/mock-pretest" element={<StudentMockPreTest />} />
-          <Route path="/student/mock-prep-tests" element={<StudentAssessments />} />
+          <Route path="/student/mock-prep-tests" element={<StudentPsychometricTest />} />
           <Route path="/student/mock-prep-tests/:id" element={<StudentAssessments />} />
           <Route path="/student/question-bank" element={<StudentAssessments />} />
           <Route path="/student/question-bank/:id" element={<StudentAssessments />} />

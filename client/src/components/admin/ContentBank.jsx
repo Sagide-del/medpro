@@ -10,6 +10,7 @@ function uniqueValues(items, key) {
 
 export default function ContentBank() {
   const [cases, setCases] = useState(null);
+  const [masterContent, setMasterContent] = useState([]);
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState('');
   const [difficulty, setDifficulty] = useState('');
@@ -19,9 +20,11 @@ export default function ContentBank() {
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
-    api('/admin/cases')
-      .then((data) => setCases(Array.isArray(data?.cases) ? data.cases : []))
-      .catch((error) => setMessage(error.message));
+    Promise.allSettled([api('/admin/cases'), api('/ai/v2/master-content')]).then(([caseResult, masterResult]) => {
+      if (caseResult.status === 'fulfilled') setCases(Array.isArray(caseResult.value?.cases) ? caseResult.value.cases : []);
+      else setMessage(caseResult.reason.message);
+      if (masterResult.status === 'fulfilled') setMasterContent(Array.isArray(masterResult.value?.content) ? masterResult.value.content : []);
+    });
   }, []);
 
   const categories = useMemo(() => uniqueValues(cases || [], 'category'), [cases]);
@@ -44,6 +47,8 @@ export default function ContentBank() {
   const selectedCount = selected.length;
   const activeCount = filtered.filter((item) => item.is_active).length;
   const activePct = filtered.length ? Math.round((activeCount / filtered.length) * 100) : 0;
+  const masterPublished = masterContent.filter((item) => item.status === 'published').length;
+  const masterTypes = new Set(masterContent.map((item) => item.content_type)).size;
 
   function toggleSelection(id) {
     setSelected((current) => (current.includes(id) ? current.filter((item) => item !== id) : [...current, id]));
@@ -84,6 +89,15 @@ export default function ContentBank() {
           <Link className="primary" to="/superadmin/ai-generator">Open Master AI Generator</Link>
         </div>
       </div>
+
+      <section className="card master-storage-card">
+        <div className="page-head master-storage-head">
+          <div><div className="eyebrow">Single source of truth</div><h2>Master Storage</h2><div className="sub">Content generated and reviewed by Master AI before it is released to student libraries.</div></div>
+          <Link className="primary" to="/superadmin/ai-generator">Open Master AI</Link>
+        </div>
+        <div className="master-storage-stats"><div><strong>{masterContent.length}</strong><span>stored items</span></div><div><strong>{masterPublished}</strong><span>published</span></div><div><strong>{masterTypes}</strong><span>content types</span></div></div>
+        {masterContent.length > 0 ? <div className="master-storage-list">{masterContent.slice(0, 5).map((item) => <div key={item.id}><span className="badge published">{item.content_type}</span><strong>{item.title}</strong><small>{item.destination_key} · {item.published_by_name || 'Master AI review'}</small></div>)}</div> : <div className="sub master-storage-empty">No reviewed content has been published to Master Storage yet.</div>}
+      </section>
 
       <div className="card">
         <div className="form-grid">

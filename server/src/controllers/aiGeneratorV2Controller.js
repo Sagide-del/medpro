@@ -1,5 +1,5 @@
 import { asyncHandler } from '../utils/helpers.js';
-import { AI_GENERATOR_V2_ENABLED, findDuplicates, getPersistentJob, listPersistentJobs, publishApproved, saveReviewDecisions } from '../services/aiGeneratorV2Service.js';
+import { AI_GENERATOR_V2_ENABLED, findDuplicates, getPersistentJob, listMasterContent, listPersistentJobs, publishApproved, saveReviewDecisions } from '../services/aiGeneratorV2Service.js';
 
 function ensureEnabled(res) {
   if (!AI_GENERATOR_V2_ENABLED) {
@@ -17,6 +17,11 @@ function generatedItems(job) {
 export const listJobs = asyncHandler(async (req, res) => {
   if (!ensureEnabled(res)) return;
   res.json({ jobs: await listPersistentJobs(req.user.role === 'super_admin' ? null : req.user.sub) });
+});
+
+export const masterContent = asyncHandler(async (req, res) => {
+  if (!ensureEnabled(res)) return;
+  res.json({ content: await listMasterContent({ contentType: req.query.contentType, status: req.query.status }) });
 });
 
 export const getJob = asyncHandler(async (req, res) => {

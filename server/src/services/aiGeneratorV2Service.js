@@ -59,6 +59,22 @@ export async function listPersistentJobs(adminId) {
   return rows;
 }
 
+export async function listMasterContent({ contentType, status } = {}) {
+  const values = [];
+  const filters = [];
+  if (contentType) { values.push(contentType); filters.push(`p.content_type = $${values.length}`); }
+  if (status) { values.push(status); filters.push(`p.status = $${values.length}`); }
+  const where = filters.length ? `WHERE ${filters.join(' AND ')}` : '';
+  const { rows } = await query(`
+    SELECT p.id, p.title, p.content_type, p.destination_key, p.program, p.topic, p.source_citation,
+           p.status, p.published_at, p.created_at, u.full_name AS published_by_name
+    FROM ai_published_content p
+    LEFT JOIN users u ON u.user_id = p.created_by
+    ${where}
+    ORDER BY p.published_at DESC NULLS LAST, p.created_at DESC`, values);
+  return rows;
+}
+
 export async function saveReviewDecisions(jobId, adminId, decisions = [], items = []) {
   return withTransaction(async (tx) => {
     const itemIds = new Set(items.map((item) => String(item.id)));

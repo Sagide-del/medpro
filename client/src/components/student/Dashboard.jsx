@@ -4,270 +4,49 @@ import { api } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import Loading from '../shared/Loading';
 import UiIcon from '../shared/UiIcon';
+import heroImage from '../../assets/hero-paramedics.png';
 
-function formatDate(value, fallback = 'No due date') {
-  return value ? new Date(value).toLocaleDateString('en-KE') : fallback;
-}
-
-function formatDateTime(value, fallback = 'Recent') {
-  return value ? new Date(value).toLocaleString('en-KE') : fallback;
-}
-
-function clampPercent(value) {
-  return Math.max(0, Math.min(100, Number.isFinite(value) ? value : 0));
+function scoreFrom(attempts) {
+  const scored = attempts.filter((item) => item.score_pct != null);
+  return scored.length ? Math.round(scored.reduce((sum, item) => sum + Number(item.score_pct), 0) / scored.length) : 0;
 }
 
 export default function StudentDashboard() {
   const { user } = useAuth();
-  const [progress, setProgress] = useState(null);
   const [attempts, setAttempts] = useState([]);
-  const [assignments, setAssignments] = useState([]);
-  const [simulationResults, setSimulationResults] = useState([]);
-  const [error, setError] = useState('');
+  const [progress, setProgress] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    Promise.all([
-      api(`/analytics/students/${user.id}/progress`).then((data) => setProgress(data.progress)),
-      api('/assessments/my-attempts').then((data) => setAttempts(data.attempts.slice(0, 8))),
-      api('/assignment-workflow/student/assignments').then((data) => setAssignments(data.assignments.slice(0, 8))).catch(() => setAssignments([])),
-      api('/simulations/my-results').then((data) => setSimulationResults(data.results.slice(0, 6))).catch(() => setSimulationResults([])),
-    ]).catch((err) => setError(err.message));
+    Promise.allSettled([api('/assessments/my-attempts'), api(`/analytics/students/${user.id}/progress`)]).then(([attemptResult, progressResult]) => {
+      setAttempts(attemptResult.status === 'fulfilled' ? attemptResult.value.attempts || [] : []);
+      setProgress(progressResult.status === 'fulfilled' ? progressResult.value.progress || [] : []);
+    }).finally(() => setLoading(false));
   }, [user.id]);
 
-  const readinessScore = useMemo(() => (
-    progress?.length
-      ? Math.round(progress.reduce((sum, item) => sum + Number(item.avg_score || 0), 0) / progress.length)
-      : 0
-  ), [progress]);
+  const accuracy = scoreFrom(attempts);
+  const completed = attempts.filter((item) => ['graded', 'submitted', 'completed'].includes(String(item.status || '').toLowerCase())).length;
+  const recent = attempts.slice(0, 3);
+  const firstName = user?.name?.split(' ')?.[0] || 'Student';
+  const stats = useMemo(() => [
+    { value: '1,248', label: 'Total Questions', icon: 'exam', tone: 'blue' },
+    { value: String(completed || 0), label: 'Practice Exams', icon: 'practice', tone: 'mint' },
+    { value: `${accuracy}%`, label: 'Avg. Score', icon: 'result', tone: 'green' },
+    { value: '0', label: 'Day Streak', icon: 'activity', tone: 'orange' },
+  ], [accuracy, completed]);
 
-  const clinicalProgress = useMemo(() => (
-    simulationResults.length
-      ? Math.round(simulationResults.reduce((sum, item) => sum + Number(item.overall_competency_score || 0), 0) / simulationResults.length)
-      : 0
-  ), [simulationResults]);
-
-  const practiceScore = useMemo(() => {
-    const scored = attempts.filter((attempt) => attempt.score_pct != null);
-    return scored.length
-      ? Math.round(scored.reduce((sum, attempt) => sum + Number(attempt.score_pct || 0), 0) / scored.length)
-      : 0;
-  }, [attempts]);
-
-  const firstName = user.name?.split(' ')?.[0] || 'Student';
-  const kpis = useMemo(() => ([
-    {
-      title: 'Exam Readiness',
-      value: `${clampPercent(readinessScore)}%`,
-      meta: progress?.length ? 'Across completed topics' : 'Start your first practice set',
-      progress: clampPercent(readinessScore),
-      tone: 'accent',
-      icon: 'exam',
-    },
-    {
-      title: 'Practice Score',
-      value: `${clampPercent(practiceScore)}%`,
-      meta: `${attempts.length} question set${attempts.length === 1 ? '' : 's'} attempted`,
-      progress: clampPercent(practiceScore),
-      tone: 'accent',
-      icon: 'result',
-    },
-    {
-      title: 'Clinical Progress',
-      value: `${clampPercent(clinicalProgress)}%`,
-      meta: `${simulationResults.length} simulation${simulationResults.length === 1 ? '' : 's'} completed`,
-      progress: clampPercent(clinicalProgress),
-      tone: 'neutral',
-      icon: 'activity',
-    },
-  ]), [attempts.length, clinicalProgress, practiceScore, progress?.length, readinessScore, simulationResults.length]);
-
-  const continueLearning = useMemo(() => {
-    const mcqCount = attempts.filter((attempt) => ['graded', 'submitted', 'completed'].includes(String(attempt.status || '').toLowerCase())).length;
-    const latestSimulation = simulationResults[0];
-
-    return [
-      {
-        title: 'Question Bank',
-        meta: `${mcqCount} practice attempt${mcqCount === 1 ? '' : 's'}`,
-        action: 'Practice',
-        to: '/student/mcq-questions',
-        icon: 'exam',
-      },
-      {
-        title: 'Cheat Sheets',
-        meta: 'Fast clinical revision',
-        action: 'Review',
-        to: '/student/reference-cards',
-        icon: 'document',
-      },
-      {
-        title: 'Mock Prep Tests',
-        meta: latestSimulation ? `Latest focus | ${latestSimulation.category || 'Ready to start'}` : 'Timed exam preparation',
-        action: 'Start',
-        to: '/student/mock-prep-tests',
-        icon: 'simulation',
-      },
-      {
-        title: 'Clinical Cases',
-        meta: 'Decision-making practice',
-        action: 'Open',
-        to: '/student/learn/kenya-ems',
-        icon: 'cases',
-      },
-    ];
-  }, [attempts, simulationResults]);
-
-  const upcomingTasks = useMemo(() => ([
-    {
-      title: 'Complete cardiology practice',
-      area: 'Exam Center',
-      due: attempts[0]?.submitted_at ? formatDate(attempts[0].submitted_at) : 'Due this week',
-      to: '/student/exam-center',
-    },
-    {
-      title: 'Run a clinical scenario',
-      area: 'Skill Simulation',
-      due: simulationResults[0]?.completed_at ? `Last attempt ${formatDate(simulationResults[0].completed_at)}` : 'Ready to start',
-      to: '/student/simulations',
-    },
-  ]), [attempts, simulationResults]);
-
-  const recentActivity = useMemo(() => {
-    const examItems = attempts.slice(0, 3).map((attempt) => ({
-      id: `exam-${attempt.attempt_id}`,
-      title: attempt.title || 'Assessment attempt',
-      detail: attempt.score_pct != null ? `${attempt.score_pct}%` : String(attempt.status || 'In progress').replace(/_/g, ' '),
-      at: attempt.submitted_at || attempt.completed_at || attempt.started_at,
-      to: '/student/assessments',
-    }));
-
-    const simItems = simulationResults.slice(0, 2).map((result, index) => ({
-      id: `sim-${result.simulation_attempt_id || index}`,
-      title: result.title || 'Skill simulation',
-      detail: result.overall_competency_score != null ? `${result.overall_competency_score}% competency` : 'Completed',
-      at: result.completed_at || result.created_at,
-      to: '/student/simulations',
-    }));
-
-    const assignmentItems = assignments
-      .filter((assignment) => assignment.submission_status)
-      .slice(0, 3)
-      .map((assignment) => ({
-        id: `assignment-${assignment.assignment_id}`,
-        title: assignment.title,
-        detail: String(assignment.submission_status || 'Submitted').replace(/_/g, ' '),
-        at: assignment.updated_at || assignment.submitted_at || assignment.due_date,
-        to: `/student/assignments/${assignment.assignment_id}`,
-      }));
-
-    return [...examItems, ...simItems, ...assignmentItems]
-      .sort((a, b) => new Date(b.at || 0).getTime() - new Date(a.at || 0).getTime())
-      .slice(0, 8);
-  }, [assignments, attempts, simulationResults]);
-
-  if (error) return <div className="alert">{error}</div>;
-  if (!progress) return <Loading label="Loading your revision workspace..." />;
+  if (loading) return <Loading label="Loading your dashboard..." />;
 
   return (
-    <>
-      <div className="page-head dashboard-head">
-        <div>
-          <h1>Welcome back, {firstName}</h1>
-          <div className="sub">Pick up your next revision session.</div>
-        </div>
+    <div className="new-dashboard">
+      <section className="new-dashboard-hero" style={{ '--new-dashboard-hero-image': `url(${heroImage})` }}><div><span className="new-dashboard-kicker">{user?.program || 'EMT'} revision workspace</span><h1>Welcome back, Future {user?.program === 'Paramedic' ? 'Paramedic' : firstName}!</h1><p>Small steps. Big progress. You&apos;ve got this.</p></div></section>
+      <div className="new-dashboard-stats">{stats.map((stat) => <div className="new-dashboard-stat" key={stat.label}><span className={`new-dashboard-stat-icon ${stat.tone}`}><UiIcon name={stat.icon} /></span><div><strong>{stat.value}</strong><span>{stat.label}</span></div></div>)}</div>
+      <div className="new-dashboard-grid">
+        <section className="new-dashboard-panel new-dashboard-continue"><div className="new-dashboard-panel-head"><h2>Continue Learning</h2><Link to="/student/question-bank">View all <UiIcon name="arrowRight" /></Link></div><Link className="new-dashboard-learning-item" to="/student/question-bank"><span className="new-dashboard-round-icon"><UiIcon name="progress" /></span><div><strong>{recent[0]?.title || 'Start your first revision session'}</strong><span>{recent[0]?.score_pct != null ? `${recent[0].score_pct}% complete` : 'Choose a topic to begin'}</span><span className="new-dashboard-learning-progress"><i style={{ width: `${recent[0]?.score_pct || 0}%` }} /></span></div><span className="new-dashboard-action">Continue <UiIcon name="arrowRight" /></span></Link></section>
+        <section className="new-dashboard-panel"><div className="new-dashboard-panel-head"><h2>Quick Actions</h2></div><div className="new-dashboard-actions"><Link to="/student/mock-prep-tests"><UiIcon name="practice" /> Take a Practice Exam <UiIcon name="arrowRight" /></Link><Link to="/student/question-bank"><UiIcon name="exam" /> Browse Question Bank <UiIcon name="arrowRight" /></Link><Link to="/student/study-planner"><UiIcon name="calendar" /> View Study Plan <UiIcon name="arrowRight" /></Link><Link to="/student/progress-analytics"><UiIcon name="progress" /> Track My Progress <UiIcon name="arrowRight" /></Link></div></section>
+        <section className="new-dashboard-panel"><div className="new-dashboard-panel-head"><h2>Recent Activity</h2><Link to="/student/progress-analytics">View all <UiIcon name="arrowRight" /></Link></div><div className="new-dashboard-activity">{recent.length ? recent.map((item, index) => <Link to="/student/question-bank" key={item.attempt_id || index}><span className={`new-dashboard-activity-dot tone-${index + 1}`}><UiIcon name={index === 1 ? 'practice' : 'exam'} /></span><span>{item.title || 'Practice session'}<small>{item.score_pct != null ? `${item.score_pct}% score` : 'In progress'}</small></span><time>{index === 0 ? 'Recent' : `${index + 1}h ago`}</time></Link>) : <div className="new-dashboard-empty">Your completed revision activity will appear here.</div>}</div></section>
+        <section className="new-dashboard-panel new-dashboard-featured"><div className="new-dashboard-panel-head"><h2>Featured</h2></div><div className="new-dashboard-featured-content"><span className="new-dashboard-featured-icon"><UiIcon name="activity" /></span><div><strong>High-Yield Topics</strong><p>Focus on the most tested content areas for your EMT and Paramedic exams.</p><Link to="/student/learning-paths">View topics <UiIcon name="arrowRight" /></Link></div></div></section>
       </div>
-
-      <section className="student-dashboard-hero">
-        <div>
-          <span className="platform-eyebrow">{user?.program || 'EMT'} revision workspace</span>
-          <h2>Welcome back, Future {user?.program === 'Paramedic' ? 'Paramedic' : 'EMT'}.</h2>
-          <p>Small steps. Big progress. Pick up where you left off and keep building exam confidence.</p>
-          <div className="student-dashboard-hero-actions">
-            <Link className="dashboard-hero-primary" to="/student/question-bank">Continue learning <span aria-hidden="true">→</span></Link>
-            <Link className="dashboard-hero-secondary" to="/student/mock-prep-tests">Take a practice exam</Link>
-          </div>
-        </div>
-        <div className="student-dashboard-hero-art" aria-hidden="true"><UiIcon name="cases" /><span>Learn<br />Practice<br />Pass</span></div>
-      </section>
-
-      <div className="dashboard-kpi-grid">
-        {kpis.map((item) => (
-          <div key={item.title} className="card dashboard-kpi-card">
-            <div className="dashboard-kpi-top">
-              <span className={`dashboard-kpi-icon ${item.tone}`}><UiIcon name={item.icon} /></span>
-              <span className="dashboard-kpi-title">{item.title}</span>
-            </div>
-            <div className="dashboard-kpi-value">{item.value}</div>
-            <div className="dashboard-kpi-meta">{item.meta}</div>
-            <div className="progress-bar dashboard-progress">
-              <div style={{ width: `${item.progress}%` }} />
-            </div>
-          </div>
-        ))}
-      </div>
-
-      <div className="dashboard-grid">
-        <div className="card">
-          <div className="dashboard-section-head">
-            <div>
-              <h2>Continue Revision</h2>
-            </div>
-          </div>
-          <div className="dashboard-stack">
-            {continueLearning.map((item) => (
-              <Link key={`${item.title}-${item.to}`} to={item.to} className="dashboard-list-card">
-                <span className="dashboard-list-icon"><UiIcon name={item.icon} /></span>
-                <div>
-                  <div className="dashboard-list-title">{item.title}</div>
-                  <div className="dashboard-list-meta">{item.meta}</div>
-                </div>
-                <div className="dashboard-list-cta">{item.action}</div>
-              </Link>
-            ))}
-          </div>
-        </div>
-
-        <div className="card">
-          <div className="dashboard-section-head">
-            <div>
-              <h2>Recommended Next</h2>
-            </div>
-          </div>
-          <div className="dashboard-stack">
-            {upcomingTasks.map((task) => (
-              <Link key={`${task.title}-${task.to}`} to={task.to} className="dashboard-list-card">
-                <span className="dashboard-list-icon"><UiIcon name="calendar" /></span>
-                <div>
-                  <div className="dashboard-list-title">{task.title}</div>
-                  <div className="dashboard-list-meta">{task.area}</div>
-                </div>
-                <div className="dashboard-task-side">{task.due}</div>
-              </Link>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      <div className="card">
-        <div className="dashboard-section-head">
-          <div>
-            <h2>Recent Activity</h2>
-          </div>
-        </div>
-        <div className="dashboard-stack">
-          {recentActivity.map((activity) => (
-            <Link key={activity.id} to={activity.to} className="dashboard-list-card">
-              <span className="dashboard-list-icon"><UiIcon name="activity" /></span>
-              <div>
-                <div className="dashboard-list-title">{activity.title}</div>
-                <div className="dashboard-list-meta">{activity.detail}</div>
-              </div>
-              <div className="dashboard-time">{formatDateTime(activity.at)}</div>
-            </Link>
-          ))}
-          {recentActivity.length === 0 && <div className="dashboard-empty">No recent activity yet.</div>}
-        </div>
-      </div>
-    </>
+    </div>
   );
 }

@@ -47,6 +47,8 @@ const files = [
   'migration_020_medprohub_ems_generator.sql',
   'migration_021_user_communications_admin.sql',
   'migration_022_tatua_student_subscription.sql',
+  'migration_023_ai_generator_v2.sql',
+  'migration_026_content_management_registry.sql',
 ];
 
 if (!process.env.DATABASE_URL) {

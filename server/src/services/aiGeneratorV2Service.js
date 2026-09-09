@@ -1,7 +1,8 @@
 import { randomUUID } from 'crypto';
 import { query, withTransaction } from '../config/database.js';
 
-export const AI_GENERATOR_V2_ENABLED = process.env.AI_GENERATOR_V2_ENABLED === 'true';
+// V2 is the durable path. Set the variable to "false" for an emergency rollback.
+export const AI_GENERATOR_V2_ENABLED = process.env.AI_GENERATOR_V2_ENABLED !== 'false';
 
 function expiresAt() {
   return new Date(Date.now() + 90 * 24 * 60 * 60 * 1000);
@@ -58,9 +59,19 @@ export async function listPersistentJobs(adminId) {
   return rows;
 }
 
-export async function saveReviewDecisions(jobId, adminId, decisions = []) {
+export async function saveReviewDecisions(jobId, adminId, decisions = [], items = []) {
   return withTransaction(async (tx) => {
+    const itemIds = new Set(items.map((item) => String(item.id)));
     for (const item of decisions) {
+      if (items.length && !itemIds.has(String(item.itemId))) {
+        throw new Error(`Review item ${item.itemId} does not belong to this generation job.`);
+      }
+      if (!['approved', 'rejected', 'needs_review'].includes(item.decision)) {
+        throw new Error('Review decision must be approved, rejected, or needs_review.');
+      }
+      if (!['skip', 'override', 'merge'].includes(item.duplicateAction || 'skip')) {
+        throw new Error('Duplicate action must be skip, override, or merge.');
+      }
       await tx.query(
         `INSERT INTO ai_review_decisions (job_id, admin_id, item_id, decision, duplicate_action, similarity_score, notes)
          VALUES ($1,$2,$3,$4,$5,$6,$7)
@@ -86,7 +97,12 @@ function similarity(left, right) {
 }
 
 export async function findDuplicates(items = []) {
-  const { rows } = await query(`SELECT bank_question_id AS id, prompt AS text FROM question_bank WHERE prompt IS NOT NULL LIMIT 5000`);
+  const { rows } = await query(`
+    SELECT bank_question_id AS id, prompt AS text FROM question_bank WHERE prompt IS NOT NULL
+    UNION ALL
+    SELECT id, question_text AS text FROM mcq_questions WHERE question_text IS NOT NULL
+    LIMIT 10000
+  `);
   return items.map((item) => {
     const text = item.question || item.prompt || item.title || '';
     let best = null;
@@ -106,9 +122,12 @@ export async function publishApproved({ job, adminId, decisions, items }) {
     const destination = {
       question_bank: 'questions',
       exam_mock: 'mock_exams',
+      mock_exam: 'mock_exams',
       exam_mcq: 'mcq_exams',
+      exam: 'mcq_exams',
       simulation: 'simulations',
       case_study: 'kenya_cases',
+      kenya_case: 'kenya_cases',
       essay: 'essays',
       learning_path: 'learning_paths',
       cheat_sheet: 'cheat_sheets',
@@ -117,13 +136,24 @@ export async function publishApproved({ job, adminId, decisions, items }) {
       const decision = decisions.get(String(item.id));
       if (decision.duplicate && decision.duplicateAction === 'skip') continue;
       const { rows } = await tx.query(
-        `INSERT INTO ai_published_content (job_id, source_item_id, content_type, title, program, topic, content_json, source_citation, created_by)
-         VALUES ($1,$2,$3,$4,$5,$6,$7::jsonb,$8,$9)
-         ON CONFLICT (job_id, source_item_id) DO UPDATE SET content_json = EXCLUDED.content_json, title = EXCLUDED.title
+        `INSERT INTO ai_published_content (job_id, source_item_id, content_type, destination_key, title, program, topic, content_json, source_citation, source_metadata, status, published_at, created_by)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8::jsonb,$9,$10::jsonb,'published',now(),$11)
+         ON CONFLICT (job_id, source_item_id) DO UPDATE SET content_json = EXCLUDED.content_json, title = EXCLUDED.title, destination_key = EXCLUDED.destination_key, status = 'published', published_at = now()
          RETURNING *`,
-        [job.id, String(item.id), destination, item.title || item.question || job.title, job.request_json?.audience || null, item.topic || job.request_json?.topic || null, JSON.stringify(item), job.citation || null, adminId]
+        [job.id, String(item.id), job.content_type, destination, item.title || item.question || job.title, job.request_json?.audience || null, item.topic || job.request_json?.topic || null, JSON.stringify(item), job.citation || null, JSON.stringify({ sourceType: job.source_type, sourceUrl: job.source_url, sourceExcerpt: job.source_excerpt, citation: job.citation }), adminId]
       );
       published.push(rows[0]);
+      await tx.query(
+        `INSERT INTO content_registry (content_type, destination_key, content_id, program, source_citation, source_job_id, published_by, status)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,'published')
+         ON CONFLICT (source_job_id, content_id) DO UPDATE SET status = 'published', published_at = now(), published_by = EXCLUDED.published_by`,
+        [job.content_type, destination, rows[0].id, job.request_json?.audience || null, job.citation || null, job.id, adminId]
+      );
+      await tx.query(
+        `INSERT INTO content_audit_log (content_id, action, admin_id, job_id, changes)
+         VALUES ($1,'publish',$2,$3,$4::jsonb)`,
+        [rows[0].id, adminId, job.id, JSON.stringify({ destination, sourceItemId: String(item.id), duplicateAction: decision.duplicateAction || 'skip' })]
+      );
     }
     await tx.query(`UPDATE ai_generation_jobs SET status = 'published', updated_at = now() WHERE id = $1`, [job.id]);
     return published;

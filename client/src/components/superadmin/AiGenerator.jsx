@@ -33,7 +33,8 @@ const AUDIENCES = [
 
 const DIFFICULTIES = ['Basic', 'Intermediate', 'Advanced'];
 const KENYA_COUNTIES = ['Nairobi', 'Mombasa', 'Kisumu', 'Nakuru', 'Uasin Gishu', 'Kakamega', 'Kiambu', 'Machakos', 'Other'];
-const aiGeneratorV2Enabled = import.meta.env.VITE_AI_GENERATOR_V2_ENABLED === 'true';
+// V2 is the durable generator path; set VITE_AI_GENERATOR_V2_ENABLED=false to roll back.
+const aiGeneratorV2Enabled = import.meta.env.VITE_AI_GENERATOR_V2_ENABLED !== 'false';
 
 const QUESTION_TYPES = [
   { key: 'multipleChoice', label: 'Multiple Choice', icon: 'question', accent: '#e63935', tint: '#fef2f2' },

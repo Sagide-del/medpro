@@ -30,7 +30,8 @@ export const reviewJob = asyncHandler(async (req, res) => {
   if (!ensureEnabled(res)) return;
   const job = await getPersistentJob(req.params.jobId, req.user.role === 'super_admin' ? null : req.user.sub);
   if (!job) return res.status(404).json({ error: 'Generation job not found or expired.' });
-  const decisions = await saveReviewDecisions(job.id, req.user.sub, Array.isArray(req.body?.decisions) ? req.body.decisions : []);
+  const items = generatedItems(job);
+  const decisions = await saveReviewDecisions(job.id, req.user.sub, Array.isArray(req.body?.decisions) ? req.body.decisions : [], items);
   res.json({ decisions });
 });
 
@@ -38,8 +39,8 @@ export const publishJob = asyncHandler(async (req, res) => {
   if (!ensureEnabled(res)) return;
   const job = await getPersistentJob(req.params.jobId, req.user.role === 'super_admin' ? null : req.user.sub);
   if (!job) return res.status(404).json({ error: 'Generation job not found or expired.' });
-  const decisions = new Map((await saveReviewDecisions(job.id, req.user.sub, Array.isArray(req.body?.decisions) ? req.body.decisions : [])).map((item) => [item.item_id, item]));
   const items = generatedItems(job);
+  const decisions = new Map((await saveReviewDecisions(job.id, req.user.sub, Array.isArray(req.body?.decisions) ? req.body.decisions : [], items)).map((item) => [item.item_id, item]));
   const duplicates = await findDuplicates(items);
   duplicates.forEach((item) => { const decision = decisions.get(item.itemId); if (decision) decision.duplicate = item.duplicate; });
   const published = await publishApproved({ job, adminId: req.user.sub, decisions, items });

@@ -53,13 +53,6 @@ export default function Layout({ links, roleLabel }) {
           </button>
         </div>
 
-        <div className="sidebar-account-actions">
-          <span className="sidebar-account-name">{user?.name || user?.full_name || 'Account'}</span>
-          <button type="button" className="sidebar-signout" onClick={() => { logout(); navigate('/login'); }}>
-            Sign out
-          </button>
-        </div>
-
         {user?.role === 'student' && (
           <div className="program-switcher" aria-label="Choose revision track">
             <div className="program-switcher-label">Revision track</div>
@@ -130,16 +123,10 @@ export default function Layout({ links, roleLabel }) {
 
 
         <div className="foot">
-
-          <div className="foot-label">Signed in as</div>
-          <div className="foot-user">{user?.name || user?.full_name}</div>
-
-
-          <div style={{ marginTop: 14 }}>
-            Andolih EdTech Studios
-          </div>
-
-
+          <button type="button" className="sidebar-logout" onClick={() => { logout(); navigate('/login'); }}>
+            <UiIcon name="logout" />
+            <span>Log out</span>
+          </button>
         </div>
 
       </aside>

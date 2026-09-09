@@ -55,6 +55,9 @@
 .shell .program-switcher-options button { min-height: 32px; padding: 5px; border: 1px solid rgba(255,255,255,.18); border-radius: 6px; background: transparent; color: #dbe8f5; font: inherit; font-size: 11px; cursor: pointer; }
 .shell .program-switcher-options button.is-selected { background: var(--platform-blue); border-color: var(--platform-blue); color: #fff; font-weight: 700; }
 .shell .sidebar .foot { padding: 14px 10px 0; border-top-color: rgba(255,255,255,.12); }
+.shell .sidebar .sidebar-logout { display: flex; align-items: center; justify-content: center; gap: 9px; width: 100%; min-height: 40px; padding: 8px 12px; color: #fff; background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.22); border-radius: 8px; font-size: 12px; font-weight: 700; cursor: pointer; }
+.shell .sidebar .sidebar-logout:hover { background: #1685e5; border-color: #1685e5; }
+.shell .sidebar .sidebar-logout .ui-icon { width: 17px; height: 17px; }
 .shell .foot-label { color: #8fa9c3; }
 .shell .foot-user { color: #fff; font-size: 12px; }
 .shell .main { min-width: 0; max-width: none; padding: 0 32px 52px; background: var(--platform-canvas); }

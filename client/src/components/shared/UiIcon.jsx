@@ -215,6 +215,12 @@ const ICONS = {
       <path d="M4 5h16l-6.2 7.1v5.4l-3.6 1.8v-7.2L4 5Z" />
     </svg>
   ),
+  logout: (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M10 4H5.5A1.5 1.5 0 0 0 4 5.5v13A1.5 1.5 0 0 0 5.5 20H10" />
+      <path d="m14 8 4 4-4 4M8 12h10" />
+    </svg>
+  ),
 };
 
 export default function UiIcon({ name, className = '', title }) {

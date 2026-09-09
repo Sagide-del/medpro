@@ -156,6 +156,33 @@ const ICONS = {
       <path d="M8 16h6" />
     </svg>
   ),
+  lungs: (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M11.5 4v7.5c-1.2-.9-2.5-2.1-3.2-3.5C7.5 6.7 6.4 6 5.5 6.7 4 7.8 3.6 12.1 4.2 15.2c.5 2.7 2.2 4.3 4.2 4.1 1.8-.2 3.1-1.8 3.1-4.1V4" />
+      <path d="M12.5 4v7.5c1.2-.9 2.5-2.1 3.2-3.5.8-1.3 1.9-2 2.8-1.3 1.5 1.1 1.9 5.4 1.3 8.5-.5 2.7-2.2 4.3-4.2 4.1-1.8-.2-3.1-1.8-3.1-4.1V4M12 4V2" />
+    </svg>
+  ),
+  heart: (
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20.5S4 15.2 4 9.3A4.3 4.3 0 0 1 12 7a4.3 4.3 0 0 1 8 2.3c0 5.9-8 11.2-8 11.2Z" /><path d="M5.8 11.5h3l1.2-2.5 2.1 5 1.5-3h4.6" /></svg>
+  ),
+  bandage: (
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m8.2 5.1 10.7 10.7a2.5 2.5 0 0 1 0 3.5l-.6.6a2.5 2.5 0 0 1-3.5 0L4.1 9.2a2.5 2.5 0 0 1 0-3.5l.6-.6a2.5 2.5 0 0 1 3.5 0Z" /><path d="m6.8 12.8 5.4-5.4M9.5 10.1h.01M13.8 14.4h.01" /></svg>
+  ),
+  cross: (
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 3h6v6h6v6h-6v6H9v-6H3V9h6V3Z" /></svg>
+  ),
+  baby: (
+    <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.5" /><path d="M6.5 20c.3-4 2.2-6 5.5-6s5.2 2 5.5 6M8.5 7.5C8.8 4.5 11 3 13.8 4.2c1.1.5 1.7 1.3 2 2.3" /></svg>
+  ),
+  maternity: (
+    <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="5.5" r="2.5" /><path d="M8.5 20c.2-4.2 1.2-7.1 3.5-8.6 2.3 1.5 3.3 4.4 3.5 8.6M9 10.5h6M12 11.5v4" /></svg>
+  ),
+  pill: (
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 18 8.8-8.8a3.5 3.5 0 0 1 5 5L11 23H6a3.5 3.5 0 0 1 0-5Z" /><path d="m9 15 5 5" /></svg>
+  ),
+  operations: (
+    <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="7.5" /><path d="m12 8 1.1 2.2 2.4.3-1.8 1.7.5 2.4-2.2-1.2-2.2 1.2.5-2.4-1.8-1.7 2.4-.3L12 8Z" /></svg>
+  ),
   mail: (
     <svg viewBox="0 0 24 24" aria-hidden="true">
       <rect x="4" y="5" width="16" height="14" rx="2" />

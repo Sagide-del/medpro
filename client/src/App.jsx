@@ -144,6 +144,7 @@ const LECTURIO_STUDENT_LINKS = [
     { to: '/student/question-bank', label: 'Question Bank', icon: 'exam' },
     { to: '/student/mock-prep-tests', label: 'Psychometric Test', icon: 'practice' },
     { to: '/student/study-planner', label: 'Study Plans', icon: 'calendar' },
+    { to: '/student/learn/kenya-ems', label: 'Kenya EMS Cases', icon: 'cases' },
   ] },
   { group: 'Progress & Resources', items: [
     { to: '/student/progress-analytics', label: 'Performance', icon: 'progress' },

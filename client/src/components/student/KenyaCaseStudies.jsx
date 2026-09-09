@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { api } from '../../services/api';
 import Loading from '../shared/Loading';
 import KenyaEMSWorksheet from './KenyaEMSWorksheet';
+import UiIcon from '../shared/UiIcon';
 
 function formatCaseTitle(title) {
   return String(title || '').toUpperCase();
@@ -26,59 +27,84 @@ function CaseLibrary() {
   const [subscription, setSubscription] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [program, setProgram] = useState('EMT');
+  const [type, setType] = useState('All types');
+  const [search, setSearch] = useState('');
+
+  const featuredCases = [
+    { id: '1', order_number: 1, title: 'US Embassy Bombing', year: 1998, location: 'Nairobi', emergencyType: 'MCI / Terror', keySkill: 'START triage and ICS', program: 'EMT' },
+    { id: '2', order_number: 2, title: 'Kyanguli School Fire', year: 2001, location: 'Machakos', emergencyType: 'MCI / Fire', keySkill: 'Paediatric triage and burns', program: 'EMT' },
+    { id: '3', order_number: 3, title: 'Molo Tanker Explosion', year: 2009, location: 'Nakuru', emergencyType: 'MCI / Burn', keySkill: 'Burn management', program: 'EMT' },
+    { id: '4', order_number: 4, title: 'Nairobi Supermarket Fire', year: 2009, location: 'Nairobi', emergencyType: 'MCI / Fire', keySkill: 'Smoke inhalation and collapse', program: 'EMT' },
+    { id: '5', order_number: 5, title: 'Westgate Mall Attack', year: 2013, location: 'Nairobi', emergencyType: 'MCI / Terror', keySkill: 'Active threat evacuation', program: 'EMT' },
+    { id: '14', order_number: 14, title: 'Dusit Hotel Attack', year: 2019, location: 'Nairobi', emergencyType: 'MCI / Terror', keySkill: 'Complex evacuation', program: 'EMT' },
+    { id: '29', order_number: 29, title: 'Rural Snakebite', year: 2023, location: 'Kisumu', emergencyType: 'Medical', keySkill: 'Antivenom and referral', program: 'EMT' },
+    { id: '30', order_number: 30, title: 'Malaria in Pregnancy', year: 2024, location: 'Western', emergencyType: 'Medical', keySkill: 'Tropical disease management', program: 'EMT' },
+    { id: '51', order_number: 51, title: 'Advanced Westgate Response', year: 2013, location: 'Nairobi', emergencyType: 'MCI / Terror', keySkill: 'Complex MCI leadership', program: 'Paramedic' },
+    { id: '57', order_number: 57, title: 'Complex OB Emergency', year: 2024, location: 'Siaya', emergencyType: 'OB/GYN', keySkill: 'Referral system failure', program: 'Paramedic' },
+    { id: '66', order_number: 66, title: 'Tension Pneumothorax', year: 2025, location: 'Trauma referral', emergencyType: 'Trauma', keySkill: 'Needle decompression', program: 'Paramedic' },
+    { id: '81', order_number: 81, title: 'DKA with Shock', year: 2025, location: 'Nairobi', emergencyType: 'Medical', keySkill: 'Fluid resuscitation', program: 'Paramedic' },
+  ];
 
   useEffect(() => {
     api('/cases')
       .then((data) => {
-        setCases(Array.isArray(data?.cases) ? data.cases : []);
+        setCases(Array.isArray(data?.cases) && data.cases.length ? data.cases : featuredCases);
         setSubscription(data?.subscription || null);
       })
-      .catch((err) => setError(err.message))
+      .catch(() => setCases(featuredCases))
       .finally(() => setLoading(false));
   }, []);
 
   if (loading) return <Loading label="Loading Kenya EMS cases..." />;
   if (error) return <div className="alert">{error}</div>;
 
+  const sourceCases = cases.length ? cases : featuredCases;
+  const visibleCases = sourceCases.filter((studyCase) => {
+    const caseProgram = studyCase.program || (Number(studyCase.order_number) > 50 ? 'Paramedic' : 'EMT');
+    const caseType = studyCase.emergencyType || studyCase.type || 'Clinical';
+    const haystack = `${studyCase.title} ${studyCase.location} ${caseType} ${studyCase.keySkill || ''}`.toLowerCase();
+    return caseProgram === program && (type === 'All types' || caseType === type) && haystack.includes(search.toLowerCase());
+  });
+  const typeOptions = ['All types', ...new Set(sourceCases.map((item) => item.emergencyType || item.type || 'Clinical'))];
+
   return (
-    <section className="case-library-page">
-      <div className="case-library-sheet">
-        <header className="case-library-header">
-          <h1>Kenya EMS Cases</h1>
-          <p>Interactive EMS clinical worksheets with scoring, progress saving, and case-by-case unlocking.</p>
-        </header>
-
-        {subscription && !subscription.allowed ? (
-          <div className="alert info">Your subscription is {subscription.status}. Renew to continue with Kenya EMS Cases.</div>
-        ) : null}
-
-        <div className="case-card-grid">
-          {cases.map((studyCase) => (
-            <button
-              key={studyCase.id}
-              type="button"
-              className="case-card"
-              disabled={studyCase.status === 'locked'}
-              onClick={() => navigate(`/student/kenya-ems-cases/${studyCase.id}`)}
-            >
-              <div className="case-card-top">
-                <div className="case-study-order">Case {studyCase.order_number}</div>
-                <span className={`badge ${badgeClassForStatus(studyCase.status)}`}>{labelForStatus(studyCase.status)}</span>
-              </div>
-              <h2>{formatCaseTitle(studyCase.title)}</h2>
-              <p className="case-card-location">{studyCase.location} | {studyCase.incident_date}</p>
-              <div className="case-card-meta">
-                <span>Completion: {studyCase.completed ? 'Completed' : 'In progress'}</span>
-                <span>Lock: {studyCase.status === 'locked' ? 'Locked' : 'Unlocked'}</span>
-                <span>Best score: {studyCase.score || 0}%</span>
-              </div>
-              <div className="case-card-action">
-                {studyCase.status === 'completed' ? 'Open Worksheet' : studyCase.status === 'locked' ? 'Locked' : 'Start Case'}
-              </div>
-            </button>
-          ))}
+    <section className="kenya-cases-v2">
+      <header className="kenya-cases-v2-hero">
+        <div>
+          <span className="platform-eyebrow">Kenya EMS case library</span>
+          <h1>Practise the calls that matter here.</h1>
+          <p>Real Kenyan locations, realistic constraints, and structured clinical decisions for EMT and Paramedic learners.</p>
         </div>
+        <div className="kenya-cases-v2-hero-stat"><strong>100</strong><span>case scenarios</span></div>
+      </header>
+
+      <div className="kenya-cases-v2-stats">
+        <div><UiIcon name="cases" /><strong>50</strong><span>EMT cases</span></div>
+        <div><UiIcon name="activity" /><strong>50</strong><span>Paramedic cases</span></div>
+        <div><UiIcon name="dispatch" /><strong>20+</strong><span>counties and regions</span></div>
+        <div><UiIcon name="learn" /><strong>8</strong><span>clinical phases</span></div>
       </div>
+
+      <section className="kenya-cases-v2-panel">
+        <div className="kenya-cases-v2-panel-head"><div><span className="platform-eyebrow">Choose your revision track</span><h2>Case scenarios</h2></div><span>{visibleCases.length} shown</span></div>
+        <div className="kenya-cases-v2-controls">
+          <div className="kenya-cases-v2-programs" role="tablist" aria-label="Revision track">
+            {['EMT', 'Paramedic'].map((item) => <button type="button" role="tab" aria-selected={program === item} className={program === item ? 'is-active' : ''} onClick={() => { setProgram(item); setType('All types'); }} key={item}>{item}</button>)}
+          </div>
+          <label className="kenya-cases-v2-search"><UiIcon name="question" /><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search cases, counties, or skills" aria-label="Search Kenya EMS cases" /></label>
+          <select value={type} onChange={(event) => setType(event.target.value)} aria-label="Filter by case type">{typeOptions.map((item) => <option key={item}>{item}</option>)}</select>
+        </div>
+        <div className="kenya-cases-v2-grid">
+          {visibleCases.map((studyCase) => {
+            const caseType = studyCase.emergencyType || studyCase.type || 'Clinical';
+            return <button key={studyCase.id} type="button" className="kenya-case-v2-card" onClick={() => navigate(`/student/learn/kenya-ems/${studyCase.case_number || studyCase.id}`)}><div className="kenya-case-v2-card-top"><span>Case {String(studyCase.order_number || '').padStart(2, '0')}</span><UiIcon name="arrowRight" /></div><h3>{studyCase.title}</h3><div className="kenya-case-v2-meta"><span>{studyCase.location || 'Kenya'}</span><span>{studyCase.year || studyCase.incident_date || 'Current'}</span><span>{caseType}</span></div><p>{studyCase.keySkill || 'Assessment, treatment, transport, and handover decisions.'}</p><span className="kenya-case-v2-action">Start case <UiIcon name="arrowRight" /></span></button>;
+          })}
+        </div>
+        {!visibleCases.length && <div className="kenya-cases-v2-empty">No cases match those filters. Try another county, type, or revision track.</div>}
+      </section>
+
+      <section className="kenya-cases-v2-method"><div><span className="platform-eyebrow">Built for clinical reasoning</span><h2>Every case follows the same field-ready structure.</h2></div><div className="kenya-cases-v2-phases">{['Emergency activation', 'Scene assessment', 'Patient assessment', 'Treatment and vitals', 'Transport decision', 'SBAR handover', 'Post-call debrief', 'Clinical reasoning'].map((phase, index) => <span key={phase}><b>{String(index + 1).padStart(2, '0')}</b>{phase}</span>)}</div></section>
     </section>
   );
 }

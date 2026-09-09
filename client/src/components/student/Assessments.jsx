@@ -47,6 +47,20 @@ const LOCK_INSTRUCTIONS = {
   5: 'Locked - Complete Module 4 to unlock',
 };
 
+const STATIC_QUESTION_BANK_TOPICS = [
+  ['Preparatory', 100], ['Airway & Breathing', 100], ['Patient Assessment', 150],
+  ['Medical, Behavioral & OB/GYN', 170], ['Trauma', 80], ['Infants & Children', 100],
+  ['Operations', 90], ['Advanced Airway', 110], ['Additional Questions', 100],
+].map(([title, total_questions], index) => ({
+  id: `static-topic-${index + 1}`,
+  order_number: index + 1,
+  title,
+  total_questions,
+  attempt_count: 0,
+  best_percentage: 0,
+  status: 'available',
+}));
+
 // V2 is the active experience by default; set VITE_QUESTION_BANK_V2_ENABLED=false to roll back.
 const questionBankV2Enabled = import.meta.env.VITE_QUESTION_BANK_V2_ENABLED !== 'false';
 // Active by default; set VITE_QUESTION_BANK_SAAS_ENABLED=false to roll back.
@@ -208,8 +222,11 @@ function ModuleList() {
     }
   }, [location.pathname]);
 
-  if (error) return <div className="alert">{error}</div>;
-  if (!modules) return <Loading label="Loading EMT-B modules..." />;
+  if (error && location.pathname !== '/student/question-bank') return <div className="alert">{error}</div>;
+  if (!modules && location.pathname === '/student/question-bank') {
+    return <ThreeModeQuestionBank modules={STATIC_QUESTION_BANK_TOPICS} baseRoute="/student/mcq-questions" subscription={null} />;
+  }
+  if (!modules) return <Loading label="Loading question bank..." />;
 
   const meta = getMeta(location.pathname);
   const baseRoute = getBaseRoute(location.pathname);
@@ -217,11 +234,8 @@ function ModuleList() {
   const availableModules = modules.filter((module) => module.status === 'available').length;
   const overallProgress = modules.length ? Math.round((completedModules / modules.length) * 100) : 0;
 
-  if (questionBankSaaSEnabled && location.pathname === '/student/question-bank') {
+  if (location.pathname === '/student/question-bank') {
     return <ThreeModeQuestionBank modules={modules} baseRoute={baseRoute} subscription={subscription} />;
-  }
-  if (questionBankV2Enabled && location.pathname === '/student/question-bank') {
-    return <LearningQuestionBank modules={modules} baseRoute={baseRoute} subscription={subscription} />;
   }
 
   return (

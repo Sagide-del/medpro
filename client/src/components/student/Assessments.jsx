@@ -75,12 +75,16 @@ function ThreeModeQuestionBank({ modules, baseRoute, subscription }) {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    Promise.all([api('/progress'), api('/mock-exams')])
-      .then(([progressData, examData]) => {
+    Promise.allSettled([api('/progress'), api('/mock-exams')])
+      .then(([progressResult, examResult]) => {
+        const progressData = progressResult.status === 'fulfilled' ? progressResult.value : {};
+        const examData = examResult.status === 'fulfilled' ? examResult.value : {};
         setProgress(progressData.progress || {});
         setMockExams(examData.mockExams || []);
-      })
-      .catch((err) => setError(err.message));
+        if (progressResult.status === 'rejected' && examResult.status === 'rejected') {
+          setError('Question Bank data is temporarily unavailable. Please try again.');
+        }
+      });
   }, []);
 
   useEffect(() => {

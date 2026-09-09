@@ -12,6 +12,9 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 
 import StudentAssessments from './components/student/Assessments';
+import StudentDashboard from './components/student/Dashboard';
+import StudentProgressAnalytics from './components/student/ProgressAnalytics';
+import StudentSettings from './components/student/Settings';
 import StudentStudyPlanner from './components/student/StudyPlanner';
 import StudentSpacedRepetition from './components/student/SpacedRepetition';
 import StudentBookmarks from './components/student/Bookmarks';
@@ -135,24 +138,17 @@ const ADMIN_LINKS = [
 ];
 
 const LECTURIO_STUDENT_LINKS = [
-  { group: 'Home', items: [
-    { to: '/student/study-planner', label: 'Study Planner', end: true, icon: 'calendar' },
-    { to: '/student/my-content', label: 'My Content', icon: 'learn' },
-  ] },
-  { group: 'Revision Tools', items: [
-    { to: '/student/reference-cards', label: 'Cheat Sheets', icon: 'learn' },
+  { group: 'Home', items: [{ to: '/student/dashboard', label: 'Dashboard', end: true, icon: 'dashboard' }] },
+  { group: 'Revision', items: [
     { to: '/student/question-bank', label: 'Question Bank', icon: 'exam' },
-    { to: '/student/essays', label: 'Essays', icon: 'document' },
-    { to: '/student/learning-paths', label: 'Learning Paths', icon: 'result' },
-    { to: '/student/spaced-repetition', label: 'Spaced Repetition', icon: 'simulation' },
+    { to: '/student/mock-prep-tests', label: 'Practice Exams', icon: 'practice' },
+    { to: '/student/study-planner', label: 'Study Plans', icon: 'calendar' },
   ] },
-  { group: 'Kenya EMS Cases', items: [
-    { to: '/student/kenya-ems-hub', label: 'Local Case Studies', icon: 'cases' },
-    { to: '/student/kenya-ems-hub#protocols', label: 'Regional Protocols', icon: 'document' },
-    { to: '/student/kenya-ems-hub#comparison', label: 'KEMS / NREMT Comparison', icon: 'progress' },
+  { group: 'Progress & Resources', items: [
+    { to: '/student/progress-analytics', label: 'Performance', icon: 'progress' },
+    { to: '/student/my-content', label: 'Resources', icon: 'learn' },
   ] },
-  { group: 'Community', items: [{ to: '/student/community', label: 'My Study Group', icon: 'community' }] },
-  { group: 'Support', items: [{ to: '/', label: 'About Us', icon: 'community' }, { to: '/', label: 'Help Center', icon: 'question' }] },
+  { group: 'Account', items: [{ to: '/student/settings', label: 'Settings', icon: 'settings' }] },
 ];
 
 // New study navigation is the default; set VITE_LECTURIO_NAV_ENABLED=false only to roll back.
@@ -308,7 +304,7 @@ function AppRoutes() {
 
 
         <Route element={<RequireRole role="student"><RequireStudentSubscription><Layout links={lecturioNavEnabled ? LECTURIO_STUDENT_LINKS : STUDENT_LINKS} roleLabel="" /></RequireStudentSubscription></RequireRole>}>
-          <Route path="/student" element={<Navigate to={lecturioNavEnabled ? '/student/study-planner' : '/student/mcq-questions'} replace />} />
+          <Route path="/student" element={<Navigate to={lecturioNavEnabled ? '/student/dashboard' : '/student/mcq-questions'} replace />} />
           <Route path="/student/study-planner" element={<StudentStudyPlanner />} />
           <Route path="/student/my-content" element={<StudentMyContent />} />
           <Route path="/student/notes" element={<StudentNotes />} />
@@ -318,7 +314,8 @@ function AppRoutes() {
           <Route path="/student/spaced-repetition" element={<StudentSpacedRepetition />} />
           <Route path="/student/bookmarks" element={<StudentBookmarks />} />
           <Route path="/student/kenya-ems-hub" element={<StudentKenyaEMSHub />} />
-          <Route path="/student/dashboard" element={<Navigate to="/student/mcq-questions" replace />} />
+          <Route path="/student/dashboard" element={<StudentDashboard />} />
+          <Route path="/student/settings" element={<StudentSettings />} />
           <Route path="/student/exam-preparation" element={<StudentExamPreparation />} />
           <Route path="/student/exam-center" element={<StudentExamPreparation />} />
           <Route path="/student/clinical-library" element={<StudentClinicalReferenceCards />} />
@@ -362,7 +359,7 @@ function AppRoutes() {
           <Route path="/student/reference-cards/:id" element={<StudentClinicalReferenceCards />} />
           <Route path="/student/graphics" element={<StudentGraphics />} />
           <Route path="/student/graphics/:id" element={<StudentGraphics />} />
-          <Route path="/student/progress-analytics" element={<Navigate to="/student/mcq-questions" replace />} />
+          <Route path="/student/progress-analytics" element={<StudentProgressAnalytics />} />
           <Route path="/student/logbook" element={<StudentLogbook />} />
           <Route path="/student/videos" element={<StudentVideos />} />
           <Route path="/student/community" element={<StudentGroups />} />

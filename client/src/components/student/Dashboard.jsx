@@ -177,6 +177,19 @@ export default function StudentDashboard() {
         </div>
       </div>
 
+      <section className="student-dashboard-hero">
+        <div>
+          <span className="platform-eyebrow">{user?.program || 'EMT'} revision workspace</span>
+          <h2>Welcome back, Future {user?.program === 'Paramedic' ? 'Paramedic' : 'EMT'}.</h2>
+          <p>Small steps. Big progress. Pick up where you left off and keep building exam confidence.</p>
+          <div className="student-dashboard-hero-actions">
+            <Link className="dashboard-hero-primary" to="/student/question-bank">Continue learning <span aria-hidden="true">→</span></Link>
+            <Link className="dashboard-hero-secondary" to="/student/mock-prep-tests">Take a practice exam</Link>
+          </div>
+        </div>
+        <div className="student-dashboard-hero-art" aria-hidden="true"><UiIcon name="cases" /><span>Learn<br />Practice<br />Pass</span></div>
+      </section>
+
       <div className="dashboard-kpi-grid">
         {kpis.map((item) => (
           <div key={item.title} className="card dashboard-kpi-card">

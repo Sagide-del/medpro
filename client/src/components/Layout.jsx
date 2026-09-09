@@ -33,14 +33,14 @@ export default function Layout({ links, roleLabel }) {
   const visibleLinks = links.filter((item) => item.group !== 'Aliases');
 
   return (
-    <div className={`shell${roleLabel === 'EMS revision workspace' ? ' role-student' : ''}`}>
+    <div className={`shell${user?.role === 'student' ? ' role-student' : ''}`}>
 
       <aside className={`sidebar${navigationOpen ? ' open' : ''}`}>
 
         <div className="sidebar-top">
           <Link to="/" className="brand" style={{ textDecoration: 'none' }}>
             <span className="brand-lockup"><MedProMark /></span>
-            {roleLabel && <small>{roleLabel}</small>}
+            {(roleLabel || user?.role === 'student') && <small>{roleLabel || 'Learn • Practice • Pass'}</small>}
           </Link>
           <button
             type="button"

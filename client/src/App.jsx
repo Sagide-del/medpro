@@ -147,15 +147,17 @@ const LECTURIO_STUDENT_LINKS = [
     { to: '/student/study-planner', label: 'Study Plans', icon: 'calendar' },
     { to: '/student/learn/kenya-ems', label: 'Kenya EMS Cases', icon: 'cases' },
   ] },
-  { group: 'Progress & Resources', items: [
+  { group: 'Progress', items: [
     { to: '/student/progress-analytics', label: 'Performance', icon: 'progress' },
-    { to: '/student/my-content', label: 'Resources', icon: 'learn' },
-    { to: '/student/study-guides', label: 'Study Guides', icon: 'learn' },
-    { to: '/student/drug-reference', label: 'Drug Reference', icon: 'pill' },
-    { to: '/student/clinical-protocols', label: 'Clinical Protocols', icon: 'document' },
-    { to: '/student/videos', label: 'Podcasts', icon: 'activity' },
-    { to: '/student/reference-cards', label: 'Cheat Sheets', icon: 'learn' },
-    { to: '/student/videos', label: 'Skills Videos', icon: 'play' },
+  ] },
+  { group: 'Resources', items: [
+    { to: '/student/my-content', label: 'Resources', icon: 'learn', end: true },
+    { to: '/student/study-guides', label: 'Study Guides', icon: 'learn', nested: true },
+    { to: '/student/drug-reference', label: 'Drug Reference', icon: 'pill', nested: true },
+    { to: '/student/clinical-protocols', label: 'Clinical Protocols', icon: 'document', nested: true },
+    { to: '/student/videos', label: 'Podcasts', icon: 'activity', nested: true },
+    { to: '/student/reference-cards', label: 'Cheat Sheets', icon: 'learn', nested: true },
+    { to: '/student/videos', label: 'Skills Videos', icon: 'play', nested: true },
   ] },
   { group: 'Account', items: [{ to: '/student/settings', label: 'Settings', icon: 'settings' }] },
 ];

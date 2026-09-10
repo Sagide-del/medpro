@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { api } from '../../services/api';
 import Loading from '../shared/Loading';
+import UiIcon from '../shared/UiIcon';
 
 const PODCASTS = [
   ['01-preparatory', 'Preparatory Care for EMS', 'Foundations', 'Safety, communication, consent, documentation, and professional practice.'],
@@ -19,6 +20,8 @@ function getScriptFocus(assignment) {
   if (!title) return 'Clinical skill demonstration';
   return title.replace(/^video\s*/i, '').replace(/\s+/g, ' ').trim();
 }
+
+const EPISODE_LENGTHS = ['28 min', '2:48', '32 min', '36 min', '31 min', '29 min', '24 min', '26 min', '22 min'];
 
 export default function Videos() {
   const [assignments, setAssignments] = useState(null);
@@ -61,15 +64,16 @@ export default function Videos() {
 
   return (
     <>
-      <div className="page-head">
+      <div className="page-head podcast-page-head">
         <div>
           <h1>Podcasts</h1>
           <div className="sub">Short audio reviews for EMT and Paramedic revision.</div>
         </div>
+        <div className="podcast-page-count"><UiIcon name="activity" /><span>9 episodes</span><i>·</i><span>2h 48m</span></div>
       </div>
 
       <section className="podcast-feature" aria-labelledby="podcast-title">
-        <div className="podcast-feature-art" aria-hidden="true"><span>{selectedPodcast[0].slice(0, 2)}</span><strong>EMS<br />Audio Review</strong></div>
+        <div className="podcast-feature-art" aria-hidden="true"><UiIcon name="activity" /><span>{selectedPodcast[0].slice(0, 2)}</span><strong>EMS<br />Audio Review</strong></div>
         <div className="podcast-feature-content">
           <div className="podcast-kicker">{selectedPodcast[2]} · Module audio</div>
           <h2 id="podcast-title">{selectedPodcast[1]}</h2>
@@ -78,11 +82,11 @@ export default function Videos() {
             <source src={`/audio/${selectedPodcast[0]}.wav`} type="audio/wav" />
             Your browser does not support audio playback.
           </audio>
-          <details className="podcast-transcript"><summary>Open transcript and key takeaways</summary><p>Use the audio review as a focused revision aid, then return to the relevant Learning Path for deeper topic explanation and Bloom&apos;s activities.</p><ul><li>Listen once for the clinical sequence.</li><li>Pause and explain the reasoning in your own words.</li><li>Use the Question Bank separately to test recall after review.</li></ul></details>
+          <div className="podcast-feature-actions"><details className="podcast-transcript"><summary><UiIcon name="document" /> Transcript and key takeaways</summary><p>Use the audio review as a focused revision aid, then return to the relevant Learning Path for deeper topic explanation.</p><ul><li>Listen once for the clinical sequence.</li><li>Pause and explain the reasoning in your own words.</li><li>Use the Question Bank separately to test recall after review.</li></ul></details><button type="button" className="new-button new-button-primary" onClick={() => setStatus(`Now listening to ${selectedPodcast[1]}.`)}>Continue listening <UiIcon name="arrowRight" /></button></div>
         </div>
       </section>
 
-      <section className="podcast-library" aria-labelledby="podcast-library-title"><div className="podcast-library-head"><div><div className="podcast-kicker">Module library</div><h2 id="podcast-library-title">Audio revision by module</h2></div><span>{PODCASTS.length} episodes</span></div><div className="podcast-list">{PODCASTS.map((podcast, index) => <button type="button" className={selectedPodcast[0] === podcast[0] ? 'is-selected' : ''} key={podcast[0]} onClick={() => setSelectedPodcast(podcast)}><span className="podcast-list-number">{String(index + 1).padStart(2, '0')}</span><span><strong>{podcast[1]}</strong><small>{podcast[2]} · {podcast[3]}</small></span><span className="podcast-list-action">Listen</span></button>)}</div></section>
+      <section className="podcast-library" aria-labelledby="podcast-library-title"><div className="podcast-library-head"><div><div className="podcast-kicker">Module library</div><h2 id="podcast-library-title">Audio revision by module</h2><p>Select a module to listen and reinforce your learning.</p></div><span className="podcast-view-toggle"><UiIcon name="learn" /> {PODCASTS.length} episodes</span></div><div className="podcast-list">{PODCASTS.map((podcast, index) => <button type="button" className={selectedPodcast[0] === podcast[0] ? 'is-selected' : ''} key={podcast[0]} onClick={() => setSelectedPodcast(podcast)}><span className="podcast-list-number">{String(index + 1).padStart(2, '0')}</span><span className="podcast-list-copy"><strong>{podcast[1]}</strong><small>{podcast[2]} · {podcast[3]}</small></span><span className="podcast-list-duration"><UiIcon name="simulation" />~{EPISODE_LENGTHS[index]}</span><span className="podcast-list-action">Listen <UiIcon name="arrowRight" /></span></button>)}</div></section>
 
       {status && <div className="ok-note">{status}</div>}
 

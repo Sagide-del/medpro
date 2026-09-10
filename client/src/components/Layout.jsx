@@ -90,9 +90,10 @@ export default function Layout({ links, roleLabel }) {
 
                   {item.items.map((link) => (
                   <NavLink
-                      key={link.to}
+                      key={`${link.to}-${link.label}`}
                       to={link.to}
                       end={link.end}
+                      className={link.nested ? 'nav-link-nested' : undefined}
                       onClick={() => setNavigationOpen(false)}
                     >
                       {link.icon && <UiIcon name={link.icon} className="nav-link-icon" />}

@@ -4,6 +4,7 @@ import { api } from '../../services/api';
 import Loading from '../shared/Loading';
 import KenyaEMSWorksheet from './KenyaEMSWorksheet';
 import UiIcon from '../shared/UiIcon';
+import heroImage from '../../assets/hero-paramedics.png';
 
 function formatCaseTitle(title) {
   return String(title || '').toUpperCase();
@@ -70,11 +71,12 @@ function CaseLibrary() {
 
   return (
     <section className="kenya-cases-v2">
-      <header className="kenya-cases-v2-hero">
+      <header className="kenya-cases-v2-hero" style={{ '--kenya-cases-hero-image': `url(${heroImage})` }}>
         <div>
           <span className="platform-eyebrow">Kenya EMS case library</span>
           <h1>Practise the calls that matter here.</h1>
           <p>Real Kenyan locations, realistic constraints, and structured clinical decisions for EMT and Paramedic learners.</p>
+          <button type="button" className="kenya-cases-v2-browse" onClick={() => document.querySelector('.kenya-cases-v2-panel')?.scrollIntoView({ behavior: 'smooth' })}>Browse cases <UiIcon name="arrowRight" /></button>
         </div>
         <div className="kenya-cases-v2-hero-stat"><strong>100</strong><span>case scenarios</span></div>
       </header>
@@ -98,7 +100,8 @@ function CaseLibrary() {
         <div className="kenya-cases-v2-grid">
           {visibleCases.map((studyCase) => {
             const caseType = studyCase.emergencyType || studyCase.type || 'Clinical';
-            return <button key={studyCase.id} type="button" className="kenya-case-v2-card" onClick={() => navigate(`/student/learn/kenya-ems/${studyCase.case_number || studyCase.id}`)}><div className="kenya-case-v2-card-top"><span>Case {String(studyCase.order_number || '').padStart(2, '0')}</span><UiIcon name="arrowRight" /></div><h3>{studyCase.title}</h3><div className="kenya-case-v2-meta"><span>{studyCase.location || 'Kenya'}</span><span>{studyCase.year || studyCase.incident_date || 'Current'}</span><span>{caseType}</span></div><p>{studyCase.keySkill || 'Assessment, treatment, transport, and handover decisions.'}</p><span className="kenya-case-v2-action">Start case <UiIcon name="arrowRight" /></span></button>;
+            const icon = caseType.toLowerCase().includes('trauma') || caseType.toLowerCase().includes('burn') ? 'bandage' : caseType.toLowerCase().includes('medical') ? 'cross' : caseType.toLowerCase().includes('ob') ? 'maternity' : caseType.toLowerCase().includes('fire') ? 'alert' : 'cases';
+            return <button key={studyCase.id} type="button" className="kenya-case-v2-card" onClick={() => navigate(`/student/learn/kenya-ems/${studyCase.case_number || studyCase.id}`)}><div className="kenya-case-v2-card-top"><span>Case {String(studyCase.order_number || '').padStart(2, '0')}</span><span className="kenya-case-v2-card-icon"><UiIcon name={icon} /></span><UiIcon name="arrowRight" /></div><h3>{studyCase.title}</h3><div className="kenya-case-v2-meta"><span>{studyCase.location || 'Kenya'}</span><span>{studyCase.year || studyCase.incident_date || 'Current'}</span><span>{caseType}</span></div><p>{studyCase.keySkill || 'Assessment, treatment, transport, and handover decisions.'}</p><div className="kenya-case-v2-card-footer"><span><UiIcon name="simulation" />~30 min</span><span><UiIcon name="progress" />Intermediate</span></div><span className="kenya-case-v2-action">Start case <UiIcon name="arrowRight" /></span></button>;
           })}
         </div>
         {!visibleCases.length && <div className="kenya-cases-v2-empty">No cases match those filters. Try another county, type, or revision track.</div>}

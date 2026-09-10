@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../services/api';
 import { homeForRole } from '../services/auth';
+import heroImage from '../assets/hero-paramedics.png';
 
 const LOGIN_MODES = {
   student: {
@@ -63,11 +64,15 @@ export default function Login() {
   return (
     <div className="auth-wrap">
       <div className="auth-card">
-        <div className="auth-brand-panel">
+          <div className="auth-brand-panel" style={{ '--auth-hero-image': `url(${heroImage})` }}>
           <Link to="/" className="auth-brand-link" aria-label="MedPro home">
             <img src="/medpro-logo.png" alt="MedPro" />
           </Link>
-          <p>Focused revision for EMT and Paramedic practice.</p>
+          <div className="auth-brand-copy">
+            <span>EMS LEARNING PLATFORM</span>
+            <h2>Prepare with purpose.</h2>
+            <p>Focused revision for EMT and Paramedic practice.</p>
+          </div>
         </div>
         <div className="auth-form-panel">
         <Link to="/" className="back-link">&larr; Back to home</Link>

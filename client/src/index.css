@@ -6319,6 +6319,23 @@ button:disabled { opacity: 0.5; cursor: default; }
 html, body, #root { max-width: 100%; overflow-x: hidden; }.main { min-width: 0; overflow-x: hidden; }.main img, .main video, .main iframe { max-width: 100%; }.main table { max-width: 100%; }.main .table-wrap, .main .responsive-table, .main .data-table-wrap { max-width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }.main input, .main select, .main textarea { max-width: 100%; box-sizing: border-box; }.main button, .main a { -webkit-tap-highlight-color: transparent; }.page-head, .new-page-header, .new-library-header, .new-topic-header { min-width: 0; }.page-head > *, .new-page-header > *, .new-library-header > *, .new-topic-header > * { min-width: 0; }
 @media (max-width: 900px) { .main { padding-left: 18px; padding-right: 18px; }.form-grid, .dashboard-grid, .admin-grid, .content-grid, .two-column, .three-column, .split-layout { grid-template-columns: 1fr !important; }.page-head, .new-page-header, .new-library-header, .new-topic-header { gap: 14px; }.page-head { flex-wrap: wrap; }.card { max-width: 100%; }.main .data-table, .main table { display: block; overflow-x: auto; white-space: nowrap; } }
 @media (max-width: 560px) { .main { padding-left: 12px; padding-right: 12px; }.page-head h1, .new-page-header h1, .new-library-header h1 { font-size: 28px; line-height: 1.2; }.new-button, .primary, .ghost { min-height: 44px; }.new-review-question { grid-template-columns: 28px minmax(0, 1fr); }.new-review-question .new-button { grid-column: 2; justify-self: start; }.form-actions, .button-row, .new-note-actions { width: 100%; }.form-actions > button, .button-row > button { flex: 1 1 140px; }.main .modal, .main [role="dialog"] { width: calc(100vw - 24px); max-width: calc(100vw - 24px); max-height: 90vh; overflow-y: auto; } }
+
+/* Brand and sign-in polish: the mark stays crisp while the clinical image carries the visual weight. */
+.shell .brand-lockup { padding: 4px 0; }
+.shell .brand-logo-image { width: 192px; height: auto; object-fit: contain; }
+.auth-wrap { background: radial-gradient(circle at 15% 15%, #e4f2ff 0, #f2f7fb 42%, #eaf1f6 100%); }
+.auth-card { grid-template-columns: minmax(280px, .92fr) minmax(360px, 1.08fr); max-width: 980px; }
+.auth-brand-panel { position: relative; isolation: isolate; justify-content: flex-end; min-height: 540px; overflow: hidden; padding: 42px; background: linear-gradient(180deg, rgba(4, 34, 68, .28), rgba(3, 25, 52, .96)), var(--auth-hero-image) center / cover no-repeat; }
+.auth-brand-panel::before { position: absolute; z-index: -1; inset: 0; background: linear-gradient(120deg, rgba(4, 31, 63, .82), rgba(6, 89, 145, .18)); content: ''; }
+.auth-brand-link { align-self: flex-start; display: inline-flex; align-items: center; max-width: 245px; padding: 9px 12px; background: rgba(255, 255, 255, .96); border-radius: 10px; box-shadow: 0 8px 22px rgba(0, 20, 45, .2); }
+.auth-brand-link img { width: 218px; filter: none; }
+.auth-brand-copy { margin-top: auto; }
+.auth-brand-copy > span { color: #91d4ff; font: 700 10px Roboto, sans-serif; letter-spacing: .14em; }
+.auth-brand-copy h2 { margin: 8px 0 5px; color: #fff; font: 700 26px/1.2 Merriweather, serif; }
+.auth-brand-copy p { margin: 0; color: #d9ebf8; }
+.auth-form-panel { display: flex; flex-direction: column; justify-content: center; }
+.auth-form-panel .primary { min-height: 46px; border-radius: 8px; font-weight: 700; }
+@media (max-width: 700px) { .auth-card { grid-template-columns: 1fr; }.auth-brand-panel { min-height: 250px; padding: 26px; }.auth-brand-link img { width: 176px; }.auth-brand-copy h2 { font-size: 22px; }.auth-form-panel { min-height: 500px; } }
 /* Professional podcast library: keep the listening path visually separate from submissions. */
 .podcast-page-head { align-items: flex-end; }
 .podcast-page-count { display: inline-flex; align-items: center; gap: 8px; color: #5b78a1; font-size: 13px; white-space: nowrap; }

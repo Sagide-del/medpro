@@ -1,58 +1,56 @@
 import UiIcon from '../shared/UiIcon';
-import heroImage from '../../assets/hero-paramedics.png';
 
 const SECTIONS = [
   {
     number: '01',
     title: 'Clinical Judgment',
+    simulatorTitle: 'Written Exam Simulator',
+    tag: 'PROMETRIC-STYLE CBT',
     format: 'Adaptive assessment',
     detail: 'Clinical reasoning and decision-making across emergency basics, trauma, and medical emergencies.',
     icon: 'exam',
     tone: 'blue',
+    meta: ['75 questions', '90 min', 'Mark for review'],
+    action: 'Resume simulator',
   },
   {
     number: '02',
     title: 'Situational Judgment',
+    simulatorTitle: 'Practical Skills Simulator',
+    tag: 'SCENARIO-BASED',
     format: 'Scenario assessment',
     detail: 'Ethics, leadership, professionalism, patient safety, and communication in EMS situations.',
     icon: 'cases',
     tone: 'violet',
+    meta: ['Dynamic vitals', '4 decision points'],
+    action: 'Start scenario',
   },
   {
     number: '03',
     title: 'Psychological Readiness',
+    simulatorTitle: 'Psychometric & Ethics Lab',
+    tag: 'SJT + STRUCTURED WRITING',
     format: 'Scale and scenarios',
     detail: 'Emotional stability, empathy, resilience, stress management, and readiness for EMS work.',
     icon: 'activity',
     tone: 'green',
+    meta: ['600 words', '45 min', 'Real-world dilemmas'],
+    action: 'Open lab',
   },
 ];
 
 export default function PsychometricTest() {
   return (
-    <div className="psychometric-page psychometric-reference-layout">
-      <div className="psychometric-main-column">
-        <header className="psychometric-intro" style={{ '--psychometric-hero-image': `url(${heroImage})` }}>
-          <div className="psychometric-intro-copy"><span className="platform-eyebrow">Assessment workspace</span><h1>Psychometric Test</h1><p>Measure the judgment, professionalism, and resilience required in emergency medical services.</p><button type="button" className="psychometric-begin">Begin assessment <UiIcon name="arrowRight" /></button></div>
-          <div className="psychometric-hero-badge"><UiIcon name="shield" /><span>Be prepared.<br />Make a difference.</span></div>
-        </header>
-        <section className="psychometric-metrics" aria-label="Assessment metrics"><div><UiIcon name="learn" /><strong>3</strong><span>Assessment sections</span><small>Complete all sections</small></div><div><UiIcon name="document" /><strong>75</strong><span>Total questions</span><small>Across all sections</small></div><div><UiIcon name="simulation" /><strong>90</strong><span>Estimated time</span><small>Approximately 90 minutes</small></div></section>
-        <section className="psychometric-overview"><div className="psychometric-overview-head"><div><UiIcon name="document" /><div><h2>Assessment overview</h2><p>Review the three assessment areas before you begin.</p></div></div></div><div className="psychometric-card-grid">
+    <div className="psychometric-page psychometric-simulator-page">
+      <header className="psychometric-simulator-head"><div><span className="platform-eyebrow">Assessment workspace</span><h1>Choose your simulation</h1><p>Train across all assessment formats used in the EMT and Paramedic process.</p></div><span className="psychometric-simulator-count"><UiIcon name="practice" />3 formats</span></header>
+      <div className="psychometric-card-grid">
         {SECTIONS.map((section) => (
           <article className={`psychometric-card ${section.tone}`} key={section.number}>
-            <div className="psychometric-card-top">
-              <span>{section.number}</span>
-              <UiIcon name={section.icon} />
-            </div>
-            <h2>{section.title}</h2>
-            <strong>{section.format}</strong>
-            <p>{section.detail}</p>
-            <div className="psychometric-card-meta"><span><UiIcon name="document" />25 questions</span><span><UiIcon name="simulation" />~30 min</span><span><i />Not started</span></div><button type="button">View details <UiIcon name="arrowRight" /></button>
+            <div className="psychometric-card-top"><span className="psychometric-card-icon"><UiIcon name={section.icon} /></span><span className="psychometric-card-tag">{section.tag}</span></div><span className="psychometric-card-area">{section.number} · {section.title}</span><h2>{section.simulatorTitle}</h2><strong>{section.format}</strong><p>{section.detail}</p>{section.number === '02' && <div className="psychometric-scenario-steps">{['Scene', 'Primary', 'Treatment', 'Transport'].map((step, index) => <span key={step}><b>{index + 1}</b>{step}</span>)}</div>}{section.number === '03' && <div className="psychometric-framework"><span>S</span><span>A</span><span>R</span></div>}<div className="psychometric-card-meta">{section.meta.map((item) => <span key={item}><UiIcon name={item.includes('question') || item.includes('words') ? 'document' : item.includes('review') || item.includes('vitals') ? 'activity' : 'simulation'} />{item}</span>)}</div><button type="button">{section.action} <UiIcon name="arrowRight" /></button>
           </article>
         ))}
-        </div></section>
       </div>
-      <aside className="psychometric-side-column"><section className="psychometric-readiness"><h2>Assessment readiness</h2><div className="psychometric-ring"><strong>0%</strong><span>Complete</span></div><b>Not started yet</b><p>Review the sections and instructions before beginning.</p></section><section className="psychometric-instructions"><div className="psychometric-side-title"><UiIcon name="document" /><h2>Instructions</h2></div>{[['practice', 'Review all sections', 'Familiarize yourself with the assessment areas.'], ['simulation', 'Find a quiet space', 'Minimize distractions for the best experience.'], ['document', 'Answer honestly', 'There are no right or wrong answers.'], ['shield', 'Take your time', 'Complete all sections in one sitting if possible.']].map(([icon, title, detail]) => <div className="psychometric-instruction" key={title}><span><UiIcon name={icon} /></span><div><strong>{title}</strong><p>{detail}</p></div></div>)}<div className="psychometric-side-note"><UiIcon name="alert" /><span>Your results help identify your strengths and areas for growth in EMS practice.</span></div></section></aside>
+      <section className="psychometric-scheduled"><span className="psychometric-scheduled-icon"><UiIcon name="calendar" /></span><div><strong>Next scheduled session</strong><small>Get back on track and keep your momentum.</small></div><div className="psychometric-scheduled-detail"><strong>Written exam · 50 questions · 90 min</strong><small><UiIcon name="simulation" /> Tomorrow, 10:00 AM</small></div><button type="button">Begin focused session <UiIcon name="arrowRight" /></button><button type="button" className="psychometric-more" aria-label="More session options">...</button></section>
     </div>
   );
 }

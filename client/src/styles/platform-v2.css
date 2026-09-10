@@ -166,3 +166,45 @@
 @media (max-width: 720px) { .planner-dashboard-head { align-items: flex-start; flex-direction: column; }.planner-countdown { width: 100%; }.planner-controls { align-items: stretch; flex-direction: column; }.planner-controls input, .planner-controls select { width: 100%; }.planner-controls .new-button { margin-left: 0; justify-content: center; }.planner-dashboard-grid { grid-template-columns: 1fr; }.planner-block { grid-template-columns: 28px minmax(0, 1fr) auto; }.planner-block-progress { display: none; } }
 .master-storage-card { border-top: 3px solid #1685e5; }.master-storage-head { align-items: flex-start; margin: 0; }.master-storage-head h2 { margin: 5px 0; color: #163b61; }.master-storage-head .eyebrow { color: #1685e5; font-size: 11px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }.master-storage-stats { display: flex; gap: 28px; margin: 18px 0 14px; padding-top: 14px; border-top: 1px solid #edf2f5; }.master-storage-stats strong, .master-storage-stats span { display: block; }.master-storage-stats strong { color: #163b61; font: 700 20px/1 Roboto, sans-serif; }.master-storage-stats span { margin-top: 4px; color: #7890aa; font-size: 11px; }.master-storage-list { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }.master-storage-list > div { display: grid; gap: 7px; min-width: 0; padding: 11px; background: #f7fafd; border: 1px solid #e1ebf2; border-radius: 7px; }.master-storage-list strong { overflow: hidden; color: #163b61; font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }.master-storage-list small { overflow: hidden; color: #7890aa; font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }.master-storage-list .badge { width: fit-content; font-size: 9px; }.master-storage-empty { padding-top: 4px; }
 @media (max-width: 780px) { .master-storage-list { grid-template-columns: repeat(2, 1fr); } }.master-storage-head .primary { white-space: nowrap; }
+/* The chooser is intentionally compact: one decision per card, with no competing dashboard rail. */
+.psychometric-simulator-page { max-width: 1120px; padding: 18px 0 38px; }
+.psychometric-simulator-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 20px; margin-bottom: 14px; }
+.psychometric-simulator-head h1 { margin: 5px 0 4px; color: #101d56; font-size: 28px; }
+.psychometric-simulator-head p { margin: 0; color: #6381a9; font-size: 13px; }
+.psychometric-simulator-count { display: inline-flex; align-items: center; gap: 7px; color: #4d6b9d; font-size: 12px; }
+.psychometric-simulator-count .ui-icon { width: 18px; color: #1685e5; }
+.psychometric-simulator-page .psychometric-card-grid { grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.psychometric-simulator-page .psychometric-card { display: flex; flex-direction: column; min-height: 380px; padding: 15px; border-top: 2px solid #1685e5; border-radius: 8px; box-shadow: none; }
+.psychometric-simulator-page .psychometric-card.violet { border-top-color: #7954d6; }
+.psychometric-simulator-page .psychometric-card.green { border-top-color: #0ca579; }
+.psychometric-card-icon { display: grid; place-items: center; width: 42px; height: 42px; color: #1685e5; background: #e7f4ff; border-radius: 8px; }
+.psychometric-card-icon .ui-icon { width: 24px; height: 24px; }
+.psychometric-card.violet .psychometric-card-icon { color: #7954d6; background: #f0eaff; }
+.psychometric-card.green .psychometric-card-icon { color: #0ca579; background: #e3f8f0; }
+.psychometric-card-tag { margin-left: auto; padding: 7px 9px; color: #1685e5; background: #eaf5ff; border-radius: 5px; font: 700 9px Roboto, sans-serif; }
+.psychometric-card.violet .psychometric-card-tag { color: #7954d6; background: #f1edff; }
+.psychometric-card.green .psychometric-card-tag { color: #0ca579; background: #e5f8f0; }
+.psychometric-simulator-page .psychometric-card-top { justify-content: flex-start; gap: 8px; }
+.psychometric-card-area { display: block; margin-top: 13px; color: #6381a9; font: 700 10px Roboto, sans-serif; letter-spacing: .04em; text-transform: uppercase; }
+.psychometric-simulator-page .psychometric-card h2 { margin: 7px 0 4px; font-size: 17px; }
+.psychometric-simulator-page .psychometric-card p { min-height: 55px; margin: 8px 0 12px; font-size: 11px; line-height: 1.45; }
+.psychometric-scenario-steps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 3px; margin: 7px 0 12px; }
+.psychometric-scenario-steps span { display: grid; justify-items: center; gap: 3px; color: #58769e; font-size: 8px; text-align: center; }
+.psychometric-scenario-steps b { display: grid; place-items: center; width: 22px; height: 22px; color: #087ff0; background: #e5f3ff; border-radius: 50%; font: 700 11px Roboto, sans-serif; }
+.psychometric-framework { display: flex; gap: 6px; margin: 8px 0 13px; }
+.psychometric-framework span { flex: 1; padding: 7px 0; color: #087ff0; background: #eaf5ff; border-radius: 5px; font: 700 13px Roboto, sans-serif; text-align: center; }
+.psychometric-simulator-page .psychometric-card-meta { margin-top: auto; }
+.psychometric-simulator-page .psychometric-card button { width: 100%; justify-content: center; min-height: 36px; color: #fff; background: #087ff0; border-radius: 6px; }
+.psychometric-simulator-page .psychometric-card.violet button, .psychometric-simulator-page .psychometric-card.green button { background: #087ff0; }
+.psychometric-scheduled { display: grid; grid-template-columns: 40px minmax(170px, 1fr) minmax(260px, 1fr) auto auto; align-items: center; gap: 11px; margin-top: 14px; padding: 13px 16px; background: #fff; border: 1px solid #d9e7f2; border-radius: 8px; }
+.psychometric-scheduled-icon { display: grid; place-items: center; width: 34px; height: 34px; color: #087ff0; background: #e8f4ff; border-radius: 7px; }
+.psychometric-scheduled-icon .ui-icon { width: 19px; }
+.psychometric-scheduled strong, .psychometric-scheduled small { display: block; }
+.psychometric-scheduled strong { color: #163b61; font-size: 11px; }
+.psychometric-scheduled small { margin-top: 3px; color: #7890aa; font-size: 9px; }
+.psychometric-scheduled-detail { padding-left: 12px; border-left: 1px solid #e1ebf2; }
+.psychometric-scheduled-detail small { display: flex; align-items: center; gap: 4px; }
+.psychometric-scheduled-detail .ui-icon { width: 11px; color: #087ff0; }
+.psychometric-scheduled > button:not(.psychometric-more) { min-height: 35px; padding: 8px 12px; color: #fff; background: #087ff0; border: 0; border-radius: 6px; font: 700 11px Roboto, sans-serif; }
+.psychometric-more { padding: 7px 9px; color: #087ff0; background: #e8f4ff; border: 0; border-radius: 5px; font-weight: 700; letter-spacing: 2px; }
+@media (max-width: 760px) { .psychometric-simulator-head { align-items: flex-start; flex-direction: column; }.psychometric-simulator-page .psychometric-card-grid { grid-template-columns: 1fr; }.psychometric-simulator-page .psychometric-card { min-height: 0; }.psychometric-scheduled { grid-template-columns: 36px 1fr; }.psychometric-scheduled-detail { grid-column: 2; padding-left: 0; border-left: 0; }.psychometric-scheduled > button:not(.psychometric-more) { grid-column: 2; justify-self: start; }.psychometric-more { grid-column: 2; justify-self: start; } }

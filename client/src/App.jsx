@@ -20,6 +20,7 @@ import StudentSpacedRepetition from './components/student/SpacedRepetition';
 import StudentBookmarks from './components/student/Bookmarks';
 import StudentKenyaEMSHub from './components/student/KenyaEMSHub';
 import StudentMyContent from './components/student/MyContent';
+import StudentResourceLibrary from './components/student/ResourceLibrary';
 import StudentNotes from './components/student/Notes';
 import StudentLearningPaths from './components/student/LearningPaths';
 import StudentAssignments from './components/student/Assignments';
@@ -149,6 +150,12 @@ const LECTURIO_STUDENT_LINKS = [
   { group: 'Progress & Resources', items: [
     { to: '/student/progress-analytics', label: 'Performance', icon: 'progress' },
     { to: '/student/my-content', label: 'Resources', icon: 'learn' },
+    { to: '/student/study-guides', label: 'Study Guides', icon: 'learn' },
+    { to: '/student/drug-reference', label: 'Drug Reference', icon: 'pill' },
+    { to: '/student/clinical-protocols', label: 'Clinical Protocols', icon: 'document' },
+    { to: '/student/videos', label: 'Podcasts', icon: 'activity' },
+    { to: '/student/reference-cards', label: 'Cheat Sheets', icon: 'learn' },
+    { to: '/student/videos', label: 'Skills Videos', icon: 'play' },
   ] },
   { group: 'Account', items: [{ to: '/student/settings', label: 'Settings', icon: 'settings' }] },
 ];
@@ -309,6 +316,9 @@ function AppRoutes() {
           <Route path="/student" element={<Navigate to={lecturioNavEnabled ? '/student/dashboard' : '/student/mcq-questions'} replace />} />
           <Route path="/student/study-planner" element={<StudentStudyPlanner />} />
           <Route path="/student/my-content" element={<StudentMyContent />} />
+          <Route path="/student/study-guides" element={<StudentResourceLibrary kind="guides" />} />
+          <Route path="/student/drug-reference" element={<StudentResourceLibrary kind="drugs" />} />
+          <Route path="/student/clinical-protocols" element={<StudentResourceLibrary kind="protocols" />} />
           <Route path="/student/notes" element={<StudentNotes />} />
           <Route path="/student/learning-paths" element={<StudentLearningPaths />} />
           <Route path="/student/learning-paths/:id" element={<StudentLearningPaths />} />

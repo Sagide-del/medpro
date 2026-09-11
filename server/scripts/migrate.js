@@ -49,6 +49,7 @@ const files = [
   'migration_022_tatua_student_subscription.sql',
   'migration_023_ai_generator_v2.sql',
   'migration_026_content_management_registry.sql',
+  'migration_027_question_program_scope.sql',
 ];
 
 if (!process.env.DATABASE_URL) {

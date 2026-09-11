@@ -11,6 +11,7 @@ import { getSignedPdfUrl } from '../services/storage.js';
 import { AI_GENERATOR_V2_ENABLED, createPersistentJob, getPersistentJob, updatePersistentJob } from '../services/aiGeneratorV2Service.js';
 
 const CONTENT_DESTINATIONS = {
+  question_bank: 'Question Bank',
   case_study: 'Kenya EMS Cases',
   simulation: 'Simulation Library',
   assignment: 'Assignment Bank',
@@ -18,6 +19,11 @@ const CONTENT_DESTINATIONS = {
   essay: 'Essay Bank',
   learning_path: 'Learning Paths',
   cheat_sheet: 'Cheat Sheet Library',
+  podcast: 'Podcasts',
+  notes: 'Notes',
+  study_guide: 'Study Guides',
+  drug_reference: 'Drug Reference',
+  clinical_protocol: 'Clinical Protocols',
   video_script: 'Video Script Bank',
   worksheet: 'Worksheet Bank',
 };
@@ -29,12 +35,18 @@ function cleanText(value) {
 function normalizeContentType(value) {
   const next = cleanText(value).toLowerCase();
   if (['case', 'case_study', 'case-study', 'case study'].includes(next)) return 'case_study';
+  if (['question_bank', 'question bank', 'questions', 'mcq'].includes(next)) return 'question_bank';
   if (['simulation', 'skill_simulation', 'skill-simulation'].includes(next)) return 'simulation';
   if (['assignment', 'assignments'].includes(next)) return 'assignment';
   if (['exam', 'mcq_exam', 'mcq', 'assessment'].includes(next)) return 'exam';
   if (['essay', 'essays'].includes(next)) return 'essay';
   if (['learning_path', 'learning path', 'path'].includes(next)) return 'learning_path';
   if (['cheat_sheet', 'cheat sheet', 'cheatsheet'].includes(next)) return 'cheat_sheet';
+  if (['podcast', 'podcasts', 'audio'].includes(next)) return 'podcast';
+  if (['notes', 'note', 'quick_notes'].includes(next)) return 'notes';
+  if (['study_guide', 'study guides', 'guide'].includes(next)) return 'study_guide';
+  if (['drug_reference', 'drug reference', 'medicine'].includes(next)) return 'drug_reference';
+  if (['clinical_protocol', 'clinical protocols', 'protocol'].includes(next)) return 'clinical_protocol';
   if (['video_script', 'video script', 'video'].includes(next)) return 'video_script';
   if (['worksheet'].includes(next)) return 'worksheet';
   return 'case_study';

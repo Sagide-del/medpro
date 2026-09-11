@@ -137,6 +137,7 @@ export async function publishApproved({ job, adminId, decisions, items }) {
     const published = [];
     const destination = {
       question_bank: 'questions',
+      questions: 'questions',
       exam_mock: 'mock_exams',
       mock_exam: 'mock_exams',
       exam_mcq: 'mcq_exams',
@@ -147,6 +148,15 @@ export async function publishApproved({ job, adminId, decisions, items }) {
       essay: 'essays',
       learning_path: 'learning_paths',
       cheat_sheet: 'cheat_sheets',
+      podcast: 'podcasts',
+      notes: 'notes',
+      study_guide: 'study_guides',
+      study_guides: 'study_guides',
+      drug_reference: 'drug_reference',
+      clinical_protocol: 'clinical_protocols',
+      clinical_protocols: 'clinical_protocols',
+      drug_references: 'drug_reference',
+      cheat_sheets: 'cheat_sheets',
     }[job.request_json?.publishDestination] || job.content_type;
     for (const item of approved) {
       const decision = decisions.get(String(item.id));

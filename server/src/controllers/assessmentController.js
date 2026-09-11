@@ -121,7 +121,7 @@ export const gradeManual = asyncHandler(async (req, res) => {
 });
 
 export const listMcqModules = asyncHandler(async (req, res) => {
-  const modules = await Assessment.listMcqModules(req.user.sub, req.user.program);
+  const modules = await Assessment.listMcqModules(req.user.sub, req.query.program || req.user.program);
   const subscription = await resolveStudentSubscriptionAccess(req.user);
   res.json({ modules, subscription });
 });

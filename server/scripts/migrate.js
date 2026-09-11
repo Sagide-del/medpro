@@ -50,6 +50,7 @@ const files = [
   'migration_023_ai_generator_v2.sql',
   'migration_026_content_management_registry.sql',
   'migration_027_question_program_scope.sql',
+  'migration_028_paramedic_curriculum.sql',
 ];
 
 if (!process.env.DATABASE_URL) {

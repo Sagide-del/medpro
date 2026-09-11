@@ -359,11 +359,7 @@ export const Assessment = {
            AND sma.module_id = m.id
        ) stats ON true
        WHERE m.is_active = true
-         AND EXISTS (
-           SELECT 1 FROM mcq_questions scoped_q
-           WHERE scoped_q.module_id = m.id
-             AND LOWER(scoped_q.program) = LOWER($2)
-         )
+         AND LOWER(m.program) = LOWER($2)
        ORDER BY m.order_number ASC`,
       [studentId, program]
     );

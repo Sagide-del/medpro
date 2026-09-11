@@ -58,6 +58,11 @@ const STATIC_QUESTION_BANK_TOPICS = [
   status: 'available',
 }));
 
+const PROGRAM_TOPIC_PILLS = {
+  EMT: ['Airway & Breathing', 'Cardiology', 'Trauma', 'Medical', 'Pediatrics', 'OB/GYN', 'Pharmacology', 'Operations'],
+  Paramedic: ['Preparatory & Professional Practice', 'Anatomy, Physiology & Pathophysiology', 'Pharmacology & Medication Administration', 'Airway & Artificial Ventilation', 'Patient Assessment & Clinical Decision Making', 'Cardiovascular & Medical Emergencies', 'Shock, Resuscitation & Trauma', 'Special Populations & Acute Care', 'Operations, Rescue & Incident Command'],
+};
+
 // V2 is the active experience by default; set VITE_QUESTION_BANK_V2_ENABLED=false to roll back.
 const questionBankV2Enabled = import.meta.env.VITE_QUESTION_BANK_V2_ENABLED !== 'false';
 // Active by default; set VITE_QUESTION_BANK_SAAS_ENABLED=false to roll back.
@@ -168,7 +173,8 @@ function ThreeModeQuestionBank({ modules, baseRoute, subscription }) {
     } catch (err) { setError(err.message); }
   }
 
-  const topics = [...new Set(modules.flatMap((item) => item.topics || []))].sort();
+  const topicPills = PROGRAM_TOPIC_PILLS[certification] || PROGRAM_TOPIC_PILLS.EMT;
+  const topics = [...new Set([...modules.flatMap((item) => item.topics || []), ...topicPills])].sort();
 
   const visibleModules = modules.filter((module) => !module.program || String(module.program).toLowerCase() === certification.toLowerCase());
 
@@ -178,7 +184,7 @@ function ThreeModeQuestionBank({ modules, baseRoute, subscription }) {
       {subscription && !subscription.allowed && <div className="alert info">Your subscription is {subscription.status}. Renew your plan to continue.</div>}
       {error && <div className="alert">{error}</div>}
 
-      {mode === 'practice' && <><aside className="question-bank-saas-filter"><div className="question-bank-saas-filter-title"><UiIcon name="filter" /> <strong>Filter Questions</strong></div><fieldset><legend>Certification Level</legend><label><input type="checkbox" checked={certification === 'EMT'} onChange={() => setCertification('EMT')} /> EMT</label><label><input type="checkbox" checked={certification === 'Paramedic'} onChange={() => setCertification('Paramedic')} /> Paramedic</label></fieldset><label className="question-bank-saas-select-label">Subject Area<select value={topic} onChange={(event) => changeBrowseFilter(setTopic, event.target.value)}><option value="">All subjects</option>{topics.map((item) => <option key={item}>{item}</option>)}</select></label><fieldset><legend>Question Type</legend><label><input type="checkbox" checked={questionType === 'multiple_choice'} onChange={() => setQuestionType('multiple_choice')} /> Multiple Choice</label><label><input type="checkbox" checked={questionType === 'true_false'} onChange={() => setQuestionType('true_false')} /> True / False</label><label><input type="checkbox" checked={questionType === 'scenario'} onChange={() => setQuestionType('scenario')} /> Scenario-based</label></fieldset><fieldset><legend>Difficulty Level</legend><label><input type="checkbox" checked={difficultyFilter === 'basic'} onChange={() => setDifficultyFilter('basic')} /> Easy</label><label><input type="checkbox" checked={difficultyFilter === 'intermediate'} onChange={() => setDifficultyFilter('intermediate')} /> Medium</label><label><input type="checkbox" checked={difficultyFilter === 'advanced'} onChange={() => setDifficultyFilter('advanced')} /> Hard</label></fieldset><button type="button" className="question-bank-saas-apply" onClick={() => { setDifficulty(difficultyFilter); setBrowse((current) => ({ ...current, pagination: { ...current.pagination, page: 1 } })); }}><UiIcon name="filter" /> Apply filters</button><button type="button" className="question-bank-saas-reset" onClick={() => { setCertification(user?.program || 'EMT'); setTopic(''); setQuestionType('multiple_choice'); setDifficultyFilter(''); setDifficulty(''); }}>Reset</button></aside><section className="question-bank-saas-panel"><div className="question-bank-saas-panel-head"><div><span className="mcq-progress-kicker">Focused revision</span><h2><UiIcon name="exam" /> Question Bank</h2></div><span>Explore topics</span></div><div className="question-bank-saas-topic-pills"><button type="button" className="is-active">All topics</button>{['Airway & Breathing', 'Cardiology', 'Trauma', 'Medical', 'Pediatrics', 'OB/GYN', 'Pharmacology', 'Operations'].map((item) => <button type="button" key={item} onClick={() => { setTopic(item); setMode('browse'); }}>{item}</button>)}</div><div className="question-bank-saas-topic-grid">{visibleModules.map((module) => { const mastery = masteryForModule(module); const band = masteryBand(mastery); const icon = medicalIconForTopic(module.title); return <article className="question-bank-saas-topic" key={module.id}><div className="question-bank-saas-topic-main"><span className="question-bank-saas-topic-icon" aria-hidden="true"><UiIcon name={icon} /></span><div><span className="question-bank-saas-topic-number">{String(module.order_number).padStart(2, '0')}</span><h3>{MODULE_LABELS[module.order_number] || module.title}</h3><p>EMT &amp; Paramedic revision</p></div></div><div className="question-bank-saas-topic-score"><strong>{mastery}%</strong><span>Mastery</span></div><div className="question-bank-saas-progress"><span style={{ width: `${mastery}%` }} /></div><div className="question-bank-saas-topic-foot"><span className={`question-bank-saas-status ${band.key}`}>{module.attempt_count ? band.label : 'START'}</span><button type="button" onClick={() => navigate(`${baseRoute}/${module.id}?mode=practice&program=${encodeURIComponent(certification)}&questionType=${encodeURIComponent(questionType)}&difficulty=${encodeURIComponent(difficultyFilter)}`)}>Start practice <UiIcon name="arrowRight" /></button></div></article>; })}</div></section></>}
+      {mode === 'practice' && <><aside className="question-bank-saas-filter"><div className="question-bank-saas-filter-title"><UiIcon name="filter" /> <strong>Filter Questions</strong></div><fieldset><legend>Certification Level</legend><label><input type="checkbox" checked={certification === 'EMT'} onChange={() => setCertification('EMT')} /> EMT</label><label><input type="checkbox" checked={certification === 'Paramedic'} onChange={() => setCertification('Paramedic')} /> Paramedic</label></fieldset><label className="question-bank-saas-select-label">Subject Area<select value={topic} onChange={(event) => changeBrowseFilter(setTopic, event.target.value)}><option value="">All subjects</option>{topics.map((item) => <option key={item}>{item}</option>)}</select></label><fieldset><legend>Question Type</legend><label><input type="checkbox" checked={questionType === 'multiple_choice'} onChange={() => setQuestionType('multiple_choice')} /> Multiple Choice</label><label><input type="checkbox" checked={questionType === 'true_false'} onChange={() => setQuestionType('true_false')} /> True / False</label><label><input type="checkbox" checked={questionType === 'scenario'} onChange={() => setQuestionType('scenario')} /> Scenario-based</label></fieldset><fieldset><legend>Difficulty Level</legend><label><input type="checkbox" checked={difficultyFilter === 'basic'} onChange={() => setDifficultyFilter('basic')} /> Easy</label><label><input type="checkbox" checked={difficultyFilter === 'intermediate'} onChange={() => setDifficultyFilter('intermediate')} /> Medium</label><label><input type="checkbox" checked={difficultyFilter === 'advanced'} onChange={() => setDifficultyFilter('advanced')} /> Hard</label></fieldset><button type="button" className="question-bank-saas-apply" onClick={() => { setDifficulty(difficultyFilter); setBrowse((current) => ({ ...current, pagination: { ...current.pagination, page: 1 } })); }}><UiIcon name="filter" /> Apply filters</button><button type="button" className="question-bank-saas-reset" onClick={() => { setCertification(user?.program || 'EMT'); setTopic(''); setQuestionType('multiple_choice'); setDifficultyFilter(''); setDifficulty(''); }}>Reset</button></aside><section className="question-bank-saas-panel"><div className="question-bank-saas-panel-head"><div><span className="mcq-progress-kicker">Focused revision</span><h2><UiIcon name="exam" /> Question Bank</h2></div><span>Explore topics</span></div><div className="question-bank-saas-topic-pills"><button type="button" className="is-active">All topics</button>{topicPills.map((item) => <button type="button" key={item} onClick={() => { setTopic(item); setMode('browse'); }}>{item}</button>)}</div><div className="question-bank-saas-topic-grid">{visibleModules.map((module) => { const mastery = masteryForModule(module); const band = masteryBand(mastery); const icon = medicalIconForTopic(module.title); const title = certification === 'Paramedic' && module.program === 'Paramedic' ? module.title : (MODULE_LABELS[module.order_number] || module.title); return <article className="question-bank-saas-topic" key={module.id}><div className="question-bank-saas-topic-main"><span className="question-bank-saas-topic-icon" aria-hidden="true"><UiIcon name={icon} /></span><div><span className="question-bank-saas-topic-number">{String(module.order_number).padStart(2, '0')}</span><h3>{title}</h3><p>{certification} revision</p></div></div><div className="question-bank-saas-topic-score"><strong>{mastery}%</strong><span>Mastery</span></div><div className="question-bank-saas-progress"><span style={{ width: `${mastery}%` }} /></div><div className="question-bank-saas-topic-foot"><span className={`question-bank-saas-status ${band.key}`}>{module.attempt_count ? band.label : 'START'}</span><button type="button" onClick={() => navigate(`${baseRoute}/${module.id}?mode=practice&program=${encodeURIComponent(certification)}&questionType=${encodeURIComponent(questionType)}&difficulty=${encodeURIComponent(difficultyFilter)}`)}>Start practice <UiIcon name="arrowRight" /> </button></div></article>; })}</div></section></>}
 
       {mode === 'mock' && <section className="question-bank-saas-panel"><div className="question-bank-saas-panel-head"><div><span className="mcq-progress-kicker">Timed practice</span><h2>Mock Exams</h2></div><span>50 questions · 60 minutes</span></div><div className="question-bank-saas-exam-list">{mockExams.map((exam) => <article key={exam.id}><div><span className="question-bank-saas-topic-number">Mock {exam.exam_number}</span><h3>{exam.title || `EMT Mock Exam ${exam.exam_number}`}</h3><p>Mixed-topic timed practice · {exam.question_count} questions</p></div><div><strong>{exam.best_score || 0}%</strong><small>Best score</small></div><button type="button" onClick={() => navigate('/student/mcq/mock-pretest')}>Start exam</button></article>)}</div></section>}
 
@@ -229,13 +235,14 @@ function LearningQuestionBank({ modules, baseRoute, subscription }) {
 function ModuleList() {
   const location = useLocation();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [modules, setModules] = useState(null);
   const [subscription, setSubscription] = useState(null);
   const [essays, setEssays] = useState([]);
   const [error, setError] = useState('');
 
   useEffect(() => {
-    api('/assessments/modules')
+    api(`/assessments/modules?program=${encodeURIComponent(user?.program || 'EMT')}`)
       .then((data) => {
         setModules(data.modules);
         setSubscription(data.subscription || null);
@@ -246,7 +253,7 @@ function ModuleList() {
         .then((data) => setEssays((data.assignments || []).filter((item) => String(item.assignment_type || '').toLowerCase() === 'essay')))
         .catch(() => {});
     }
-  }, [location.pathname]);
+  }, [location.pathname, user?.program]);
 
   if (error && location.pathname !== '/student/question-bank') return <div className="alert">{error}</div>;
   if (!modules && location.pathname === '/student/question-bank') {
@@ -261,7 +268,8 @@ function ModuleList() {
   const overallProgress = modules.length ? Math.round((completedModules / modules.length) * 100) : 0;
 
   if (location.pathname === '/student/question-bank') {
-    return <ThreeModeQuestionBank modules={STATIC_QUESTION_BANK_TOPICS} baseRoute={baseRoute} subscription={null} />;
+    const questionBankModules = user?.program === 'Paramedic' ? modules : STATIC_QUESTION_BANK_TOPICS;
+    return <ThreeModeQuestionBank modules={questionBankModules} baseRoute={baseRoute} subscription={null} />;
   }
 
   return (

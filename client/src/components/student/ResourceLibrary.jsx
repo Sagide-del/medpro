@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import UiIcon from '../shared/UiIcon';
+import { useAuth } from '../../context/AuthContext';
 
 const LIBRARIES = {
   guides: {
@@ -21,8 +22,46 @@ const LIBRARIES = {
   },
 };
 
+const PARAMEDIC_ITEMS = {
+  guides: [
+    ['Preparatory & Professional Practice', 'EMS systems, safety and wellness, communications, law, ethics, and evidence-based practice.', 'document', 'Preparatory'],
+    ['Anatomy & Pathophysiology', 'Human systems, medical terminology, pathophysiology, and lifespan development.', 'learn', 'Foundations'],
+    ['Pharmacology & Medication Administration', 'Emergency medications, pharmacology principles, and safe administration.', 'pill', 'Pharmacology'],
+    ['Airway & Artificial Ventilation', 'Airway management, respiration, oxygenation, and artificial ventilation.', 'lungs', 'Airway'],
+    ['Patient Assessment & Clinical Decisions', 'History taking, assessment, reassessment, communication, and clinical decision making.', 'document', 'Assessment'],
+    ['Medical, Trauma & Special Populations', 'Advanced medical, trauma, obstetric, neonatal, paediatric, geriatric, and special-population review.', 'heart', 'Clinical'],
+  ],
+  protocols: [
+    ['Advanced Scene Management', 'Risk assessment, incident command, communications, and evidence-based field decisions.', 'shield', 'Operations'],
+    ['Advanced Airway Management', 'Airway strategy, ventilation, monitoring, and escalation across patient groups.', 'lungs', 'Airway'],
+    ['Cardiovascular Emergencies', 'Advanced assessment and management of cardiovascular presentations.', 'heart', 'Cardiology'],
+    ['Shock & Resuscitation', 'Recognition, reassessment, and structured management of shock states.', 'activity', 'Resuscitation'],
+    ['Major Trauma Management', 'Mechanism of injury, haemorrhage, burns, and region-specific trauma care.', 'bandage', 'Trauma'],
+    ['Obstetric, Neonatal & Paediatric Care', 'Age- and condition-appropriate assessment for special populations.', 'baby', 'Special populations'],
+  ],
+  drugs: [
+    ['Emergency Pharmacology', 'Principles of pharmacology and emergency medication selection.', 'pill', 'Pharmacology'],
+    ['Medication Administration', 'Routes, safety checks, dosing principles, and documentation.', 'document', 'Administration'],
+    ['Cardiovascular Medications', 'Medication considerations for cardiovascular emergencies.', 'heart', 'Cardiology'],
+    ['Respiratory Medications', 'Medication considerations for respiratory and airway emergencies.', 'lungs', 'Respiratory'],
+    ['Toxicology & Antidotes', 'Recognition and treatment principles for toxic exposures.', 'activity', 'Toxicology'],
+    ['Paediatric Medication Safety', 'Age-appropriate medication safety and dose-checking principles.', 'baby', 'Paediatrics'],
+  ],
+  sheets: [
+    ['Advanced Patient Assessment', 'A quick reference for primary, secondary, and reassessment decisions.', 'document', 'Assessment'],
+    ['Airway & Ventilation', 'Advanced airway and ventilation checkpoints across patient groups.', 'lungs', 'Airway'],
+    ['Cardiology Reference', 'Rapid cardiovascular assessment and resuscitation reminders.', 'heart', 'Cardiology'],
+    ['Shock Recognition', 'Patterns, reassessment triggers, and structured shock review.', 'activity', 'Resuscitation'],
+    ['Trauma Priorities', 'Region-specific trauma priorities and haemorrhage control reminders.', 'bandage', 'Trauma'],
+    ['Obstetric & Neonatal Reference', 'Fast reference for obstetric and neonatal assessment priorities.', 'baby', 'Special populations'],
+  ],
+};
+
 export default function ResourceLibrary({ kind = 'guides' }) {
-  const library = LIBRARIES[kind] || LIBRARIES.guides;
+  const { user } = useAuth();
+  const isParamedic = user?.program === 'Paramedic';
+  const baseLibrary = LIBRARIES[kind] || LIBRARIES.guides;
+  const library = isParamedic ? { ...baseLibrary, items: PARAMEDIC_ITEMS[kind] || baseLibrary.items } : baseLibrary;
   const [category, setCategory] = useState('All');
   const [search, setSearch] = useState('');
   const categories = ['All', ...new Set(library.items.map((item) => item[3]))];

@@ -15,6 +15,17 @@ const FALLBACK_BLOCKS = [
   { topic: 'Cardiology & Trauma', detail: 'ECG, ACS, arrhythmias, trauma assessment', mastery: 0 },
   { topic: 'Medical, Pediatrics & OB/GYN', detail: 'Common illnesses, medications, special populations', mastery: 0 },
 ];
+const PARAMEDIC_PLANS = [
+  { title: 'Paramedic 8-Week Plan', text: 'Build advanced clinical reasoning across assessment, interventions, and operations.', icon: 'calendar', tone: 'blue', action: 'Use plan' },
+  { title: 'Paramedic 12-Week Plan', text: 'Work through the full Sanders paramedic curriculum with deliberate practice.', icon: 'learn', tone: 'violet', action: 'Use plan' },
+  { title: 'Custom Plan', text: 'Set your own exam date, study hours, and revision priorities.', icon: 'progress', tone: 'green', action: 'Create plan' },
+];
+const PARAMEDIC_BLOCKS = [
+  { topic: 'Preparatory & Professional Practice', detail: 'EMS systems, safety, communications, law, and ethics', mastery: 0 },
+  { topic: 'Airway & Artificial Ventilation', detail: 'Advanced airway, respiration, oxygenation, and ventilation', mastery: 0 },
+  { topic: 'Cardiovascular & Medical Emergencies', detail: 'Cardiology, medical emergencies, shock, and resuscitation', mastery: 0 },
+  { topic: 'Trauma & Special Populations', detail: 'Trauma, obstetrics, neonatal, paediatric, and geriatric care', mastery: 0 },
+];
 const plannerEnabled = import.meta.env.VITE_PLANNER_PREDICTION_ENABLED === 'true';
 
 function daysRemaining(date) {
@@ -31,6 +42,8 @@ export default function StudyPlanner() {
   const [predictions, setPredictions] = useState([]);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState('');
+  const contentPlans = program === 'Paramedic' ? PARAMEDIC_PLANS : PLANS;
+  const contentBlocks = program === 'Paramedic' ? PARAMEDIC_BLOCKS : FALLBACK_BLOCKS;
 
   useEffect(() => {
     if (!plannerEnabled) return;
@@ -40,7 +53,7 @@ export default function StudyPlanner() {
     });
   }, []);
 
-  const blocks = plan?.blocks?.length ? plan.blocks : FALLBACK_BLOCKS.map((item, index) => ({ ...item, id: `${item.topic}-${index}`, minutes: 30, reason: index === 0 ? 'Recommended starting point' : 'Next in your pathway', completed: false, target: 70 }));
+  const blocks = plan?.blocks?.length ? plan.blocks : contentBlocks.map((item, index) => ({ ...item, id: `${item.topic}-${index}`, minutes: 30, reason: index === 0 ? 'Recommended starting point' : 'Next in your pathway', completed: false, target: 70 }));
   const weakTopics = useMemo(() => predictions.slice().sort((a, b) => a.mastery - b.mastery).slice(0, 3), [predictions]);
 
   async function generatePlan() {
@@ -58,6 +71,6 @@ export default function StudyPlanner() {
     <div className="new-track-tabs" role="tablist" aria-label="Certification track">{['EMT', 'Paramedic'].map((item) => <button type="button" role="tab" aria-selected={program === item} className={program === item ? 'is-active' : ''} onClick={() => setProgram(item)} key={item}>{item}</button>)}</div>
     <section className="planner-controls"><label>Exam date<input type="date" value={examDate} onChange={(event) => setExamDate(event.target.value)} /></label><label>Daily study hours<select value={hours} onChange={(event) => setHours(event.target.value)}><option value="0.5">30 minutes</option><option value="1">1 hour</option><option value="2">2 hours</option><option value="3">3 hours</option></select></label><button type="button" className="new-button new-button-primary" onClick={generatePlan} disabled={busy}>{busy ? 'Updating...' : 'Generate today’s plan'} <UiIcon name="arrowRight" /></button></section>
     {message && <div className="planner-message" role="status">{message}</div>}
-    <div className="new-plan-cards">{PLANS.map((item, index) => <article className={`new-plan-card ${item.tone}`} key={item.title}><span className="new-plan-icon"><UiIcon name={item.icon} /></span>{index === 0 && <b>Recommended</b>}<h2>{item.title}</h2><p>{item.text}</p><button type="button" onClick={generatePlan}>{item.action} <UiIcon name="arrowRight" /></button></article>)}</div>
+    <div className="new-plan-cards">{contentPlans.map((item, index) => <article className={`new-plan-card ${item.tone}`} key={item.title}><span className="new-plan-icon"><UiIcon name={item.icon} /></span>{index === 0 && <b>Recommended</b>}<h2>{item.title}</h2><p>{item.text}</p><button type="button" onClick={generatePlan}>{item.action} <UiIcon name="arrowRight" /></button></article>)}</div>
     <div className="planner-dashboard-grid"><section className="new-plan-overview planner-schedule"><div className="planner-section-head"><div><span className="platform-eyebrow">Today</span><h2>Your study schedule</h2></div><span>{blocks.filter((item) => item.completed).length}/{blocks.length} complete</span></div>{blocks.map((item, index) => <div className={`new-week-row planner-block ${item.completed ? 'is-complete' : ''}`} key={item.id}><span className="new-week-number">{index + 1}</span><div><strong>{item.topic}</strong><small>{item.detail || `${item.reason || 'Focused review'} · ${item.minutes || 30} minutes`}</small></div><span className="planner-block-progress"><i style={{ width: `${Math.min(100, Number(item.mastery || 0))}%` }} /></span><button type="button" onClick={() => completeBlock(item)} aria-label={`Mark ${item.topic} complete`}>{item.completed ? 'Done' : 'Start'}</button></div>)}</section><aside className="planner-weak-topics"><span className="platform-eyebrow">Focus next</span><h2>Topics needing attention</h2>{(weakTopics.length ? weakTopics : [{ topic: 'Airway & Breathing', mastery: 0 }, { topic: 'Trauma', mastery: 0 }, { topic: 'Medical emergencies', mastery: 0 }]).map((item) => <Link to="/student/question-bank" key={item.topic}><span><strong>{item.topic}</strong><small>{item.mastery}% mastery · target 70%</small></span><UiIcon name="arrowRight" /></Link>)}</aside></div></div>;
 }

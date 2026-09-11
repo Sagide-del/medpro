@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { api } from '../../services/api';
 import Loading from '../shared/Loading';
 import UiIcon from '../shared/UiIcon';
+import { useAuth } from '../../context/AuthContext';
 
 const PODCASTS = [
   ['01-preparatory', 'Preparatory Care for EMS', 'Foundations', 'Safety, communication, consent, documentation, and professional practice.'],
@@ -15,6 +16,18 @@ const PODCASTS = [
   ['09-additional-review', 'Integrated EMT Review', 'Exam readiness', 'Prioritisation, clinical reasoning, time pressure, and Kenya-specific context.'],
 ];
 
+const PARAMEDIC_PODCASTS = [
+  ['01-preparatory', 'Paramedic Professional Practice', 'Preparatory', 'EMS systems, safety, communications, law, ethics, and evidence-based practice.'],
+  ['02-anatomy-pathophysiology', 'Anatomy & Pathophysiology', 'Foundations', 'Human systems, pathophysiology, terminology, and lifespan development.'],
+  ['03-pharmacology', 'Pharmacology & Medication Administration', 'Pharmacology', 'Emergency medications, administration principles, and medication safety.'],
+  ['04-advanced-airway', 'Advanced Airway & Ventilation', 'Airway', 'Airway management, respiration, oxygenation, and artificial ventilation.'],
+  ['05-clinical-assessment', 'Clinical Assessment & Decision Making', 'Assessment', 'Communication, history taking, assessment, reassessment, and clinical decisions.'],
+  ['06-cardiovascular-medical', 'Cardiovascular & Medical Emergencies', 'Medical', 'Cardiology, respiratory, neurologic, endocrine, toxicology, and behavioural emergencies.'],
+  ['07-shock-trauma', 'Shock, Resuscitation & Trauma', 'Trauma', 'Shock, haemorrhage, burns, and region-specific trauma management.'],
+  ['08-special-populations', 'Special Populations', 'Paediatrics', 'Obstetric, neonatal, paediatric, geriatric, and special-challenge patients.'],
+  ['09-operations-rescue', 'Operations, Rescue & Incident Command', 'Operations', 'Ambulance operations, rescue awareness, hazardous materials, and incident command.'],
+];
+
 function getScriptFocus(assignment) {
   const title = (assignment.title || '').trim();
   if (!title) return 'Clinical skill demonstration';
@@ -24,12 +37,18 @@ function getScriptFocus(assignment) {
 const EPISODE_LENGTHS = ['28 min', '2:48', '32 min', '36 min', '31 min', '29 min', '24 min', '26 min', '22 min'];
 
 export default function Videos() {
+  const { user } = useAuth();
+  const podcasts = user?.program === 'Paramedic' ? PARAMEDIC_PODCASTS : PODCASTS;
   const [assignments, setAssignments] = useState(null);
   const [status, setStatus] = useState('');
   const [files, setFiles] = useState({});
   const [notes, setNotes] = useState({});
   const [busyId, setBusyId] = useState('');
-  const [selectedPodcast, setSelectedPodcast] = useState(PODCASTS[1]);
+  const [selectedPodcast, setSelectedPodcast] = useState(podcasts[1]);
+
+  useEffect(() => {
+    setSelectedPodcast(podcasts[1]);
+  }, [user?.program]);
 
   async function load() {
     const data = await api('/practical-videos');
@@ -73,7 +92,7 @@ export default function Videos() {
       </div>
 
       <section className="podcast-feature" aria-labelledby="podcast-title">
-        <div className="podcast-feature-art" aria-hidden="true"><UiIcon name="activity" /><span>{selectedPodcast[0].slice(0, 2)}</span><strong>EMS<br />Audio Review</strong></div>
+          <div className="podcast-feature-art" aria-hidden="true"><UiIcon name="activity" /><span>{selectedPodcast[0].slice(0, 2)}</span><strong>EMS<br />Audio Review</strong></div>
         <div className="podcast-feature-content">
           <div className="podcast-kicker">{selectedPodcast[2]} · Module audio</div>
           <h2 id="podcast-title">{selectedPodcast[1]}</h2>
@@ -86,7 +105,7 @@ export default function Videos() {
         </div>
       </section>
 
-      <section className="podcast-library" aria-labelledby="podcast-library-title"><div className="podcast-library-head"><div><div className="podcast-kicker">Module library</div><h2 id="podcast-library-title">Audio revision by module</h2><p>Select a module to listen and reinforce your learning.</p></div><span className="podcast-view-toggle"><UiIcon name="learn" /> {PODCASTS.length} episodes</span></div><div className="podcast-list">{PODCASTS.map((podcast, index) => <button type="button" className={selectedPodcast[0] === podcast[0] ? 'is-selected' : ''} key={podcast[0]} onClick={() => setSelectedPodcast(podcast)}><span className="podcast-list-number">{String(index + 1).padStart(2, '0')}</span><span className="podcast-list-copy"><strong>{podcast[1]}</strong><small>{podcast[2]} · {podcast[3]}</small></span><span className="podcast-list-duration"><UiIcon name="simulation" />~{EPISODE_LENGTHS[index]}</span><span className="podcast-list-action">Listen <UiIcon name="arrowRight" /></span></button>)}</div></section>
+      <section className="podcast-library" aria-labelledby="podcast-library-title"><div className="podcast-library-head"><div><div className="podcast-kicker">Module library</div><h2 id="podcast-library-title">Audio revision by module</h2><p>Select a module to listen and reinforce your learning.</p></div><span className="podcast-view-toggle"><UiIcon name="learn" /> {podcasts.length} episodes</span></div><div className="podcast-list">{podcasts.map((podcast, index) => <button type="button" className={selectedPodcast[0] === podcast[0] ? 'is-selected' : ''} key={podcast[0]} onClick={() => setSelectedPodcast(podcast)}><span className="podcast-list-number">{String(index + 1).padStart(2, '0')}</span><span className="podcast-list-copy"><strong>{podcast[1]}</strong><small>{podcast[2]} · {podcast[3]}</small></span><span className="podcast-list-duration"><UiIcon name="simulation" />~{EPISODE_LENGTHS[index]}</span><span className="podcast-list-action">Listen <UiIcon name="arrowRight" /></span></button>)}</div></section>
 
       {status && <div className="ok-note">{status}</div>}
 

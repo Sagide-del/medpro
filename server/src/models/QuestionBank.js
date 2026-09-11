@@ -1,5 +1,10 @@
 import { query } from '../config/database.js';
 
+function normalizeDifficulty(value) {
+  const normalized = String(value || '').trim().toLowerCase();
+  return ({ easy: 'beginner', medium: 'intermediate', hard: 'advanced' })[normalized] || value;
+}
+
 function featureEnabled() {
   // Active by default so the production workspace is visible immediately;
   // set QUESTION_BANK_SAAS=false for an instant rollback to legacy routes.
@@ -17,14 +22,15 @@ export const QuestionBank = {
     if (!featureEnabled()) throw featureError();
   },
 
-  async listQuestions({ studentId, topic, difficulty, questionId, page = 1, limit = 20, includeAnswer = false } = {}) {
+  async listQuestions({ studentId, program = 'EMT', topic, difficulty, questionType, questionId, page = 1, limit = 20, includeAnswer = false } = {}) {
     this.assertEnabled();
     const safePage = Math.max(1, Number(page) || 1);
     const safeLimit = Math.min(50, Math.max(1, Number(limit) || 20));
     const values = [];
     const conditions = [];
+    if (program) { values.push(program); conditions.push(`LOWER(q.program) = LOWER($${values.length})`); }
     if (topic) { values.push(topic); conditions.push(`q.topic = $${values.length}`); }
-    if (difficulty) { values.push(difficulty); conditions.push(`q.difficulty = $${values.length}`); }
+    if (difficulty) { values.push(normalizeDifficulty(difficulty)); conditions.push(`q.difficulty = $${values.length}`); }
     if (questionId) { values.push(questionId); conditions.push(`q.id = $${values.length}`); }
     const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
     const offset = (safePage - 1) * safeLimit;
@@ -64,21 +70,21 @@ export const QuestionBank = {
     return { student_id: studentId, question_id: questionId, bookmarked: false };
   },
 
-  async progress(studentId) {
+  async progress(studentId, program = 'EMT') {
     this.assertEnabled();
     const { rows } = await query(
       `SELECT
-         (SELECT COUNT(*)::int FROM mcq_questions) AS total_questions,
+         (SELECT COUNT(*)::int FROM mcq_questions WHERE LOWER(program) = LOWER($2)) AS total_questions,
          (SELECT COUNT(DISTINCT question_id)::int FROM student_question_bookmarks WHERE student_id = $1) AS bookmarked,
          (SELECT COUNT(*)::int FROM student_mcq_attempts WHERE student_id = $1) AS attempts,
          COALESCE((SELECT ROUND(AVG(percentage))::int FROM student_mcq_attempts WHERE student_id = $1), 0) AS accuracy,
          COALESCE((SELECT COUNT(*)::int FROM student_mcq_attempts WHERE student_id = $1), 0) AS answered`,
-      [studentId]
+      [studentId, program]
     );
     return rows[0] || {};
   },
 
-  async mockExams(studentId) {
+  async mockExams(studentId, program = 'EMT') {
     this.assertEnabled();
     const { rows } = await query(
       `SELECT m.id, m.title, 50::int AS question_count, 60::int AS time_limit_minutes,
@@ -86,10 +92,11 @@ export const QuestionBank = {
        FROM mcq_modules m
        LEFT JOIN student_mcq_attempts a ON a.module_id = m.id AND a.student_id = $1
        WHERE m.is_active = true
+         AND EXISTS (SELECT 1 FROM mcq_questions q WHERE q.module_id = m.id AND LOWER(q.program) = LOWER($2))
        GROUP BY m.id, m.title, m.order_number
        ORDER BY m.order_number ASC
        LIMIT 3`,
-      [studentId]
+      [studentId, program]
     );
     return rows.map((row, index) => ({ ...row, exam_number: index + 1, mixed_topics: true }));
   },

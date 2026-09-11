@@ -1,5 +1,10 @@
 import { query, withTransaction } from '../config/database.js';
 
+function normalizeDifficulty(value) {
+  const normalized = String(value || '').trim().toLowerCase();
+  return ({ easy: 'beginner', medium: 'intermediate', hard: 'advanced' })[normalized] || value;
+}
+
 function dbExecutor(executor) {
   return executor || { query };
 }
@@ -315,7 +320,7 @@ export const Assessment = {
     return rows;
   },
 
-  async listMcqModules(studentId) {
+  async listMcqModules(studentId, program = 'EMT') {
     await ensureModuleProgress(studentId);
 
     const { rows } = await query(
@@ -324,6 +329,7 @@ export const Assessment = {
                 SELECT json_agg(DISTINCT q.topic)
                 FROM mcq_questions q
                 WHERE q.module_id = m.id
+                  AND LOWER(q.program) = LOWER($2)
               ), '[]'::json) AS topics,
               p.status,
               p.score,
@@ -353,8 +359,13 @@ export const Assessment = {
            AND sma.module_id = m.id
        ) stats ON true
        WHERE m.is_active = true
+         AND EXISTS (
+           SELECT 1 FROM mcq_questions scoped_q
+           WHERE scoped_q.module_id = m.id
+             AND LOWER(scoped_q.program) = LOWER($2)
+         )
        ORDER BY m.order_number ASC`,
-      [studentId]
+      [studentId, program]
     );
 
     return rows;
@@ -382,7 +393,7 @@ export const Assessment = {
     return rows[0] || null;
   },
 
-  async randomizedMcqQuestions(studentId, moduleId) {
+  async randomizedMcqQuestions(studentId, moduleId, { program = 'EMT', difficulty } = {}) {
     const module = await this.findMcqModuleForStudent(studentId, moduleId);
     if (!module) return null;
 
@@ -390,8 +401,10 @@ export const Assessment = {
       `SELECT id, topic, question_text, option_a, option_b, option_c, option_d, difficulty
        FROM mcq_questions
        WHERE module_id = $1
+         AND LOWER(program) = LOWER($2)
+         AND ($3::text IS NULL OR difficulty = $3)
        ORDER BY random()`,
-      [moduleId]
+      [moduleId, program, normalizeDifficulty(difficulty) || null]
     );
 
     return {

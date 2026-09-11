@@ -121,7 +121,7 @@ export const gradeManual = asyncHandler(async (req, res) => {
 });
 
 export const listMcqModules = asyncHandler(async (req, res) => {
-  const modules = await Assessment.listMcqModules(req.user.sub);
+  const modules = await Assessment.listMcqModules(req.user.sub, req.user.program);
   const subscription = await resolveStudentSubscriptionAccess(req.user);
   res.json({ modules, subscription });
 });
@@ -136,7 +136,10 @@ export const getMcqModuleQuestions = asyncHandler(async (req, res) => {
     });
   }
 
-  const payload = await Assessment.randomizedMcqQuestions(req.user.sub, req.params.moduleId);
+  const payload = await Assessment.randomizedMcqQuestions(req.user.sub, req.params.moduleId, {
+      program: req.query.program || req.user.program,
+      difficulty: req.query.difficulty,
+  });
   if (!payload) return res.status(404).json({ error: 'Module not found.' });
   // Keep all modules practiceable by default; set QUESTION_BANK_V2_ENABLED=false to roll back.
   const questionBankV2Enabled = process.env.QUESTION_BANK_V2_ENABLED !== 'false';

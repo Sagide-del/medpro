@@ -6,6 +6,7 @@ import { asyncHandler } from '../utils/helpers.js';
 export const listQuestions = asyncHandler(async (req, res) => {
   res.json(await QuestionBank.listQuestions({
     studentId: req.user.sub,
+    program: req.query.program || req.user.program,
     topic: req.query.topic,
     difficulty: req.query.difficulty,
     questionId: req.query.questionId,
@@ -30,11 +31,11 @@ export const bookmarkQuestion = asyncHandler(async (req, res) => {
 });
 
 export const getProgress = asyncHandler(async (req, res) => {
-  res.json({ progress: await QuestionBank.progress(req.user.sub) });
+  res.json({ progress: await QuestionBank.progress(req.user.sub, req.query.program || req.user.program) });
 });
 
 export const listMockExams = asyncHandler(async (req, res) => {
-  res.json({ mockExams: await QuestionBank.mockExams(req.user.sub) });
+  res.json({ mockExams: await QuestionBank.mockExams(req.user.sub, req.query.program || req.user.program) });
 });
 
 export const submitMockExam = asyncHandler(async (req, res) => {

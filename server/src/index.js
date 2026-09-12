@@ -168,6 +168,10 @@ app.use((err, _req, res, _next) => {
   res.status(err.status || 500).json({ error: err.publicMessage || 'Something went wrong on our end.' });
 });
 
+// Do not report healthy while required Question Bank columns are missing.
+const { ensureQuestionBankSchema } = await import('./services/questionBankSchema.js');
+await ensureQuestionBankSchema();
+
 const server = app.listen(port, () => {
   logger.info(`MedPro Server running on port ${port}`);
   logger.info(`   http://localhost:${port}`);

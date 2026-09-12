@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import UiIcon from '../shared/UiIcon';
 import { useAuth } from '../../context/AuthContext';
+import PublishedLibrary from './PublishedLibrary';
 
 const LIBRARIES = {
   guides: {
@@ -58,6 +59,11 @@ const PARAMEDIC_ITEMS = {
 };
 
 export default function ResourceLibrary({ kind = 'guides' }) {
+  const destinations = { guides: 'study_guides', protocols: 'clinical_protocols', drugs: 'drug_reference', sheets: 'cheat_sheets' };
+  return <PublishedLibrary destination={destinations[kind] || 'study_guides'} title={(LIBRARIES[kind] || LIBRARIES.guides).title} />;
+}
+
+function LegacyResourceLibrary({ kind = 'guides' }) {
   const { user } = useAuth();
   const isParamedic = user?.program === 'Paramedic';
   const baseLibrary = LIBRARIES[kind] || LIBRARIES.guides;

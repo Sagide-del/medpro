@@ -1,5 +1,7 @@
 import UiIcon from '../shared/UiIcon';
 import { useNavigate } from 'react-router-dom';
+import { useState } from 'react';
+import PublishedLibrary from './PublishedLibrary';
 
 const SECTIONS = [
   {
@@ -42,14 +44,17 @@ const SECTIONS = [
 
 export default function PsychometricTest() {
   const navigate = useNavigate();
-  const destinations = ['/student/mcq/mock-pretest', '/student/learn/kenya-ems', '/student/assessments'];
+  const [area, setArea] = useState(null);
+  const areas = ['psychometric_clinical', 'psychometric_situational', 'psychometric_readiness'];
+  if (area) return <><button type="button" onClick={() => setArea(null)}>Back to assessment areas</button><PublishedLibrary destination={area} title={SECTIONS[areas.indexOf(area)].title} /></>;
+  const destinations = areas;
   return (
     <div className="psychometric-page psychometric-simulator-page">
       <header className="psychometric-simulator-head"><div><span className="platform-eyebrow">Assessment workspace</span><h1>Choose your simulation</h1><p>Train across all assessment formats used in the EMT and Paramedic process.</p></div><span className="psychometric-simulator-count"><UiIcon name="practice" />3 formats</span></header>
       <div className="psychometric-card-grid">
         {SECTIONS.map((section) => (
           <article className={`psychometric-card ${section.tone}`} key={section.number}>
-            <div className="psychometric-card-top"><span className="psychometric-card-icon"><UiIcon name={section.icon} /></span><span className="psychometric-card-tag">{section.tag}</span></div><span className="psychometric-card-area">{section.number} · {section.title}</span><h2>{section.simulatorTitle}</h2><strong>{section.format}</strong><p>{section.detail}</p>{section.number === '02' && <div className="psychometric-scenario-steps">{['Scene', 'Primary', 'Treatment', 'Transport'].map((step, index) => <span key={step}><b>{index + 1}</b>{step}</span>)}</div>}{section.number === '03' && <div className="psychometric-framework"><span>S</span><span>A</span><span>R</span></div>}<div className="psychometric-card-meta">{section.meta.map((item) => <span key={item}><UiIcon name={item.includes('question') || item.includes('words') ? 'document' : item.includes('review') || item.includes('vitals') ? 'activity' : 'simulation'} />{item}</span>)}</div><button type="button" onClick={() => navigate(destinations[Number(section.number) - 1])}>{section.action} <UiIcon name="arrowRight" /></button>
+            <div className="psychometric-card-top"><span className="psychometric-card-icon"><UiIcon name={section.icon} /></span><span className="psychometric-card-tag">{section.tag}</span></div><span className="psychometric-card-area">{section.number} · {section.title}</span><h2>{section.simulatorTitle}</h2><strong>{section.format}</strong><p>{section.detail}</p>{section.number === '02' && <div className="psychometric-scenario-steps">{['Scene', 'Primary', 'Treatment', 'Transport'].map((step, index) => <span key={step}><b>{index + 1}</b>{step}</span>)}</div>}{section.number === '03' && <div className="psychometric-framework"><span>S</span><span>A</span><span>R</span></div>}<div className="psychometric-card-meta">{section.meta.map((item) => <span key={item}><UiIcon name={item.includes('question') || item.includes('words') ? 'document' : item.includes('review') || item.includes('vitals') ? 'activity' : 'simulation'} />{item}</span>)}</div><button type="button" onClick={() => setArea(destinations[Number(section.number) - 1])}>{section.action} <UiIcon name="arrowRight" /></button>
           </article>
         ))}
       </div>

@@ -54,6 +54,13 @@ const BROWSER_OPTIONS = [
 ];
 
 const OUTPUT_DESTINATIONS = [
+  { value: 'psychometric_clinical', label: 'Psychometric - Clinical Judgment', icon: 'exam', tint: '#eff6ff' },
+  { value: 'psychometric_situational', label: 'Psychometric - Situational Judgment', icon: 'cases', tint: '#eff6ff' },
+  { value: 'psychometric_readiness', label: 'Psychometric - Psychological Readiness', icon: 'activity', tint: '#eff6ff' },
+  { value: 'skills_videos', label: 'Resources - Skills Videos', icon: 'activity', tint: '#eff6ff' },
+  { value: 'flashcards', label: 'Resources - Flashcards', icon: 'learn', tint: '#eff6ff' },
+  { value: 'mnemonics', label: 'Resources - Mnemonics', icon: 'learn', tint: '#eff6ff' },
+  { value: 'diagrams', label: 'Resources - Images & Diagrams', icon: 'learn', tint: '#eff6ff' },
   { value: 'question_bank', label: 'Question Bank', icon: 'question', tint: '#fef2f2' },
   { value: 'independent_student', label: 'Independent Student', icon: 'learn', tint: '#ecfeff' },
   { value: 'ems_cases', label: 'EMS Cases', icon: 'cases', tint: '#eff6ff' },

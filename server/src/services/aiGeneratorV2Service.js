@@ -131,12 +131,24 @@ export async function findDuplicates(items = []) {
 }
 
 export async function publishApproved({ job, adminId, decisions, items }) {
+  const audience = String(job.request_json?.audience || '').toLowerCase();
+  const program = ['paramedic', 'emt-paramedic'].includes(audience) ? 'Paramedic'
+    : ['emt', 'emt-basic', 'emt-intermediate'].includes(audience) ? 'EMT' : null;
+  if (!program) throw Object.assign(new Error('Choose EMT or Paramedic before publishing student content.'), { status: 400, publicMessage: 'Choose EMT or Paramedic before publishing student content.' });
   const approved = items.filter((item) => decisions.get(String(item.id))?.decision === 'approved');
   if (!approved.length) throw new Error('Approve at least one item before publishing.');
   return withTransaction(async (tx) => {
     const published = [];
     const destination = {
       question_bank: 'questions',
+      ems_cases: 'kenya_cases',
+      psychometric_clinical: 'psychometric_clinical',
+      psychometric_situational: 'psychometric_situational',
+      psychometric_readiness: 'psychometric_readiness',
+      skills_videos: 'skills_videos',
+      flashcards: 'flashcards',
+      mnemonics: 'mnemonics',
+      diagrams: 'diagrams',
       questions: 'questions',
       exam_mock: 'mock_exams',
       mock_exam: 'mock_exams',
@@ -166,14 +178,14 @@ export async function publishApproved({ job, adminId, decisions, items }) {
          VALUES ($1,$2,$3,$4,$5,$6,$7,$8::jsonb,$9,$10::jsonb,'published',now(),$11)
          ON CONFLICT (job_id, source_item_id) DO UPDATE SET content_json = EXCLUDED.content_json, title = EXCLUDED.title, destination_key = EXCLUDED.destination_key, status = 'published', published_at = now()
          RETURNING *`,
-        [job.id, String(item.id), job.content_type, destination, item.title || item.question || job.title, job.request_json?.audience || null, item.topic || job.request_json?.topic || null, JSON.stringify(item), job.citation || null, JSON.stringify({ sourceType: job.source_type, sourceUrl: job.source_url, sourceExcerpt: job.source_excerpt, citation: job.citation }), adminId]
+        [job.id, String(item.id), job.content_type, destination, item.title || item.question || job.title, program, item.topic || job.request_json?.topic || null, JSON.stringify(item), job.citation || null, JSON.stringify({ sourceType: job.source_type, sourceUrl: job.source_url, sourceExcerpt: job.source_excerpt, citation: job.citation }), adminId]
       );
       published.push(rows[0]);
       await tx.query(
         `INSERT INTO content_registry (content_type, destination_key, content_id, program, source_citation, source_job_id, published_by, status)
          VALUES ($1,$2,$3,$4,$5,$6,$7,'published')
          ON CONFLICT (source_job_id, content_id) DO UPDATE SET status = 'published', published_at = now(), published_by = EXCLUDED.published_by`,
-        [job.content_type, destination, rows[0].id, job.request_json?.audience || null, job.citation || null, job.id, adminId]
+        [job.content_type, destination, rows[0].id, program, job.citation || null, job.id, adminId]
       );
       await tx.query(
         `INSERT INTO content_audit_log (content_id, action, admin_id, job_id, changes)

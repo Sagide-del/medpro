@@ -27,7 +27,8 @@ export const QuestionBank = {
     const safePage = Math.max(1, Number(page) || 1);
     const safeLimit = Math.min(50, Math.max(1, Number(limit) || 20));
     const values = [];
-    const conditions = [];
+    const conditions = ["(q.published_content_id IS NULL OR EXISTS (SELECT 1 FROM ai_published_content p WHERE p.id=q.published_content_id AND p.status='published'))"];
+    if (questionType) { values.push(questionType); conditions.push(`q.question_type = $${values.length}`); }
     if (program) { values.push(program); conditions.push(`LOWER(q.program) = LOWER($${values.length})`); }
     if (topic) { values.push(topic); conditions.push(`q.topic = $${values.length}`); }
     if (difficulty) { values.push(normalizeDifficulty(difficulty)); conditions.push(`q.difficulty = $${values.length}`); }

@@ -139,6 +139,7 @@ export const getMcqModuleQuestions = asyncHandler(async (req, res) => {
   const payload = await Assessment.randomizedMcqQuestions(req.user.sub, req.params.moduleId, {
       program: req.query.program || req.user.program,
       difficulty: req.query.difficulty,
+      questionType: req.query.questionType,
   });
   if (!payload) return res.status(404).json({ error: 'Module not found.' });
   // Keep all modules practiceable by default; set QUESTION_BANK_V2_ENABLED=false to roll back.

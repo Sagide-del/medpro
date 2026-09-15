@@ -1,5 +1,8 @@
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
+ALTER TABLE mcq_questions ADD COLUMN IF NOT EXISTS question_type TEXT NOT NULL DEFAULT 'multiple_choice';
+ALTER TABLE mcq_questions ADD COLUMN IF NOT EXISTS published_content_id UUID;
+
 CREATE TABLE IF NOT EXISTS published_content_responses (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   student_id UUID NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
@@ -102,4 +105,3 @@ CREATE INDEX IF NOT EXISTS idx_content_registry_lookup
 
 CREATE INDEX IF NOT EXISTS idx_content_audit_content
   ON content_audit_log(content_id, created_at DESC);
-

@@ -16,24 +16,30 @@ export default function StudentDashboard() {
   const [attempts, setAttempts] = useState([]);
   const [progress, setProgress] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [totalQuestions, setTotalQuestions] = useState(0);
 
   useEffect(() => {
-    Promise.allSettled([api('/assessments/my-attempts'), api(`/analytics/students/${user.id}/progress`)]).then(([attemptResult, progressResult]) => {
+    let active = true;
+    setLoading(true);
+    Promise.allSettled([api(`/published-content/activity?program=${encodeURIComponent(user.program || 'EMT')}`), api(`/analytics/students/${user.id}/progress`)]).then(([attemptResult, progressResult]) => {
+      if (!active) return;
+      setTotalQuestions(attemptResult.status === 'fulfilled' ? attemptResult.value.totalQuestions || 0 : 0);
       setAttempts(attemptResult.status === 'fulfilled' ? attemptResult.value.attempts || [] : []);
       setProgress(progressResult.status === 'fulfilled' ? progressResult.value.progress || [] : []);
-    }).finally(() => setLoading(false));
-  }, [user.id]);
+    }).finally(() => { if (active) setLoading(false); });
+    return () => { active = false; };
+  }, [user.id, user.program]);
 
   const accuracy = scoreFrom(attempts);
   const completed = attempts.filter((item) => ['graded', 'submitted', 'completed'].includes(String(item.status || '').toLowerCase())).length;
   const recent = attempts.slice(0, 3);
   const firstName = user?.name?.split(' ')?.[0] || 'Student';
   const stats = useMemo(() => [
-    { value: '1,248', label: 'Total Questions', icon: 'exam', tone: 'blue' },
+    { value: String(totalQuestions), label: 'Total Questions', icon: 'exam', tone: 'blue' },
     { value: String(completed || 0), label: 'Practice Exams', icon: 'practice', tone: 'mint' },
     { value: `${accuracy}%`, label: 'Avg. Score', icon: 'result', tone: 'green' },
     { value: '0', label: 'Day Streak', icon: 'activity', tone: 'orange' },
-  ], [accuracy, completed]);
+  ], [accuracy, completed, totalQuestions]);
 
   if (loading) return <Loading label="Loading your dashboard..." />;
 

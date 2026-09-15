@@ -7,6 +7,17 @@ import { asyncHandler } from '../utils/helpers.js';
 const router = Router();
 router.use(authenticate, requireRole('student'));
 const programSql = "CASE WHEN lower(program) IN ('paramedic','emt-paramedic') THEN 'Paramedic' WHEN lower(program) IN ('emt','emt-basic','emt-intermediate') THEN 'EMT' ELSE NULL END";
+router.get('/activity', asyncHandler(async (req, res) => {
+  const program = req.query.program || req.user.program;
+  if (!['EMT', 'Paramedic'].includes(program)) return res.status(400).json({ error: 'Select EMT or Paramedic.' });
+  const { rows } = await query(`SELECT a.id AS attempt_id, a.percentage AS score_pct, a.completed_at,
+    m.title, 'completed' AS status FROM student_mcq_attempts a JOIN mcq_modules m ON m.id=a.module_id
+    WHERE a.student_id=$1 AND m.program=$2 ORDER BY a.completed_at DESC LIMIT 100`, [req.user.sub, program]);
+  const { rows: totals } = await query(`SELECT count(*)::int AS total_questions FROM mcq_questions q
+    WHERE q.program=$1 AND (q.published_content_id IS NULL OR EXISTS
+      (SELECT 1 FROM ai_published_content p WHERE p.id=q.published_content_id AND p.status='published'))`, [program]);
+  res.json({ attempts: rows, totalQuestions: totals[0].total_questions });
+}));
 router.post('/:id/responses', asyncHandler(async (req, res) => {
   const { program, response } = req.body || {};
   if (!['EMT', 'Paramedic'].includes(program) || typeof response !== 'string' || !response.trim() || response.length > 20000) {

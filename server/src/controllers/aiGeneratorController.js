@@ -581,7 +581,7 @@ export const startGeneration = asyncHandler(async (req, res) => {
       adminId: req.user.sub,
       contentType,
       title,
-      request: { audience, topic, difficulty, questionCount, publishDestination, schoolAccess, selectedSchoolIds, questionTypes: parsedQuestionTypes, extendedProcessing: parseJsonBoolean(body.extendedProcessing, false), kenyaSpecific: parseJsonBoolean(body.kenyaSpecific, false), county: body.county, historicalYear: body.historicalYear },
+      request: { moduleId: body.moduleId || null, audience, topic, difficulty, questionCount, publishDestination, schoolAccess, selectedSchoolIds, questionTypes: parsedQuestionTypes, extendedProcessing: parseJsonBoolean(body.extendedProcessing, false), kenyaSpecific: parseJsonBoolean(body.kenyaSpecific, false), county: body.county, historicalYear: body.historicalYear },
       source: { type: sourceType, url: sourceUrl, excerpt: sourceExcerpt, citation: body.citation || body.sourceCitation || null },
     });
   }

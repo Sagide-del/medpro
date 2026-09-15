@@ -81,7 +81,7 @@ function randomizedOptions(question) {
     { key: 'option_b', label: question.option_b },
     { key: 'option_c', label: question.option_c },
     { key: 'option_d', label: question.option_d },
-  ]);
+  ].filter((option) => option.label));
 }
 
 function normalizeSelectedAnswers(questionIds = [], selectedAnswers = []) {
@@ -389,18 +389,20 @@ export const Assessment = {
     return rows[0] || null;
   },
 
-  async randomizedMcqQuestions(studentId, moduleId, { program = 'EMT', difficulty } = {}) {
+  async randomizedMcqQuestions(studentId, moduleId, { program = 'EMT', difficulty, questionType } = {}) {
     const module = await this.findMcqModuleForStudent(studentId, moduleId);
     if (!module) return null;
 
     const { rows } = await query(
-      `SELECT id, topic, question_text, option_a, option_b, option_c, option_d, difficulty
+      `SELECT id, topic, question_text, option_a, option_b, option_c, option_d, difficulty, question_type
        FROM mcq_questions
        WHERE module_id = $1
          AND LOWER(program) = LOWER($2)
          AND ($3::text IS NULL OR difficulty = $3)
+         AND ($4::text IS NULL OR question_type = $4)
+         AND (published_content_id IS NULL OR EXISTS (SELECT 1 FROM ai_published_content p WHERE p.id=published_content_id AND p.status='published'))
        ORDER BY random()`,
-      [moduleId, program, normalizeDifficulty(difficulty) || null]
+      [moduleId, program, normalizeDifficulty(difficulty) || null, questionType || null]
     );
 
     return {
@@ -410,6 +412,7 @@ export const Assessment = {
         topic: question.topic,
         question_text: question.question_text,
         difficulty: question.difficulty,
+        question_type: question.question_type,
         options: randomizedOptions(question),
       })),
     };
@@ -424,7 +427,7 @@ export const Assessment = {
         throw error;
       }
 
-      if (module.status === 'locked') {
+      if (module.status === 'locked' && process.env.QUESTION_BANK_V2_ENABLED === 'false') {
         const error = new Error('This module is currently locked.');
         error.statusCode = 403;
         throw error;
@@ -506,9 +509,10 @@ export const Assessment = {
          FROM mcq_modules
          WHERE is_active = true
            AND order_number > $1
+           AND program = $2
          ORDER BY order_number ASC
          LIMIT 1`,
-        [module.order_number]
+        [module.order_number, module.program]
       );
 
       let nextModuleUnlocked = null;

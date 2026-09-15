@@ -93,7 +93,7 @@ function medicalIconForTopic(title) {
 
 function ThreeModeQuestionBank({ modules, baseRoute, subscription }) {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, setProgram } = useAuth();
   const [mode, setMode] = useState('practice');
   const [progress, setProgress] = useState({});
   const [mockExams, setMockExams] = useState([]);
@@ -103,7 +103,8 @@ function ThreeModeQuestionBank({ modules, baseRoute, subscription }) {
   const [answerIds, setAnswerIds] = useState(new Set());
   const [loadingBrowse, setLoadingBrowse] = useState(false);
   const [error, setError] = useState('');
-  const [certification, setCertification] = useState(user?.program || 'EMT');
+  const [certification, setLocalCertification] = useState(user?.program || 'EMT');
+  function setCertification(value) { setLocalCertification(value); setProgram(value); }
   const [questionType, setQuestionType] = useState('multiple_choice');
   const [difficultyFilter, setDifficultyFilter] = useState('');
 
@@ -255,9 +256,9 @@ function ModuleList() {
     }
   }, [location.pathname, user?.program]);
 
-  if (error && location.pathname !== '/student/question-bank') return <div className="alert">{error}</div>;
+  if (error) return <div className="alert">{error}</div>;
   if (!modules && location.pathname === '/student/question-bank') {
-    return <ThreeModeQuestionBank modules={STATIC_QUESTION_BANK_TOPICS} baseRoute="/student/mcq-questions" subscription={null} />;
+    return <Loading label="Loading question bank..." />;
   }
   if (!modules) return <Loading label="Loading question bank..." />;
 
@@ -268,7 +269,7 @@ function ModuleList() {
   const overallProgress = modules.length ? Math.round((completedModules / modules.length) * 100) : 0;
 
   if (location.pathname === '/student/question-bank') {
-    const questionBankModules = user?.program === 'Paramedic' ? modules : STATIC_QUESTION_BANK_TOPICS;
+    const questionBankModules = modules;
     return <ThreeModeQuestionBank modules={questionBankModules} baseRoute={baseRoute} subscription={null} />;
   }
 

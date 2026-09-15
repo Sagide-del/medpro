@@ -8,6 +8,7 @@ export const listQuestions = asyncHandler(async (req, res) => {
     studentId: req.user.sub,
     program: req.query.program || req.user.program,
     topic: req.query.topic,
+    questionType: req.query.questionType,
     difficulty: req.query.difficulty,
     questionId: req.query.questionId,
     page: req.query.page,

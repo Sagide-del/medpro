@@ -91,6 +91,15 @@ export default function AiGenerator() {
   const [contentType, setContentType] = useState('case_study');
   const [audience, setAudience] = useState('emt-basic');
   const [topic, setTopic] = useState('');
+  const [moduleId, setModuleId] = useState('');
+  const [modules, setModules] = useState([]);
+  useEffect(() => {
+    let active = true;
+    setModuleId(''); setModules([]);
+    api(`/ai/v2/modules?program=${audience === 'emt-paramedic' ? 'Paramedic' : 'EMT'}`)
+      .then((data) => { if (active) setModules(data.modules || []); }).catch(() => {});
+    return () => { active = false; };
+  }, [audience]);
   const [difficulty, setDifficulty] = useState('Intermediate');
   const [questionCount, setQuestionCount] = useState(20);
   const [bloomPriority, setBloomPriority] = useState(true);
@@ -427,6 +436,7 @@ export default function AiGenerator() {
       payload.set('sourceUrl', sourceUrl);
       payload.set('audience', audience);
       payload.set('topic', topic);
+      payload.set('moduleId', moduleId);
       payload.set('difficulty', difficulty);
       payload.set('questionCount', String(questionCount));
       payload.set('bloomPriority', String(bloomPriority));
@@ -725,6 +735,7 @@ export default function AiGenerator() {
               </div>
               <div className="field">
                 <label>Topic</label>
+                <label>Question Bank module<select value={moduleId} onChange={(event) => setModuleId(event.target.value)}><option value="">Choose a module for Question Bank publishing</option>{modules.map((item) => <option key={item.id} value={item.id}>{item.title}</option>)}</select></label>
                 <input value={topic} onChange={(event) => setTopic(event.target.value)} placeholder="Airway management, trauma, cardiology..." />
               </div>
               <div className="field">

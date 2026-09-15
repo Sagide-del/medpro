@@ -1,5 +1,6 @@
 import { randomUUID } from 'crypto';
 import { query, withTransaction } from '../config/database.js';
+import { publishQuestion } from './publishQuestion.js';
 
 // V2 is the durable path. Set the variable to "false" for an emergency rollback.
 export const AI_GENERATOR_V2_ENABLED = process.env.AI_GENERATOR_V2_ENABLED !== 'false';
@@ -172,7 +173,7 @@ export async function publishApproved({ job, adminId, decisions, items }) {
     }[job.request_json?.publishDestination] || job.content_type;
     for (const item of approved) {
       const decision = decisions.get(String(item.id));
-      if (decision.duplicate && decision.duplicateAction === 'skip') continue;
+      if (decision.duplicate && (decision.duplicate_action || decision.duplicateAction || 'skip') === 'skip') continue;
       const { rows } = await tx.query(
         `INSERT INTO ai_published_content (job_id, source_item_id, content_type, destination_key, title, program, topic, content_json, source_citation, source_metadata, status, published_at, created_by)
          VALUES ($1,$2,$3,$4,$5,$6,$7,$8::jsonb,$9,$10::jsonb,'published',now(),$11)
@@ -181,6 +182,7 @@ export async function publishApproved({ job, adminId, decisions, items }) {
         [job.id, String(item.id), job.content_type, destination, item.title || item.question || job.title, program, item.topic || job.request_json?.topic || null, JSON.stringify(item), job.citation || null, JSON.stringify({ sourceType: job.source_type, sourceUrl: job.source_url, sourceExcerpt: job.source_excerpt, citation: job.citation }), adminId]
       );
       published.push(rows[0]);
+      if (destination === 'questions') await publishQuestion(tx, rows[0], job.request_json?.moduleId);
       await tx.query(
         `INSERT INTO content_registry (content_type, destination_key, content_id, program, source_citation, source_job_id, published_by, status)
          VALUES ($1,$2,$3,$4,$5,$6,$7,'published')

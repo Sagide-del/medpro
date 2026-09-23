@@ -3,8 +3,9 @@ import { asyncHandler } from '../utils/helpers.js';
 
 export const listNotes = asyncHandler(async (req, res) => {
   const notes = await StudentNote.list(req.user.sub);
-  let library = [];
-  try { library = await StudentNote.library(); } catch (_error) { /* Content migration may not be deployed yet. */ }
+  const program = req.query.program || req.user.program;
+  if (!['EMT', 'Paramedic'].includes(program)) return res.status(400).json({ error: 'Select EMT or Paramedic.' });
+  const library = await StudentNote.library(program);
   res.json({ notes, library });
 });
 

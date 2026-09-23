@@ -32,6 +32,8 @@ import StudentFlashcards from './components/student/Flashcards';
 import StudentGraphics from './components/student/Graphics';
 import StudentLogbook from './components/student/Logbook';
 import StudentVideos from './components/student/Videos';
+import PublishedPodcasts from './components/student/PublishedPodcasts';
+import PublishedLibrary from './components/student/PublishedLibrary';
 import StudentPayments from './components/student/Payments';
 import StudentResearch from './components/student/Research';
 import StudentSimulations from './components/student/Simulations';
@@ -156,8 +158,8 @@ const LECTURIO_STUDENT_LINKS = [
     { to: '/student/drug-reference', label: 'Drug Reference', icon: 'pill', nested: true },
     { to: '/student/clinical-protocols', label: 'Clinical Protocols', icon: 'document', nested: true },
     { to: '/student/videos', label: 'Podcasts', icon: 'activity', nested: true },
-    { to: '/student/reference-cards', label: 'Cheat Sheets', icon: 'learn', nested: true },
-    { to: '/student/videos', label: 'Skills Videos', icon: 'play', nested: true },
+    { to: '/student/cheat-sheets', label: 'Cheat Sheets', icon: 'learn', nested: true },
+    { to: '/student/skills-videos', label: 'Skills Videos', icon: 'play', nested: true },
   ] },
   { group: 'Account', items: [{ to: '/student/settings', label: 'Settings', icon: 'settings' }] },
 ];
@@ -334,6 +336,7 @@ function AppRoutes() {
           <Route path="/student/exam-center" element={<StudentExamPreparation />} />
           <Route path="/student/clinical-library" element={<StudentClinicalReferenceCards />} />
           <Route path="/student/learn/kenya-ems" element={<StudentKenyaEmsCases />} />
+          <Route path="/student/published-cases" element={<PublishedLibrary destination="kenya_cases" title="Kenya EMS Cases" />} />
           <Route path="/student/learn/kenya-ems/:caseNumber" element={<StudentKenyaEmsCases />} />
           <Route path="/student/medprohub/cases" element={<MedProhubEmsAssignments />} />
           <Route path="/student/medprohub/cases/:id" element={<MedProhubEmsPlayer />} />
@@ -375,7 +378,12 @@ function AppRoutes() {
           <Route path="/student/graphics/:id" element={<StudentGraphics />} />
           <Route path="/student/progress-analytics" element={<StudentProgressAnalytics />} />
           <Route path="/student/logbook" element={<StudentLogbook />} />
-          <Route path="/student/videos" element={<StudentVideos />} />
+          <Route path="/student/videos" element={<PublishedPodcasts />} />
+          <Route path="/student/skills-videos" element={<><PublishedLibrary destination="skills_videos" title="Skills Videos" /><StudentVideos assignmentsOnly /></>} />
+          <Route path="/student/mnemonics" element={<PublishedLibrary destination="mnemonics" title="Mnemonics" />} />
+          <Route path="/student/published-flashcards" element={<PublishedLibrary destination="flashcards" title="Flashcards" />} />
+          <Route path="/student/published-diagrams" element={<PublishedLibrary destination="diagrams" title="Images & Diagrams" />} />
+          <Route path="/student/cheat-sheets" element={<StudentResourceLibrary kind="sheets" />} />
           <Route path="/student/community" element={<StudentGroups />} />
           <Route path="/student/groups" element={<Navigate to="/student/mcq-questions" replace />} />
           <Route path="/student/subscription" element={<StudentPayments />} />

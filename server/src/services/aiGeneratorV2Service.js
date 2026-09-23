@@ -1,6 +1,7 @@
 import { randomUUID } from 'crypto';
 import { query, withTransaction } from '../config/database.js';
 import { publishQuestion } from './publishQuestion.js';
+import { ragError } from './ragService.js';
 
 // V2 is the durable path. Set the variable to "false" for an emergency rollback.
 export const AI_GENERATOR_V2_ENABLED = process.env.AI_GENERATOR_V2_ENABLED !== 'false';
@@ -172,14 +173,29 @@ export async function publishApproved({ job, adminId, decisions, items }) {
       cheat_sheets: 'cheat_sheets',
     }[job.request_json?.publishDestination] || job.content_type;
     for (const item of approved) {
+      if (job.request_json?.useRag) {
+        const references = item.source_references || [item.source_reference];
+        if (!Array.isArray(references) || !references.length) throw ragError('Source-grounded content requires evidence references.', 422);
+        for (const reference of references) {
+        if (!reference || !(job.request_json.sourceReferences || []).some((ref) => ref.document_id === reference.document_id && ref.chunk_id === reference.chunk_id)) {
+          throw ragError('Source-grounded content must retain its original evidence reference.', 422);
+        }
+        const { rows: sources } = await tx.query(`SELECT id FROM rag_sources WHERE id=$1 AND version=$2
+          AND status='ready' AND approved_by IS NOT NULL AND program IN ($3,'both') AND scope_key='global' FOR SHARE`,
+        [reference.document_id, reference.version, program]);
+        // Student feeds are currently global. Do not publish institution-private
+        // source material into them until those feeds enforce institution scope.
+        if (!sources.length) throw ragError('Publishing requires an active, approved global source for this pathway. Private sources remain draft-only.', 422);
+        }
+      }
       const decision = decisions.get(String(item.id));
       if (decision.duplicate && (decision.duplicate_action || decision.duplicateAction || 'skip') === 'skip') continue;
       const { rows } = await tx.query(
         `INSERT INTO ai_published_content (job_id, source_item_id, content_type, destination_key, title, program, topic, content_json, source_citation, source_metadata, status, published_at, created_by)
          VALUES ($1,$2,$3,$4,$5,$6,$7,$8::jsonb,$9,$10::jsonb,'published',now(),$11)
-         ON CONFLICT (job_id, source_item_id) DO UPDATE SET content_json = EXCLUDED.content_json, title = EXCLUDED.title, destination_key = EXCLUDED.destination_key, status = 'published', published_at = now()
+         ON CONFLICT (job_id, source_item_id) DO UPDATE SET content_json = EXCLUDED.content_json, title = EXCLUDED.title, destination_key = EXCLUDED.destination_key, source_citation = EXCLUDED.source_citation, source_metadata = EXCLUDED.source_metadata, program = EXCLUDED.program, topic = EXCLUDED.topic, status = 'published', published_at = now()
          RETURNING *`,
-        [job.id, String(item.id), job.content_type, destination, item.title || item.question || job.title, program, item.topic || job.request_json?.topic || null, JSON.stringify(item), job.citation || null, JSON.stringify({ sourceType: job.source_type, sourceUrl: job.source_url, sourceExcerpt: job.source_excerpt, citation: job.citation }), adminId]
+        [job.id, String(item.id), job.content_type, destination, item.title || item.question || job.title, program, item.topic || job.request_json?.topic || null, JSON.stringify(item), item.source_citation || job.citation || null, JSON.stringify({ sourceType: job.source_type, sourceUrl: job.source_url, sourceExcerpt: job.source_excerpt, citation: item.source_citation || job.citation, reference: item.source_reference, references: item.source_references || (item.source_reference ? [item.source_reference] : []) }), adminId]
       );
       published.push(rows[0]);
       if (destination === 'questions') await publishQuestion(tx, rows[0], job.request_json?.moduleId);
@@ -187,7 +203,7 @@ export async function publishApproved({ job, adminId, decisions, items }) {
         `INSERT INTO content_registry (content_type, destination_key, content_id, program, source_citation, source_job_id, published_by, status)
          VALUES ($1,$2,$3,$4,$5,$6,$7,'published')
          ON CONFLICT (source_job_id, content_id) DO UPDATE SET status = 'published', published_at = now(), published_by = EXCLUDED.published_by`,
-        [job.content_type, destination, rows[0].id, program, job.citation || null, job.id, adminId]
+        [job.content_type, destination, rows[0].id, program, item.source_citation || job.citation || null, job.id, adminId]
       );
       await tx.query(
         `INSERT INTO content_audit_log (content_id, action, admin_id, job_id, changes)

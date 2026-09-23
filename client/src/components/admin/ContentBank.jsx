@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { api } from '../../services/api';
 import ProgressBar from '../common/ProgressBar';
 import Loading from '../shared/Loading';
+import MasterContentItem from './MasterContentItem';
 
 function uniqueValues(items, key) {
   return [...new Set(items.map((item) => String(item?.[key] || '').trim()).filter(Boolean))].sort();
@@ -22,8 +23,9 @@ export default function ContentBank() {
   useEffect(() => {
     Promise.allSettled([api('/admin/cases'), api('/ai/v2/master-content')]).then(([caseResult, masterResult]) => {
       if (caseResult.status === 'fulfilled') setCases(Array.isArray(caseResult.value?.cases) ? caseResult.value.cases : []);
-      else setMessage(caseResult.reason.message);
+      else { setCases([]); setMessage(caseResult.reason.message); }
       if (masterResult.status === 'fulfilled') setMasterContent(Array.isArray(masterResult.value?.content) ? masterResult.value.content : []);
+      else setMessage(masterResult.reason.message);
     });
   }, []);
 
@@ -96,7 +98,7 @@ export default function ContentBank() {
           <Link className="primary" to="/superadmin/ai-generator">Open Master AI</Link>
         </div>
         <div className="master-storage-stats"><div><strong>{masterContent.length}</strong><span>stored items</span></div><div><strong>{masterPublished}</strong><span>published</span></div><div><strong>{masterTypes}</strong><span>content types</span></div></div>
-        {masterContent.length > 0 ? <div className="master-storage-list">{masterContent.slice(0, 5).map((item) => <div key={item.id}><span className="badge published">{item.content_type}</span><strong>{item.title}</strong><small>{item.destination_key} · {item.published_by_name || 'Master AI review'}</small></div>)}</div> : <div className="sub master-storage-empty">No reviewed content has been published to Master Storage yet.</div>}
+        {masterContent.length > 0 ? <div className="master-storage-list">{masterContent.filter((item) => `${item.title} ${item.program} ${item.destination_key}`.toLowerCase().includes(search.toLowerCase())).map((item) => <MasterContentItem key={item.id} item={item} onChange={() => api('/ai/v2/master-content').then((data) => setMasterContent(data.content || [])).catch((error) => setMessage(error.message))} />)}</div> : <div className="sub master-storage-empty">No reviewed content has been published to Master Storage yet.</div>}
       </section>
 
       <div className="card">

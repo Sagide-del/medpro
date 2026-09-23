@@ -34,12 +34,12 @@ export const StudentNote = {
     return rowCount > 0;
   },
 
-  async library() {
+  async library(program) {
     const { rows } = await query(
       `SELECT id, title, topic, content_json, source_citation, created_at
        FROM ai_published_content
-       WHERE content_type IN ('cheat_sheet', 'notes', 'summary')
-       ORDER BY created_at DESC LIMIT 100`
+       WHERE destination_key='notes' AND status='published' AND program=$1
+       ORDER BY created_at DESC LIMIT 100`, [program]
     );
     return rows;
   },

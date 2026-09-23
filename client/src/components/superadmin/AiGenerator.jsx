@@ -5,6 +5,7 @@ import ContentCustomizer from '../common/ContentCustomizer';
 import ProgressBar from '../common/ProgressBar';
 import UiIcon from '../shared/UiIcon';
 import Loading from '../shared/Loading';
+import RagSourceLibrary from './RagSourceLibrary';
 
 const SOURCE_MODES = [
   { id: 'pdf', label: 'PDF Upload', icon: 'document', accent: '#e63935', tint: '#fef2f2' },
@@ -83,6 +84,10 @@ export default function AiGenerator() {
   const [sourceFile, setSourceFile] = useState(null);
   const [sourceFileMeta, setSourceFileMeta] = useState(null);
   const [sourceText, setSourceText] = useState('');
+  const [ragAvailable, setRagAvailable] = useState(false);
+  const [useRag, setUseRag] = useState(false);
+  const [ragSubject, setRagSubject] = useState('');
+  useEffect(() => { api('/ai/rag/config').then((data) => setRagAvailable(data.enabled)).catch(() => {}); }, []);
   const [sourceUrl, setSourceUrl] = useState('');
   const [sourceTitle, setSourceTitle] = useState('');
   const [sourceOrigin, setSourceOrigin] = useState('');
@@ -142,7 +147,7 @@ export default function AiGenerator() {
   useEffect(() => {
     api('/admin/cases')
       .then((data) => setCases(Array.isArray(data?.cases) ? data.cases : []))
-      .catch((error) => setStatus(error.message));
+      .catch((error) => { setCases([]); setStatus(error.message); });
   }, []);
 
   useEffect(() => {
@@ -173,10 +178,11 @@ export default function AiGenerator() {
   );
 
   const sourceReady = useMemo(() => {
+    if (useRag) return !!topic.trim() && (publishDestination !== 'question_bank' || !!moduleId);
     if (sourceMode === 'pdf') return !!sourceFile;
     if (sourceMode === 'url') return !!sourceUrl.trim();
     return !!sourceText.trim();
-  }, [sourceMode, sourceFile, sourceUrl, sourceText]);
+  }, [sourceMode, sourceFile, sourceUrl, sourceText, useRag, topic, moduleId, publishDestination]);
 
   const enabledQuestionTypes = useMemo(
     () => QUESTION_TYPES.filter((item) => questionTypes[item.key]).map((item) => item.label),
@@ -350,6 +356,7 @@ export default function AiGenerator() {
         const id = question.id || `generated-${index + 1}`;
         const currentItem = existingById.get(id);
         return {
+          ...question,
           id,
           status: currentItem?.status || 'needs_review',
           question: question.question || question.prompt || `Question ${index + 1}`,
@@ -426,6 +433,8 @@ export default function AiGenerator() {
     setElapsedSeconds(0);
     try {
       const payload = new FormData();
+      payload.set('useRag', String(useRag));
+      payload.set('ragSubject', ragSubject);
       payload.set('title', title);
       payload.set('contentType', contentType);
       payload.set('sourceType', sourceMode);
@@ -456,7 +465,7 @@ export default function AiGenerator() {
       payload.set('targetLibrary', contentMeta.destination);
       payload.set('generationMode', mode);
       payload.set('assignmentTitle', assignmentTitle);
-      if (sourceFile) payload.append('sourceFile', sourceFile);
+      if (sourceFile && !useRag) payload.append('sourceFile', sourceFile);
 
       const response = await api('/ai/generate', {
         method: 'POST',
@@ -579,6 +588,18 @@ export default function AiGenerator() {
           </button>
         ))}
       </div>
+
+      {ragAvailable && <section className="card">
+        <label><input type="checkbox" checked={useRag} onChange={(event) => {
+          setUseRag(event.target.checked);
+          if (event.target.checked) {
+            setContentType('exam'); setPublishDestination('question_bank');
+            setQuestionCount(20); setQuestionTypes({ multipleChoice: true, trueFalse: false, numeric: false, shortAnswer: false });
+          }
+        }} /> Generate drafts from approved indexed sources</label>
+        <p>Select a pathway, topic and destination in Generation Settings. Question Bank requires a module and generates 10-20 questions; resources generate one structured artifact. Media drafts are scripts, not playable files. Pasted text and uploads below are ignored in this mode.</p>
+      </section>}
+      {ragAvailable && <RagSourceLibrary program={audience === 'emt-paramedic' ? 'Paramedic' : 'EMT'} subject={ragSubject} onSubjectChange={setRagSubject} />}
 
       <div className="grid-auto">
         {currentStep === 1 ? (
@@ -998,6 +1019,11 @@ export default function AiGenerator() {
                       </div>
                       {selectedReviewItem ? (
                         <>
+                          {selectedReviewItem.summary && <p>{selectedReviewItem.summary}</p>}
+                          {selectedReviewItem.sections?.map((section, index) => <section key={index}><h3>{section.heading}</h3><p style={{ whiteSpace: 'pre-wrap' }}>{section.text}</p></section>)}
+                          {selectedReviewItem.rubric && <details><summary>Scoring rubric</summary><pre style={{ whiteSpace: 'pre-wrap' }}>{JSON.stringify(selectedReviewItem.rubric, null, 2)}</pre></details>}
+                          {selectedReviewItem.source_citation && <p><strong>Source:</strong> {selectedReviewItem.source_citation}</p>}
+                          {(selectedReviewItem.source_references || (selectedReviewItem.source_reference ? [selectedReviewItem.source_reference] : [])).map((reference, index) => <blockquote key={index}>{reference.evidence_quote}</blockquote>)}
                           <div className="preview-answer">
                             <span className="preview-answer-label">Suggested answer</span>
                             <p>{selectedReviewItem.answer || 'No suggested answer yet.'}</p>

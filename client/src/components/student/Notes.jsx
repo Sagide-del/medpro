@@ -1,10 +1,13 @@
 import { useEffect, useState } from 'react';
 import { api } from '../../services/api';
 import Loading from '../shared/Loading';
+import { useAuth } from '../../context/AuthContext';
 
 const emptyForm = { title: '', topic: '', body: '' };
 
 export default function Notes() {
+  const { user } = useAuth();
+  const program = user?.program || 'EMT';
   const [notes, setNotes] = useState(null);
   const [library, setLibrary] = useState([]);
   const [form, setForm] = useState(emptyForm);
@@ -12,8 +15,13 @@ export default function Notes() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
 
-  function load() { api('/student-notes').then((data) => { setNotes(data.notes || []); setLibrary(data.library || []); }).catch((err) => { setError(err.message); setNotes([]); setLibrary([]); }); }
-  useEffect(load, []);
+  useEffect(() => {
+    let active = true;
+    setNotes(null); setLibrary([]); setError('');
+    api(`/student-notes?program=${encodeURIComponent(program)}`).then((data) => { if (active) { setNotes(data.notes || []); setLibrary(data.library || []); } })
+      .catch((err) => { if (active) { setError(err.message); setNotes([]); } });
+    return () => { active = false; };
+  }, [program]);
 
   async function save(event) {
     event.preventDefault();

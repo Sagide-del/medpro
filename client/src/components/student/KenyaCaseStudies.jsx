@@ -5,6 +5,7 @@ import Loading from '../shared/Loading';
 import KenyaEMSWorksheet from './KenyaEMSWorksheet';
 import UiIcon from '../shared/UiIcon';
 import heroImage from '../../assets/hero-paramedics.png';
+import { useAuth } from '../../context/AuthContext';
 
 function formatCaseTitle(title) {
   return String(title || '').toUpperCase();
@@ -24,11 +25,12 @@ function badgeClassForStatus(status) {
 
 function CaseLibrary() {
   const navigate = useNavigate();
+  const { user, setProgram } = useAuth();
   const [cases, setCases] = useState([]);
   const [subscription, setSubscription] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [program, setProgram] = useState('EMT');
+  const program = user?.program || 'EMT';
   const [type, setType] = useState('All types');
   const [search, setSearch] = useState('');
 
@@ -48,19 +50,24 @@ function CaseLibrary() {
   ];
 
   useEffect(() => {
-    api('/cases')
+    let active = true;
+    setCases([]); setError(''); setLoading(true);
+    api(`/published-content?program=${program}&destination=kenya_cases`)
       .then((data) => {
-        setCases(Array.isArray(data?.cases) && data.cases.length ? data.cases : featuredCases);
-        setSubscription(data?.subscription || null);
+        if (!active) return;
+        setCases((data.content || []).map((item, index) => ({ ...item, order_number: index + 1,
+          emergencyType: item.topic, keySkill: item.content_json.summary,
+          location: item.content_json.location, year: item.content_json.year })));
       })
-      .catch(() => setCases(featuredCases))
-      .finally(() => setLoading(false));
-  }, []);
+      .catch((err) => { if (active) setError(err.message); })
+      .finally(() => { if (active) setLoading(false); });
+    return () => { active = false; };
+  }, [program]);
 
   if (loading) return <Loading label="Loading Kenya EMS cases..." />;
   if (error) return <div className="alert">{error}</div>;
 
-  const sourceCases = cases.length ? cases : featuredCases;
+  const sourceCases = cases;
   const visibleCases = sourceCases.filter((studyCase) => {
     const caseProgram = studyCase.program || (Number(studyCase.order_number) > 50 ? 'Paramedic' : 'EMT');
     const caseType = studyCase.emergencyType || studyCase.type || 'Clinical';
@@ -78,14 +85,14 @@ function CaseLibrary() {
           <p>Real Kenyan locations, realistic constraints, and structured clinical decisions for EMT and Paramedic learners.</p>
           <button type="button" className="kenya-cases-v2-browse" onClick={() => document.querySelector('.kenya-cases-v2-panel')?.scrollIntoView({ behavior: 'smooth' })}>Browse cases <UiIcon name="arrowRight" /></button>
         </div>
-        <div className="kenya-cases-v2-hero-stat"><strong>100</strong><span>case scenarios</span></div>
+        <div className="kenya-cases-v2-hero-stat"><strong>{cases.length}</strong><span>{program} case scenarios</span></div>
       </header>
 
       <div className="kenya-cases-v2-stats">
-        <div><UiIcon name="cases" /><strong>50</strong><span>EMT cases</span></div>
-        <div><UiIcon name="activity" /><strong>50</strong><span>Paramedic cases</span></div>
-        <div><UiIcon name="dispatch" /><strong>20+</strong><span>counties and regions</span></div>
-        <div><UiIcon name="learn" /><strong>8</strong><span>clinical phases</span></div>
+        <div><UiIcon name="cases" /><strong>{cases.length}</strong><span>{program} cases</span></div>
+        <div><UiIcon name="activity" /><strong>{new Set(cases.map((item) => item.topic).filter(Boolean)).size}</strong><span>topics</span></div>
+        <div><UiIcon name="dispatch" /><strong>{new Set(cases.map((item) => item.location).filter(Boolean)).size}</strong><span>counties and regions</span></div>
+        <div><UiIcon name="learn" /><strong>{visibleCases.length}</strong><span>matching cases</span></div>
       </div>
 
       <section className="kenya-cases-v2-panel">
@@ -101,7 +108,7 @@ function CaseLibrary() {
           {visibleCases.map((studyCase) => {
             const caseType = studyCase.emergencyType || studyCase.type || 'Clinical';
             const icon = caseType.toLowerCase().includes('trauma') || caseType.toLowerCase().includes('burn') ? 'bandage' : caseType.toLowerCase().includes('medical') ? 'cross' : caseType.toLowerCase().includes('ob') ? 'maternity' : caseType.toLowerCase().includes('fire') ? 'alert' : 'cases';
-            return <button key={studyCase.id} type="button" className="kenya-case-v2-card" onClick={() => navigate(`/student/learn/kenya-ems/${studyCase.case_number || studyCase.id}`)}><div className="kenya-case-v2-card-top"><span>Case {String(studyCase.order_number || '').padStart(2, '0')}</span><span className="kenya-case-v2-card-icon"><UiIcon name={icon} /></span><UiIcon name="arrowRight" /></div><h3>{studyCase.title}</h3><div className="kenya-case-v2-meta"><span>{studyCase.location || 'Kenya'}</span><span>{studyCase.year || studyCase.incident_date || 'Current'}</span><span>{caseType}</span></div><p>{studyCase.keySkill || 'Assessment, treatment, transport, and handover decisions.'}</p><div className="kenya-case-v2-card-footer"><span><UiIcon name="simulation" />~30 min</span><span><UiIcon name="progress" />Intermediate</span></div><span className="kenya-case-v2-action">Start case <UiIcon name="arrowRight" /></span></button>;
+            return <button key={studyCase.id} type="button" className="kenya-case-v2-card" onClick={() => navigate(`/student/published-cases?id=${studyCase.id}`)}><div className="kenya-case-v2-card-top"><span>Case {String(studyCase.order_number || '').padStart(2, '0')}</span><span className="kenya-case-v2-card-icon"><UiIcon name={icon} /></span><UiIcon name="arrowRight" /></div><h3>{studyCase.title}</h3><div className="kenya-case-v2-meta"><span>{studyCase.location || 'Kenya'}</span>{studyCase.year && <span>{studyCase.year}</span>}<span>{caseType}</span></div><p>{studyCase.keySkill}</p><div className="kenya-case-v2-card-footer"><span><UiIcon name="progress" />{program}</span></div><span className="kenya-case-v2-action">Open case <UiIcon name="arrowRight" /></span></button>;
           })}
         </div>
         {!visibleCases.length && <div className="kenya-cases-v2-empty">No cases match those filters. Try another county, type, or revision track.</div>}

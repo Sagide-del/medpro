@@ -36,11 +36,17 @@ function cleanFilename(filename) {
 
 
 export function createUploader(folder = 'uploads', options = {}) {
-  // Reserved for future per-uploader options. multer-s3's `contentType` must
+  // multer-s3's `contentType` must
   // be undefined or a function (e.g. multerS3.AUTO_CONTENT_TYPE) — it cannot
   // be a static string like 'application/pdf', or multer-s3 throws
   // "Expected opts.contentType to be undefined or function" on every upload.
-  void options;
+  const fileFilter = options.allowedMimeTypes ? (_req, file, cb) => {
+    const extension = file.originalname.split('.').pop()?.toLowerCase();
+    if (!options.allowedMimeTypes.includes(file.mimetype) || !options.allowedExtensions?.includes(extension)) {
+      return cb(Object.assign(new Error('Unsupported media format.'), { status: 400, publicMessage: 'Unsupported media format.' }));
+    }
+    cb(null, true);
+  } : undefined;
 
   let upload;
 
@@ -48,6 +54,7 @@ export function createUploader(folder = 'uploads', options = {}) {
   if (useS3) {
 
     upload = multer({
+      fileFilter,
 
       storage: multerS3({
 
@@ -106,6 +113,7 @@ export function createUploader(folder = 'uploads', options = {}) {
 
 
     upload = multer({
+      fileFilter,
 
       storage: diskStorage,
 

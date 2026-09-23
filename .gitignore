@@ -4,3 +4,6 @@ dist/
 .env.*
 !.env.example
 server/uploads/
+rag/.venv/
+rag/__pycache__/
+rag/.data/

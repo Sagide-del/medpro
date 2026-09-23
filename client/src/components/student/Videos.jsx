@@ -36,7 +36,7 @@ function getScriptFocus(assignment) {
 
 const EPISODE_LENGTHS = ['28 min', '2:48', '32 min', '36 min', '31 min', '29 min', '24 min', '26 min', '22 min'];
 
-export default function Videos() {
+export default function Videos({ assignmentsOnly = false }) {
   const { user } = useAuth();
   const podcasts = user?.program === 'Paramedic' ? PARAMEDIC_PODCASTS : PODCASTS;
   const [assignments, setAssignments] = useState(null);
@@ -56,7 +56,7 @@ export default function Videos() {
   }
 
   useEffect(() => {
-    load().catch((error) => setStatus(error.message));
+    load().catch((error) => { setStatus(error.message); setAssignments([]); });
   }, []);
 
   async function upload(assignmentId) {
@@ -83,6 +83,7 @@ export default function Videos() {
 
   return (
     <>
+      {!assignmentsOnly && <>
       <div className="page-head podcast-page-head">
         <div>
           <h1>Podcasts</h1>
@@ -107,6 +108,7 @@ export default function Videos() {
 
       <section className="podcast-library" aria-labelledby="podcast-library-title"><div className="podcast-library-head"><div><div className="podcast-kicker">Module library</div><h2 id="podcast-library-title">Audio revision by module</h2><p>Select a module to listen and reinforce your learning.</p></div><span className="podcast-view-toggle"><UiIcon name="learn" /> {podcasts.length} episodes</span></div><div className="podcast-list">{podcasts.map((podcast, index) => <button type="button" className={selectedPodcast[0] === podcast[0] ? 'is-selected' : ''} key={podcast[0]} onClick={() => setSelectedPodcast(podcast)}><span className="podcast-list-number">{String(index + 1).padStart(2, '0')}</span><span className="podcast-list-copy"><strong>{podcast[1]}</strong><small>{podcast[2]} · {podcast[3]}</small></span><span className="podcast-list-duration"><UiIcon name="simulation" />~{EPISODE_LENGTHS[index]}</span><span className="podcast-list-action">Listen <UiIcon name="arrowRight" /></span></button>)}</div></section>
 
+      </>}
       {status && <div className="ok-note">{status}</div>}
 
       {assignments.length > 0 && <h2 className="podcast-assignment-heading">Clinical video assignments</h2>}

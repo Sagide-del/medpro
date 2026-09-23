@@ -30,3 +30,11 @@ export async function api(path, { method = 'GET', body, headers = {} } = {}) {
 
 export const setToken = (t) => sessionStorage.setItem('medpro_token', t);
 export const clearToken = () => sessionStorage.removeItem('medpro_token');
+
+export function mediaUrl(value) {
+  if (typeof value !== 'string') return '';
+  if (/^https:\/\//i.test(value)) return value;
+  if (!value.startsWith('/uploads/')) return '';
+  const backend = new URL(BASE, window.location.origin);
+  return new URL(value, backend.origin).href;
+}

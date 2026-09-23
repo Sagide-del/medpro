@@ -42,6 +42,11 @@ services:
       WHATSAPP_TOKEN: ${WHATSAPP_TOKEN:-}
       WHATSAPP_PHONE_ID: ${WHATSAPP_PHONE_ID:-}
       LOG_LEVEL: ${LOG_LEVEL:-info}
+      RAG_ENABLED: ${RAG_ENABLED:-false}
+      RAG_SERVICE_URL: http://rag:8010
+      RAG_SERVICE_KEY: ${RAG_SERVICE_KEY:-}
+      DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY:-}
+      DEEPSEEK_MODEL: ${DEEPSEEK_MODEL:-deepseek-chat}
       # This compose Postgres has no TLS listener — do not set DB_SSL=true here.
       DB_SSL: 'false'
       # Uploads default to the local volume below. Set these three (plus real
@@ -67,6 +72,23 @@ services:
     ports:
       - '8080:80'
 
+  # Opt-in: docker compose --profile rag up -d --build
+  # No public port: only the Node server should access this service.
+  rag:
+    profiles: ['rag']
+    build: ./rag
+    restart: unless-stopped
+    depends_on:
+      - db
+      - server
+    environment:
+      DATABASE_URL: postgres://postgres:${DB_PASSWORD:-postgres}@db:5432/medpro
+      RAG_SERVICE_KEY: ${RAG_SERVICE_KEY:-}
+      RAG_MAX_DISTANCE: ${RAG_MAX_DISTANCE:-0.25}
+    volumes:
+      - rag_data:/data
+
 volumes:
   db_data:
   uploads:
+  rag_data:

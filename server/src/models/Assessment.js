@@ -1,3 +1,4 @@
+import { studentProgramSql } from '../utils/programs.js';
 import { query, withTransaction } from '../config/database.js';
 
 function normalizeDifficulty(value) {
@@ -338,6 +339,7 @@ export const Assessment = {
               stats.last_percentage,
               stats.last_completed_at
        FROM mcq_modules m
+       JOIN users u ON u.user_id=$1
        LEFT JOIN student_module_progress p
          ON p.module_id = m.id
         AND p.student_id = $1
@@ -376,10 +378,12 @@ export const Assessment = {
               p.score,
               p.completed_at
        FROM mcq_modules m
+       JOIN users u ON u.user_id=$1
        LEFT JOIN student_module_progress p
          ON p.module_id = m.id
         AND p.student_id = $1
        WHERE m.id = $2
+         AND m.program = (${studentProgramSql()})
          AND m.is_active = true
        LIMIT 1`,
       [studentId, moduleId]
@@ -554,7 +558,8 @@ export const Assessment = {
               m.passing_score
        FROM student_mcq_attempts a
        JOIN mcq_modules m ON m.id = a.module_id
-       WHERE a.id = $1
+       JOIN users u ON u.user_id=a.student_id
+       WHERE m.program=(${studentProgramSql()}) AND a.id = $1
          AND a.student_id = $2
        LIMIT 1`,
       [attemptId, studentId]

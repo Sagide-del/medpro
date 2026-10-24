@@ -26,6 +26,17 @@ const PARAMEDIC_BLOCKS = [
   { topic: 'Cardiovascular & Medical Emergencies', detail: 'Cardiology, medical emergencies, shock, and resuscitation', mastery: 0 },
   { topic: 'Trauma & Special Populations', detail: 'Trauma, obstetrics, neonatal, paediatric, and geriatric care', mastery: 0 },
 ];
+const NURSING_PLANS = [
+  { title:'Nursing 4-Week Plan',text:'Review nursing foundations, patient assessment, and safe care.',icon:'calendar',tone:'blue',action:'Use plan' },
+  { title:'Nursing 8-Week Plan',text:'Revise clinical reasoning and patient care with regular practice.',icon:'learn',tone:'violet',action:'Use plan' },
+  { title:'Custom Plan',text:'Set your own exam date, study hours, and revision priorities.',icon:'progress',tone:'green',action:'Create plan' },
+];
+const NURSING_BLOCKS = [
+  {topic:'Nursing Fundamentals',detail:'Communication, documentation, and person-centred care',mastery:0},
+  {topic:'Patient Assessment',detail:'History, observations, and clinical reasoning',mastery:0},
+  {topic:'Infection Prevention',detail:'Standard precautions and safe care environments',mastery:0},
+  {topic:'Medication Safety',detail:'Medication checks, documentation, and patient education',mastery:0},
+];
 const plannerEnabled = import.meta.env.VITE_PLANNER_PREDICTION_ENABLED === 'true';
 
 function daysRemaining(date) {
@@ -34,7 +45,7 @@ function daysRemaining(date) {
 }
 
 export default function StudyPlanner() {
-  const { user, setProgram } = useAuth();
+  const { user } = useAuth();
   const program = user?.program || 'EMT';
   const [examDate, setExamDate] = useState('');
   const [hours, setHours] = useState('1');
@@ -43,8 +54,8 @@ export default function StudyPlanner() {
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState('');
   const requestContext = useRef(0);
-  const contentPlans = program === 'Paramedic' ? PARAMEDIC_PLANS : PLANS;
-  const contentBlocks = program === 'Paramedic' ? PARAMEDIC_BLOCKS : FALLBACK_BLOCKS;
+  const contentPlans = program === 'Nursing' ? NURSING_PLANS : program === 'Paramedic' ? PARAMEDIC_PLANS : PLANS;
+  const contentBlocks = program === 'Nursing' ? NURSING_BLOCKS : program === 'Paramedic' ? PARAMEDIC_BLOCKS : FALLBACK_BLOCKS;
 
   useEffect(() => {
     let active = true;
@@ -83,7 +94,7 @@ export default function StudyPlanner() {
   }
 
   return <div className="new-reference-page new-study-plans planner-dashboard"><header className="planner-dashboard-head"><div><span className="platform-eyebrow">Personal learning workspace</span><h1>Study Plans</h1><p>Structured revision for {program} learners, shaped around your exam readiness.</p></div><div className="planner-countdown"><span>Exam countdown</span><strong>{daysRemaining(examDate)}</strong></div></header>
-    <div className="new-track-tabs" role="tablist" aria-label="Certification track">{['EMT', 'Paramedic', 'Nursing'].map((item) => <button type="button" role="tab" aria-selected={program === item} className={program === item ? 'is-active' : ''} onClick={() => setProgram(item)} key={item}>{item}</button>)}</div>
+
     <section className="planner-controls"><label>Exam date<input type="date" value={examDate} onChange={(event) => setExamDate(event.target.value)} /></label><label>Daily study hours<select value={hours} onChange={(event) => setHours(event.target.value)}><option value="0.5">30 minutes</option><option value="1">1 hour</option><option value="2">2 hours</option><option value="3">3 hours</option></select></label><button type="button" className="new-button new-button-primary" onClick={generatePlan} disabled={busy}>{busy ? 'Updating...' : 'Generate today’s plan'} <UiIcon name="arrowRight" /></button></section>
     {message && <div className="planner-message" role="status">{message}</div>}
     <div className="new-plan-cards">{contentPlans.map((item, index) => <article className={`new-plan-card ${item.tone}`} key={item.title}><span className="new-plan-icon"><UiIcon name={item.icon} /></span>{index === 0 && <b>Recommended</b>}<h2>{item.title}</h2><p>{item.text}</p><button type="button" onClick={generatePlan}>{item.action} <UiIcon name="arrowRight" /></button></article>)}</div>

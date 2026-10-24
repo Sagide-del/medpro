@@ -1,3 +1,4 @@
+import { studentProgramSql } from '../utils/programs.js';
 import { query } from '../config/database.js';
 
 function normalizeDifficulty(value) {
@@ -72,12 +73,13 @@ export const QuestionBank = {
     if (bookmarked) {
       const { rows } = await query(
         `INSERT INTO student_question_bookmarks (student_id, question_id)
-         VALUES ($1, $2) ON CONFLICT (student_id, question_id) DO NOTHING RETURNING *`,
+         SELECT $1,q.id FROM mcq_questions q JOIN users u ON u.user_id=$1 WHERE q.id=$2 AND q.program=(${studentProgramSql()}) ON CONFLICT (student_id, question_id) DO UPDATE SET student_id=EXCLUDED.student_id RETURNING *`,
         [studentId, questionId]
       );
-      return rows[0] || { student_id: studentId, question_id: questionId };
+      if(!rows[0]) throw Object.assign(new Error('Question not found in your study track.'),{statusCode:404});
+      return rows[0];
     }
-    await query('DELETE FROM student_question_bookmarks WHERE student_id = $1 AND question_id = $2', [studentId, questionId]);
+    await query('DELETE FROM student_question_bookmarks WHERE student_id=$1 AND question_id=$2',[studentId,questionId]);
     return { student_id: studentId, question_id: questionId, bookmarked: false };
   },
 
@@ -86,10 +88,10 @@ export const QuestionBank = {
     const { rows } = await query(
       `SELECT
          (SELECT COUNT(*)::int FROM mcq_questions WHERE LOWER(program) = LOWER($2)) AS total_questions,
-         (SELECT COUNT(DISTINCT question_id)::int FROM student_question_bookmarks WHERE student_id = $1) AS bookmarked,
-         (SELECT COUNT(*)::int FROM student_mcq_attempts WHERE student_id = $1) AS attempts,
-         COALESCE((SELECT ROUND(AVG(percentage))::int FROM student_mcq_attempts WHERE student_id = $1), 0) AS accuracy,
-         COALESCE((SELECT COUNT(*)::int FROM student_mcq_attempts WHERE student_id = $1), 0) AS answered`,
+         (SELECT COUNT(DISTINCT b.question_id)::int FROM student_question_bookmarks b JOIN mcq_questions q ON q.id=b.question_id WHERE b.student_id = $1 AND lower(q.program)=lower($2)) AS bookmarked,
+         (SELECT COUNT(*)::int FROM student_mcq_attempts a JOIN mcq_modules m ON m.id=a.module_id WHERE a.student_id = $1 AND lower(m.program)=lower($2)) AS attempts,
+         COALESCE((SELECT ROUND(AVG(percentage))::int FROM student_mcq_attempts a JOIN mcq_modules m ON m.id=a.module_id WHERE a.student_id = $1 AND lower(m.program)=lower($2)), 0) AS accuracy,
+         COALESCE((SELECT COUNT(*)::int FROM student_mcq_attempts a JOIN mcq_modules m ON m.id=a.module_id WHERE a.student_id = $1 AND lower(m.program)=lower($2)), 0) AS answered`,
       [studentId, program]
     );
     return rows[0] || {};

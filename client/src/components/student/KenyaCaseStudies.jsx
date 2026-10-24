@@ -25,7 +25,7 @@ function badgeClassForStatus(status) {
 
 function CaseLibrary() {
   const navigate = useNavigate();
-  const { user, setProgram } = useAuth();
+  const { user } = useAuth();
   const [cases, setCases] = useState([]);
   const [subscription, setSubscription] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -98,9 +98,7 @@ function CaseLibrary() {
       <section className="kenya-cases-v2-panel">
         <div className="kenya-cases-v2-panel-head"><div><span className="platform-eyebrow">Choose your revision track</span><h2>Case scenarios</h2></div><span>{visibleCases.length} shown</span></div>
         <div className="kenya-cases-v2-controls">
-          <div className="kenya-cases-v2-programs" role="tablist" aria-label="Revision track">
-            {['EMT', 'Paramedic', 'Nursing'].map((item) => <button type="button" role="tab" aria-selected={program === item} className={program === item ? 'is-active' : ''} onClick={() => { setProgram(item); setType('All types'); }} key={item}>{item}</button>)}
-          </div>
+          <span className="platform-eyebrow">{program} incident studies</span>
           <label className="kenya-cases-v2-search"><UiIcon name="question" /><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search cases, counties, or skills" aria-label="Search Kenya EMS cases" /></label>
           <select value={type} onChange={(event) => setType(event.target.value)} aria-label="Filter by case type">{typeOptions.map((item) => <option key={item}>{item}</option>)}</select>
         </div>

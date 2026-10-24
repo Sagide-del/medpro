@@ -1,3 +1,5 @@
+import { Assessment } from '../src/models/Assessment.js';
+import { MockPreTest } from '../src/models/MockPreTest.js';
 import { generateIncident, processNextIncidentTask } from '../src/services/incidentGenerationService.js';
 import { BOOK_DESTINATIONS } from '../src/services/bookGenerationPlan.js';
 import 'dotenv/config';
@@ -63,6 +65,21 @@ test('book queue creates scoped drafts, pauses, resumes, deduplicates, and publi
       const bank=await QuestionBank.listQuestions({studentId:student.user_id,program:'Nursing',limit:50});
       assert.equal(bank.questions.filter(item=>item.question_text.startsWith('Nursing cell knowledge')).length,5);
       assert(bank.questions.every(item=>!('correct_option' in item)));
+      const otherModule=(await pool.query("SELECT id FROM mcq_modules WHERE title=$1 AND program='EMT'",[subject])).rows[0].id;
+      assert.equal(await Assessment.randomizedMcqQuestions(student.user_id,otherModule,{program:'Nursing'}),null);
+      await assert.rejects(()=>Assessment.submitMcqAttempt({studentId:student.user_id,moduleId:otherModule}),/Module not found/);
+      assert(!(await MockPreTest.listModules('Nursing')).some(module=>module.id===otherModule));
+      await assert.rejects(()=>MockPreTest.startTest({module:otherModule,questionCount:20,program:'Nursing'}),/Unknown topic/);
+      assert.equal((await fetch(`http://127.0.0.1:${server.address().port}/published?program=EMT&destination=psychometric_clinical`,{headers:{Authorization:`Bearer ${token}`}})).status,403);
+      const otherQuestion=(await pool.query('SELECT id FROM mcq_questions WHERE module_id=$1 LIMIT 1',[otherModule])).rows[0].id;
+      await assert.rejects(()=>QuestionBank.setBookmark({studentId:student.user_id,questionId:otherQuestion}),/not found in your study track/);
+      const ownQuestion=bank.questions.find(question=>question.question_text.startsWith('Nursing cell knowledge'));
+      const ownMock=await MockPreTest.startTest({module:ownQuestion.module_id,questionCount:20,program:'Nursing'});assert.equal(ownMock.actualCount,5);
+      const mockResult=await MockPreTest.submitTest({module:ownQuestion.module_id,program:'Nursing',answers:ownMock.questions.map(question=>({id:question.id,selectedAnswer:question.options[0]}))});assert.equal(mockResult.totalCount,5);
+      await QuestionBank.setBookmark({studentId:student.user_id,questionId:ownQuestion.id});assert.equal((await QuestionBank.progress(student.user_id,'Nursing')).bookmarked,1);
+      await QuestionBank.setBookmark({studentId:student.user_id,questionId:ownQuestion.id,bookmarked:false});assert.equal((await QuestionBank.progress(student.user_id,'Nursing')).bookmarked,0);
+
+
       for (const [difficulty,type] of [['beginner','true_false'],['advanced','multiple_choice']]) {
         const run=await createBookRun(actor,{...settings,targets:[{program:'Nursing'}],destinations:['question_bank'],difficulty,questionTypes:[type],clientToken:randomUUID()});
         while(await processNextBookTask({generate,runId:run.id})){}

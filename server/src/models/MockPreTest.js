@@ -103,18 +103,19 @@ function chooseQuestionMix(questions, requestedCount) {
 export const MockPreTest = {
   QUESTION_COUNT_OPTIONS,
 
-  async listModules() {
+  async listModules(program='EMT') {
     const [{ rows: modules }, { rows: counts }] = await Promise.all([
       query(
         `SELECT id, title, description, order_number, passing_score
          FROM mcq_modules
-         WHERE is_active = true
-         ORDER BY order_number ASC, title ASC`
+         WHERE is_active = true AND program=$1
+         ORDER BY order_number ASC, title ASC`, [program]
       ),
       query(
         `SELECT module_id, COUNT(*)::int AS available_questions
          FROM mcq_questions
-         GROUP BY module_id`
+         WHERE program=$1 AND (published_content_id IS NULL OR EXISTS(SELECT 1 FROM ai_published_content p WHERE p.id=published_content_id AND p.status='published'))
+         GROUP BY module_id`, [program]
       ),
     ]);
 
@@ -122,7 +123,7 @@ export const MockPreTest = {
     return modules.map((module) => normalizeModuleRow(module, countsByModuleId.get(module.id) || 0));
   },
 
-  async startTest({ module: moduleId, questionCount }) {
+  async startTest({ module: moduleId, questionCount, program='EMT' }) {
     const requestedCount = Number(questionCount);
     if (!QUESTION_COUNT_OPTIONS.includes(requestedCount)) {
       throw httpError(400, `Question count must be one of: ${QUESTION_COUNT_OPTIONS.join(', ')}.`);
@@ -131,9 +132,9 @@ export const MockPreTest = {
     const { rows: moduleRows } = await query(
       `SELECT id, title, description, order_number, passing_score
        FROM mcq_modules
-       WHERE id = $1 AND is_active = true
+       WHERE id = $1 AND is_active = true AND program=$2
        LIMIT 1`,
-      [moduleId]
+      [moduleId,program]
     );
     const module = moduleRows[0];
     if (!module) throw httpError(404, 'Unknown topic selected.');
@@ -141,9 +142,9 @@ export const MockPreTest = {
     const { rows: pool } = await query(
       `SELECT id, module_id, topic, question_text, option_a, option_b, option_c, option_d, correct_option, explanation, difficulty
        FROM mcq_questions
-       WHERE module_id = $1
+       WHERE module_id = $1 AND program=$2 AND (published_content_id IS NULL OR EXISTS(SELECT 1 FROM ai_published_content p WHERE p.id=published_content_id AND p.status='published'))
        ORDER BY topic ASC, created_at ASC`,
-      [moduleId]
+      [moduleId,program]
     );
 
     if (!pool.length) {
@@ -161,13 +162,13 @@ export const MockPreTest = {
     };
   },
 
-  async submitTest({ module: moduleId, answers = [] }) {
+  async submitTest({ module: moduleId, answers = [], program='EMT' }) {
     const { rows: moduleRows } = await query(
       `SELECT id, title, description, order_number, passing_score
        FROM mcq_modules
-       WHERE id = $1 AND is_active = true
+       WHERE id = $1 AND is_active = true AND program=$2
        LIMIT 1`,
-      [moduleId]
+      [moduleId,program]
     );
     const module = moduleRows[0];
     if (!module) throw httpError(400, 'Unknown topic selected.');

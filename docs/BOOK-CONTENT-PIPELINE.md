@@ -87,3 +87,11 @@ The collection lock no longer covers an entire book or model encoding, so health
 A 15-second worker heartbeat prevents an active long index from being mistaken for an interrupted task. An index without activity for three minutes is eligible for requeue, replacing the previous thirty-minute delay. Progress updates respect withdrawal/cancellation, and the final ready transition still requires a successful complete index. Generation and publication remain blocked for unfinished sources.
 
 A deterministic 65-page regression fixture verifies three cross-page batches (32, 32, 1), four passage-storage database connections including initial cleanup, complete unique passage coverage, and the final page/chunk counters. This verifies reduced request overhead; it is not a production timing benchmark. First model download and actual Railway CPU/memory allocation still affect elapsed time.
+
+### Student enrollment isolation
+
+Student pages now display the account's enrolled track as read-only. Student-facing track switches have been removed from the shell, question filters, study planner, incident library and settings. Registration still selects enrollment; administrator generation and source routing still support all three tracks.
+
+Authenticated student requests default to the track carried by the signed login token and reject query/body requests for another track with `STUDY_TRACK_MISMATCH`. Historical unassigned accounts retain the existing EMT default. MCQ module lookup/submission and attempt review additionally check the student's enrollment in PostgreSQL. Mock-test lists and sessions are scoped by track; bookmarks and question-bank progress no longer expose another track. Existing browser sessions discard the previous local override and restore the enrollment from their login token, with authorization always enforced on the server. Administrative enrollment changes require a fresh login token.
+
+Validation includes actual signed-token requests for EMT, Paramedic and Nursing, direct access to a foreign module, cross-track publication feeds, mock-test selection and bookmarking. Browser checks cover six student pages for each enrollment and recovery from a stale locally selected track.

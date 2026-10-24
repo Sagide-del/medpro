@@ -1,3 +1,4 @@
+import { restoreSessionUser } from '../utils/sessionUser';
 import { normalizeProgram } from '../data/programs';
 import { createContext, useContext, useState } from 'react';
 import { loginRequest, registerRequest, setToken, clearToken } from '../services/auth';
@@ -6,11 +7,10 @@ const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(() => {
-    const saved = sessionStorage.getItem('medpro_user');
-    if (!saved) return null;
-    const parsed = JSON.parse(saved);
-    const selectedProgram = sessionStorage.getItem('medpro_program');
-    return { ...parsed, program: normalizeProgram(selectedProgram || parsed.program) };
+    sessionStorage.removeItem('medpro_program');
+    const restored=restoreSessionUser(sessionStorage.getItem('medpro_user'),sessionStorage.getItem('medpro_token') || '');
+    if(restored)sessionStorage.setItem('medpro_user',JSON.stringify(restored));
+    return restored;
   });
 
   async function login(email, password) {
@@ -36,19 +36,9 @@ export function AuthProvider({ children }) {
     setUser(null);
   }
 
-  function setProgram(program) {
-    const nextProgram = normalizeProgram(program);
-    setUser((current) => {
-      if (!current) return current;
-      const nextUser = { ...current, program: nextProgram };
-      sessionStorage.setItem('medpro_user', JSON.stringify(nextUser));
-      sessionStorage.setItem('medpro_program', nextProgram);
-      return nextUser;
-    });
-  }
 
   return (
-    <AuthContext.Provider value={{ user, login, register, logout, setProgram }}>
+    <AuthContext.Provider value={{ user, login, register, logout }}>
       {children}
     </AuthContext.Provider>
   );

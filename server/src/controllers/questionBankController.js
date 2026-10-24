@@ -43,7 +43,7 @@ export const submitMockExam = asyncHandler(async (req, res) => {
   const { answers } = req.body || {};
   const module = req.body?.module || req.params.id;
   if (!module || !Array.isArray(answers)) return res.status(400).json({ error: 'module and answers are required.' });
-  res.json(await MockPreTest.submitTest({ module, answers }));
+  res.json(await MockPreTest.submitTest({ module, answers, program:req.user.program }));
 });
 
 export const moduleCounts = asyncHandler(async (req,res) => {

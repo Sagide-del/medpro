@@ -1,4 +1,3 @@
-import { PROGRAMS } from '../data/programs';
 import { useEffect, useRef, useState } from 'react';
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
@@ -29,7 +28,7 @@ function MedProMark() {
  *    ]
  */
 export default function Layout({ links, roleLabel }) {
-  const { user, logout, setProgram } = useAuth();
+  const { user, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const sidebarRef = useRef(null);
@@ -84,21 +83,9 @@ export default function Layout({ links, roleLabel }) {
         </div>
 
         {user?.role === 'student' && (
-          <div className="program-switcher" aria-label="Choose revision track">
-            <div className="program-switcher-label">Revision track</div>
-            <div className="program-switcher-options">
-              {PROGRAMS.map((program) => (
-                <button
-                  key={program}
-                  type="button"
-                  className={user.program === program ? 'is-selected' : ''}
-                  aria-pressed={user.program === program}
-                      onClick={() => setProgram(program)}
-                >
-                  {program}
-                </button>
-              ))}
-            </div>
+          <div className="program-switcher" aria-label="Account study track">
+            <div className="program-switcher-label">Study track</div>
+            <strong>{user.program}</strong>
           </div>
         )}
 
@@ -183,12 +170,7 @@ export default function Layout({ links, roleLabel }) {
             <span className="sr-only">Search MedPro</span>
             <input type="search" placeholder="Search questions, topics, or keywords..." />
           </label>
-          {user?.role === 'student' && <label className="platform-track-picker">
-            <span>Revision track</span>
-            <select aria-label="Revision track" value={user.program} onChange={(event) => setProgram(event.target.value)}>
-              {PROGRAMS.map((program) => <option value={program} key={program}>{program}</option>)}
-            </select>
-          </label>}
+          {user?.role === 'student' && <div className="platform-track-picker" aria-label="Account study track"><span>Study track</span><strong>{user.program}</strong></div>}
           <div className="platform-topbar-actions">
             <button type="button" aria-label="Notifications"><UiIcon name="alert" /></button>
             <span className="platform-user-role">{roleLabel || user?.role || 'Account'}</span>

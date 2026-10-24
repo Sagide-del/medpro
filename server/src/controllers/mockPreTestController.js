@@ -23,7 +23,7 @@ async function assertSubscription(req, res) {
 export const listMockPreTestModules = asyncHandler(async (req, res) => {
   const subscription = await resolveStudentSubscriptionAccess(req.user);
   res.json({
-    modules: await MockPreTest.listModules(),
+    modules: await MockPreTest.listModules(req.user.program),
     questionCountOptions: MockPreTest.QUESTION_COUNT_OPTIONS,
     subscription,
   });
@@ -35,7 +35,7 @@ export const startMockPreTest = asyncHandler(async (req, res) => {
 
   const { module, questionCount } = req.body || {};
   try {
-    const session = await MockPreTest.startTest({ module, questionCount });
+    const session = await MockPreTest.startTest({ module, questionCount, program:req.user.program });
     res.json(session);
   } catch (error) {
     res.status(error.statusCode || 500).json({ error: error.message || 'Could not start the Mock Pre-Test.' });
@@ -49,7 +49,7 @@ export const submitMockPreTest = asyncHandler(async (req, res) => {
   const { module, answers } = req.body || {};
   let result;
   try {
-    result = await MockPreTest.submitTest({ module, answers });
+    result = await MockPreTest.submitTest({ module, answers, program:req.user.program });
   } catch (error) {
     return res.status(error.statusCode || 500).json({ error: error.message || 'Could not grade the Mock Pre-Test.' });
   }

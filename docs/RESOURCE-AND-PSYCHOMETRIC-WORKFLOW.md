@@ -17,3 +17,7 @@ New assignments favor activities assigned to fewer students, with random tie bre
 Only the assigned task can be submitted; completed tasks cannot be resubmitted as fresh practice. Original submission tokens remain idempotent. Public activity payloads exclude answers, rubrics and evidence metadata. Written feedback remains provisional or awaits review as before.
 
 This assignment policy applies to the three Psychometric Test areas. Shared study references, sequential Kenya EMS cases, teacher assignments and formal MCQ exams keep their existing access/review policies.
+
+## Screening failures
+
+A rejected resource batch now identifies Evidence support, Learner scope and/or Numerical consistency, with the screening explanation when supplied. An incomplete screening response is reported separately. Rejected drafts are not published and other queued batches can continue. Review successful batches first, then retry failed batches after checking the cited passage and selected learner track. Definition-only passages should yield concise summaries or no clinical task rather than unsupported treatment material. Existing failed batches retain their original messages until retried.

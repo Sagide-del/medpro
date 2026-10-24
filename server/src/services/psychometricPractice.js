@@ -1,3 +1,4 @@
+import {createHash} from 'node:crypto';
 import { withTransaction } from '../config/database.js';
 export const PSYCHOMETRIC_AREAS=['psychometric_clinical','psychometric_situational','psychometric_readiness'];
 export const practicePrompt=item=>[item?.question || item?.prompt || '',item?.scenario || ''].filter(Boolean).join(' ').trim();
@@ -34,3 +35,5 @@ export async function nextPsychometricActivity(studentId,program,destination){
   return [chosen];
  });
 }
+
+export function orderPracticeOptions(options,studentId,contentId){return options.map(value=>({value,key:createHash('sha256').update(JSON.stringify([studentId,contentId,value])).digest('hex')})).sort((a,b)=>a.key.localeCompare(b.key)).map(row=>row.value);}

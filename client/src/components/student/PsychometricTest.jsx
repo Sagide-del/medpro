@@ -1,79 +1,11 @@
-import UiIcon from '../shared/UiIcon';
-import { useNavigate } from 'react-router-dom';
-import { useEffect, useState } from 'react';
+import {useRef,useState} from 'react';
 import PsychometricActivity from './PsychometricActivity';
-import { useAuth } from '../../context/AuthContext';
-import { api } from '../../services/api';
-
-const SECTIONS = [
-  {
-    number: '01',
-    title: 'Clinical Judgment',
-    simulatorTitle: 'Clinical Judgment',
-    tag: 'CLINICAL REASONING',
-    format: 'Clinical assessment',
-    detail: 'Clinical reasoning and decision-making across emergency basics, trauma, and medical emergencies.',
-    icon: 'exam',
-    tone: 'blue',
-    meta: ['75 questions', '90 min', 'Mark for review'],
-    action: 'Resume simulator',
-  },
-  {
-    number: '02',
-    title: 'Situational Judgment',
-    simulatorTitle: 'Situational Judgment',
-    tag: 'SCENARIO-BASED',
-    format: 'Scenario assessment',
-    detail: 'Ethics, leadership, professionalism, patient safety, and communication in healthcare situations.',
-    icon: 'cases',
-    tone: 'violet',
-    meta: ['Dynamic vitals', '4 decision points'],
-    action: 'Start scenario',
-  },
-  {
-    number: '03',
-    title: 'Readiness Reflection',
-    simulatorTitle: 'Readiness Reflection',
-    tag: 'EDUCATIONAL REFLECTION',
-    format: 'Scale and scenarios',
-    detail: 'Emotional stability, empathy, resilience, stress management, and readiness for clinical learning.',
-    icon: 'activity',
-    tone: 'green',
-    meta: ['600 words', '45 min', 'Real-world dilemmas'],
-    action: 'Open lab',
-  },
-];
-
-export default function PsychometricTest() {
-  const navigate = useNavigate();
-  const { user } = useAuth();
-  const program = user?.program || 'EMT';
-  const [counts, setCounts] = useState({});
-  const [error, setError] = useState('');
-  const [area, setArea] = useState(null);
-  const areas = ['psychometric_clinical', 'psychometric_situational', 'psychometric_readiness'];
-  useEffect(() => {
-    let active = true;
-    setCounts({}); setError(''); setArea(null);
-    api(`/published-content/summary?program=${program}`).then((data) => { if (active) setCounts(data.counts || {}); }).catch((err) => { if (active) setError(err.message); });
-    return () => { active = false; };
-  }, [program]);
-  if (area) return <><button type="button" onClick={() => setArea(null)}>Back to assessment areas</button><PsychometricActivity key={area} destination={area} title={SECTIONS[areas.indexOf(area)].title} /></>;
-  const destinations = areas;
-  return (
-    <div className="psychometric-page psychometric-simulator-page">
-      <header className="psychometric-simulator-head"><div><span className="platform-eyebrow">Assessment workspace</span><h1>Psychometric Test</h1><p>Practise clinical reasoning, situational judgment, and readiness for your {program} pathway.</p></div><span className="psychometric-simulator-count"><UiIcon name="practice" />3 formats</span></header>
-      <div className="psychometric-card-grid">
-        {error && <p role="alert">{error}</p>}
-        {SECTIONS.map((definition, index) => {
-          const section = { ...definition, meta: [`${counts[areas[index]] || 0} published activities`, `${program} pathway`, 'Saved responses'], action: 'Start practice' };
-          return (
-          <article className={`psychometric-card ${section.tone}`} key={section.number}>
-            <div className="psychometric-card-top"><span className="psychometric-card-icon"><UiIcon name={section.icon} /></span><span className="psychometric-card-tag">{section.tag}</span></div><span className="psychometric-card-area">{section.number} · {section.title}</span><h2>{section.simulatorTitle}</h2><strong>{section.format}</strong><p>{section.detail}</p>{section.number === '02' && <div className="psychometric-scenario-steps">{['Scene', 'Primary', 'Treatment', 'Transport'].map((step, index) => <span key={step}><b>{index + 1}</b>{step}</span>)}</div>}{section.number === '03' && <div className="psychometric-framework"><span>S</span><span>A</span><span>R</span></div>}<div className="psychometric-card-meta">{section.meta.map((item) => <span key={item}><UiIcon name={item.includes('question') || item.includes('words') ? 'document' : item.includes('review') || item.includes('vitals') ? 'activity' : 'simulation'} />{item}</span>)}</div><button type="button" onClick={() => setArea(destinations[Number(section.number) - 1])}>{section.action} <UiIcon name="arrowRight" /></button>
-          </article>
-        ); })}
-      </div>
-      <section className="psychometric-scheduled"><span className="psychometric-scheduled-icon"><UiIcon name="calendar" /></span><div><strong>Your next practice session</strong><small>Choose a published activity or plan your study time.</small></div><div className="psychometric-scheduled-detail"><strong>{areas.reduce((sum, key) => sum + (counts[key] || 0), 0)} published activities</strong><small><UiIcon name="simulation" />{program} revision</small></div><button type="button" disabled={!areas.some((key) => counts[key])} onClick={() => setArea(areas.find((key) => counts[key]))}>Begin focused session <UiIcon name="arrowRight" /></button><button type="button" className="psychometric-more" aria-label="Open study planner" onClick={() => navigate('/student/study-planner')}>...</button></section>
-    </div>
-  );
+import {useAuth} from '../../context/AuthContext';
+import './psychometricTabs.css';
+const AREAS=[{key:'psychometric_clinical',title:'Clinical Judgment',label:'Clinical',focus:'Assessment · Priorities · Reassessment'},{key:'psychometric_situational',title:'Situational Judgment',label:'Situational',focus:'Safety · Communication · Professional decisions'},{key:'psychometric_readiness',title:'Readiness Reflection',label:'Readiness',focus:'Preparation · Reflection · Action planning'}];
+export default function PsychometricTest(){
+ const {user}=useAuth(),[index,setIndex]=useState(0),[visited,setVisited]=useState([0]),tabs=useRef([]);
+ function activate(next){setIndex(next);setVisited(previous=>previous.includes(next)?previous:[...previous,next]);}
+ function navigate(event){let next=Math.max(0,tabs.current.indexOf(event.currentTarget));if(event.key==='ArrowRight')next=(next+1)%AREAS.length;else if(event.key==='ArrowLeft')next=(next+AREAS.length-1)%AREAS.length;else if(event.key==='Home')next=0;else if(event.key==='End')next=AREAS.length-1;else return;event.preventDefault();activate(next);tabs.current[next]?.focus();}
+ return <div className="psychometric-workspace"><header className="pt-heading"><div><span>{user?.program} · Practice</span><h1>Psychometric Test</h1></div></header><nav className="pt-tabs" role="tablist" aria-label="Assessment areas">{AREAS.map((item,i)=><button key={item.key} ref={element=>{tabs.current[i]=element;}} id={`pt-tab-${i}`} type="button" role="tab" aria-selected={index===i} aria-controls={`pt-panel-${i}`} tabIndex={index===i?0:-1} onClick={()=>activate(i)} onKeyDown={navigate}>{item.label}</button>)}</nav>{AREAS.map((item,i)=><section key={item.key} role="tabpanel" id={`pt-panel-${i}`} aria-labelledby={`pt-tab-${i}`} hidden={index!==i}><div className="pt-area-heading"><h2>{item.title}</h2><p>{item.focus}</p></div>{visited.includes(i) && <PsychometricActivity destination={item.key} title={item.title} compact/>}</section>)}<details className="pt-exam-details"><summary>Licensing exam information</summary><p>Check the blueprint for your exact professional title and regulator. Practice scores here are not licensing pass marks.</p><a href="https://scfhs.org.sa/en" target="_blank" rel="noreferrer">Saudi Arabia · SCFHS</a><a href="https://dhp.moph.gov.qa/en/Pages/QualifyingExamination.aspx" target="_blank" rel="noreferrer">Qatar · DHP qualifying examinations</a></details></div>;
 }

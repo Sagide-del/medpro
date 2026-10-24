@@ -120,9 +120,12 @@ export function validateGroundedArtifacts(items, chunks, destination) {
         version: source.version, evidence_quote: quote,
         citation: `${source.source_document}, version ${source.version}, PDF page ${source.page_number}` };
     });
-    if (destination.startsWith('psychometric_')) {
+    const multipleChoice=destination.startsWith('psychometric_') && Array.isArray(item.options);
+    if(multipleChoice && (item.options.length!==4 || item.options.some(option=>typeof option!=='string' || !option.trim()) || new Set(item.options.map(option=>option.trim().toLowerCase())).size!==4 || !item.options.includes(item.answer) || typeof item.feedback!=='string' || !item.feedback.trim()))throw ragError('Assessment options must be distinct, with one matching answer and a complete rationale.',422);
+    if(multipleChoice && (typeof item.question!=='string' || !item.question.trim() || !Array.isArray(item.option_rationales) || item.option_rationales.length!==4 || item.options.some(option=>item.option_rationales.filter(row=>row?.option===option && typeof row.explanation==='string' && row.explanation.trim()).length!==1)))throw ragError('Each assessment option requires its own evidence-based explanation.',422);
+    if (destination.startsWith('psychometric_') && !multipleChoice) {
       if (!item.question || !Array.isArray(item.rubric) || !item.rubric.length ||
-          item.rubric.some((row) => !row.criterion || !row.expected || !Number.isInteger(row.points) || row.points < 1 || row.points > 20)) {
+          item.rubric.some((row) => !row || typeof row.criterion!=='string' || !row.criterion.trim() || typeof row.expected!=='string' || !row.expected.trim() || !Number.isInteger(row.points) || row.points < 1 || row.points > 20)) {
         throw ragError('The assessment needs a complete scoring rubric.', 422);
       }
     }
@@ -130,9 +133,9 @@ export function validateGroundedArtifacts(items, chunks, destination) {
       throw ragError('Flashcards need a front and back for every card.', 422);
     }
     return { title: String(item.title), question: item.question || item.title, summary: String(item.summary),
-      type: destination.startsWith('psychometric_') ? 'short_answer' : destination,
+      type: multipleChoice?'multiple_choice':destination.startsWith('psychometric_') ? 'short_answer' : destination,
       topic: item.topic || chunks[0]?.clinical_subject, sections: item.sections.map(({ heading, text }) => ({ heading, text })),
-      ...(destination.startsWith('psychometric_') ? { rubric: item.rubric, scenario: item.summary } : {}),
+      ...(destination.startsWith('psychometric_') ? { ...(multipleChoice?{options:item.options,answer:item.answer,option_rationales:item.option_rationales,feedback:[item.feedback,...item.options.map(option=>`${option}\n${item.option_rationales.find(row=>row.option===option).explanation}`)].join('\n\n')}:{rubric:item.rubric}), scenario: item.summary } : {}),
       ...(destination === 'flashcards' ? { cards: item.cards.map(({ front, back, visual }) => ({ front, back, ...(visual?.kind === 'sequence' && Array.isArray(visual.steps) && visual.steps.length >= 2 && visual.steps.length <= 5 && visual.steps.every(step => typeof step === 'string' && step.trim() && step.length <= 90) ? { visual: { kind: 'sequence', steps: visual.steps } } : {}) })) } : {}),
       ...(destination === 'podcasts' ? { transcript: item.sections.map((section) => `${section.heading}\n${section.text}`).join('\n\n') } : {}),
       source_reference: references[0], source_references: references,

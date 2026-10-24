@@ -1,4 +1,4 @@
-import { nextPsychometricActivity,PSYCHOMETRIC_AREAS } from '../services/psychometricPractice.js';
+import { nextPsychometricActivity,PSYCHOMETRIC_AREAS,orderPracticeOptions } from '../services/psychometricPractice.js';
 import { Router } from 'express';
 import { authenticate } from '../middleware/auth.js';
 import { requireRole } from '../middleware/roleCheck.js';
@@ -80,7 +80,7 @@ router.get('/', asyncHandler(async (req, res) => {
   res.json({ content: rows.map((row) => assessment ? { id:row.id,title:row.title,topic:row.topic,destination_key:row.destination_key,source_citation:row.source_citation,program, content_json: {
     question: row.content_json.question || row.content_json.prompt,
     scenario: row.content_json.scenario,
-    options: Array.isArray(row.content_json.options) ? row.content_json.options.map((option) => typeof option === 'string' ? option : { text: option?.text || option?.label, key: option?.key }) : [],
+    options: Array.isArray(row.content_json.options) ? (Array.isArray(row.content_json.option_rationales)?orderPracticeOptions(row.content_json.options,req.user.sub,row.id):row.content_json.options).map((option) => typeof option === 'string' ? option : { text: option?.text || option?.label, key: option?.key }) : [],
     type: row.content_json.type || row.content_json.questionType,
   } } : row) });
 }));

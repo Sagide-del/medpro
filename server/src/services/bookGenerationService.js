@@ -82,6 +82,7 @@ export async function listBookRuns(user) {
   const { rows } = await query(`SELECT r.*,s.filename,s.subject,s.scope_key,
     count(t.id)::int AS total,count(*) FILTER(WHERE t.status='queued')::int AS queued,
     count(*) FILTER(WHERE t.status='generating')::int AS generating,count(*) FILTER(WHERE t.status='review' AND t.generated_count > (SELECT count(*) FROM ai_published_content p WHERE p.job_id=t.job_id AND p.status='published'))::int AS review,
+    count(*) FILTER(WHERE t.status='review' AND t.generated_count=0 AND t.duplicate_count=0)::int AS unsupported,
     count(*) FILTER(WHERE t.status='failed')::int AS failed,count(*) FILTER(WHERE j.status='published')::int AS published,
     COALESCE(sum(t.generated_count),0)::int AS drafts,COALESCE(sum(t.duplicate_count),0)::int AS duplicates
     FROM book_generation_runs r JOIN rag_sources s ON s.id=r.source_id

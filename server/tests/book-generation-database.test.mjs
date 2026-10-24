@@ -94,6 +94,7 @@ test('book queue creates scoped drafts, pauses, resumes, deduplicates, and publi
       const unsupportedRun=await createBookRun(actor,{...settings,targets:[{program:'Nursing'}],destinations:['drug_reference'],clientToken:randomUUID()});
       while(await processNextBookTask({generate:async()=>({preview_questions:[],content_notes:['No suitable medication evidence.']}),runId:unsupportedRun.id})){}
       const unsupportedDetail=await getBookRun(actor,unsupportedRun.id);assert(unsupportedDetail.tasks.every(task=>task.status==='review' && task.generated_count===0));assert(unsupportedDetail.tasks[0].content_notes.includes('No suitable medication evidence.'));
+      assert.equal((await listBookRuns(actor)).find(run=>run.id===unsupportedRun.id).unsupported,1);
       assert.equal((await listBookRuns(actor)).find(run=>run.id===unsupportedRun.id).failed,0,'Unsupported destinations should complete without inventing artifacts or failing the queue');
       const resources=BOOK_DESTINATIONS.filter(destination=>!['question_bank','psychometric_clinical'].includes(destination));
       const run=await createBookRun(actor,{...settings,targets:[{program:'Nursing'}],destinations:resources,clientToken:randomUUID()});

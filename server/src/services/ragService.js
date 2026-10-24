@@ -106,13 +106,16 @@ export function validateGroundedArtifacts(items, chunks, destination) {
     if (!String(item.title || '').trim() || !String(item.summary || '').trim() || !Array.isArray(item.sections) || !item.sections.length) {
       throw ragError('The generated resource is incomplete.', 422);
     }
-    const references = item.sections.map((section) => {
+    const references = item.sections.map((section,index) => {
+      if(!section || typeof section!=='object')throw ragError(`Resource section ${index+1} must be an object.`,422);
       const source = sources.get(section.chunk_id);
       const quote = String(section.evidence_quote || '').trim();
-      const norm = (s) => String(s).replace(/\s+/g, ' ').trim().toLowerCase();
-      if (!source || !section.heading || !section.text || quote.length < 20 || !norm(source.text).includes(norm(quote))) {
-        throw ragError('A resource section failed its source-evidence check.', 422);
-      }
+      const norm = value=>String(value).normalize('NFC').replace(/[ﬀﬁﬂﬃﬄﬅﬆ]/g,char=>({'ﬀ':'ff','ﬁ':'fi','ﬂ':'fl','ﬃ':'ffi','ﬄ':'ffl','ﬅ':'st','ﬆ':'st'}[char])).replace(/\u00ad/g,'').replace(/[‘’]/g,"'").replace(/[“”]/g,'"').replace(/\s+/g,' ').trim().toLowerCase();
+      const label=`Resource section ${index+1}`;
+      if(!source)throw ragError(`${label}: citation chunk_id is missing or does not match the supplied passages. Retry this batch; do not change source classification to bypass citation checks.`,422);
+      if(!section.heading || !section.text)throw ragError(`${label}: heading or teaching text is missing. Retry this batch.`,422);
+      if(quote.length<20)throw ragError(`${label}: evidence quote must contain at least 20 characters copied from PDF page ${source.page_number}.`,422);
+      if(!norm(source.text).includes(norm(quote)))throw ragError(`${label}: evidence quote does not match its cited passage on PDF page ${source.page_number}. A contiguous source quote is required; paraphrases and changed clinical values are rejected. Retry this batch.`,422);
       return { document_id: source.document_id, chunk_id: source.chunk_id, page_number: source.page_number,
         version: source.version, evidence_quote: quote,
         citation: `${source.source_document}, version ${source.version}, PDF page ${source.page_number}` };

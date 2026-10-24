@@ -1,6 +1,18 @@
 {
   "rewrites": [
     {
+      "source": "/emt-revision",
+      "destination": "/emt-revision.html"
+    },
+    {
+      "source": "/paramedic-revision",
+      "destination": "/paramedic-revision.html"
+    },
+    {
+      "source": "/nursing-revision",
+      "destination": "/nursing-revision.html"
+    },
+    {
       "source": "/login",
       "destination": "/login.html"
     },

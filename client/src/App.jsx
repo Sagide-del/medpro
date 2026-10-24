@@ -1,3 +1,4 @@
+import { REVISION_PAGES } from './data/publicSeo';
 import RouteMetadata from './components/RouteMetadata';
 import { lazy, Suspense, useEffect, useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
@@ -9,6 +10,7 @@ import ErrorBoundary from './components/ErrorBoundary';
 import Loading from './components/shared/Loading';
 
 import Home from './pages/Home';
+import RevisionLanding from './pages/RevisionLanding';
 import Login from './pages/Login';
 import Register from './pages/Register';
 
@@ -313,6 +315,9 @@ function AppRoutes() {
       <Routes>
 
         <Route path="/" element={<Home />} />
+        <Route path="/emt-revision" element={<RevisionLanding page={REVISION_PAGES[0]} />} />
+        <Route path="/paramedic-revision" element={<RevisionLanding page={REVISION_PAGES[1]} />} />
+        <Route path="/nursing-revision" element={<RevisionLanding page={REVISION_PAGES[2]} />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
 

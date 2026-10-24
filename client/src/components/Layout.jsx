@@ -57,7 +57,7 @@ export default function Layout({ links, roleLabel }) {
           <div className="program-switcher" aria-label="Choose revision track">
             <div className="program-switcher-label">Revision track</div>
             <div className="program-switcher-options">
-              {['EMT', 'Paramedic'].map((program) => (
+              {['EMT', 'Paramedic', 'Nursing'].map((program) => (
                 <button
                   key={program}
                   type="button"

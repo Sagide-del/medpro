@@ -41,7 +41,8 @@ export function retrievalDestination(destination) {
 export function normalizeRagProgram(audience) {
   if (['EMT', 'emt', 'emt-basic', 'emt-intermediate'].includes(audience)) return 'EMT';
   if (['Paramedic', 'paramedic', 'emt-paramedic'].includes(audience)) return 'Paramedic';
-  throw ragError('Choose exactly EMT or Paramedic for source retrieval.');
+  if (['Nursing', 'nursing', 'nurse'].includes(audience)) return 'Nursing';
+  throw ragError('Choose EMT, Paramedic, or Nursing for source retrieval.');
 }
 export async function ragRequest(path, { body, bytes, method = 'POST' } = {}) {
   if (!ragEnabled()) throw ragError('Source retrieval is not enabled.', 503);
@@ -71,7 +72,7 @@ export async function retrieveSources(user, { program, destination = 'question_b
   const normalizedSubject = ['all', 'All subjects', ''].includes(subject || '') ? null : subject;
   const { rows } = await query(`SELECT id,filename,version,program,subject FROM rag_sources
     WHERE status='ready' AND approved_by IS NOT NULL AND scope_key=ANY($1::text[])
-    AND program IN ($2,'both') AND source_type=ANY($3::text[]) AND ($4::text IS NULL OR subject=$4)`,
+    AND (program=$2 OR ($2 <> 'Nursing' AND program='both')) AND source_type=ANY($3::text[]) AND ($4::text IS NULL OR subject=$4)`,
   [readableScopes(user), program, types, normalizedSubject]);
   if (!rows.length) throw ragError('No approved, indexed sources match this pathway and subject. Upload and approve sources first.', 422);
   const result = await ragRequest('/retrieve', { body: {

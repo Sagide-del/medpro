@@ -1,3 +1,4 @@
+import { canonicalProgram } from '../utils/programs.js';
 import { randomUUID } from 'crypto';
 import { query, withTransaction } from '../config/database.js';
 import { publishQuestion } from './publishQuestion.js';
@@ -134,9 +135,8 @@ export async function findDuplicates(items = []) {
 
 export async function publishApproved({ job, adminId, decisions, items }) {
   const audience = String(job.request_json?.audience || '').toLowerCase();
-  const program = ['paramedic', 'emt-paramedic'].includes(audience) ? 'Paramedic'
-    : ['emt', 'emt-basic', 'emt-intermediate'].includes(audience) ? 'EMT' : null;
-  if (!program) throw Object.assign(new Error('Choose EMT or Paramedic before publishing student content.'), { status: 400, publicMessage: 'Choose EMT or Paramedic before publishing student content.' });
+  const program = canonicalProgram(audience);
+  if (!program) throw Object.assign(new Error('Choose EMT, Paramedic, or Nursing before publishing student content.'), { status: 400, publicMessage: 'Choose EMT, Paramedic, or Nursing before publishing student content.' });
   const approved = items.filter((item) => decisions.get(String(item.id))?.decision === 'approved');
   if (!approved.length) throw new Error('Approve at least one item before publishing.');
   return withTransaction(async (tx) => {
@@ -181,7 +181,7 @@ export async function publishApproved({ job, adminId, decisions, items }) {
           throw ragError('Source-grounded content must retain its original evidence reference.', 422);
         }
         const { rows: sources } = await tx.query(`SELECT id FROM rag_sources WHERE id=$1 AND version=$2
-          AND status='ready' AND approved_by IS NOT NULL AND program IN ($3,'both') AND scope_key='global' FOR SHARE`,
+          AND status='ready' AND approved_by IS NOT NULL AND (program=$3 OR ($3 <> 'Nursing' AND program='both')) AND scope_key='global' FOR SHARE`,
         [reference.document_id, reference.version, program]);
         // Student feeds are currently global. Do not publish institution-private
         // source material into them until those feeds enforce institution scope.

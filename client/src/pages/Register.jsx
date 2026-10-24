@@ -1,13 +1,15 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { homeForRole } from '../services/auth';
 import AuthShell from '../components/AuthShell';
 
 export default function Register() {
   const { register } = useAuth();
+  const [searchParams] = useSearchParams();
+  const requestedProgram = searchParams.get('program');
   const navigate = useNavigate();
-  const [form, setForm] = useState({ fullName: '', email: '', phone: '', password: '', program: '', regNumber: '' });
+  const [form, setForm] = useState({ fullName: '', email: '', phone: '', password: '', program: ['EMT', 'Paramedic', 'Nursing'].includes(requestedProgram) ? requestedProgram : '', regNumber: '' });
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -56,9 +58,9 @@ export default function Register() {
           <label htmlFor="program">Program</label>
           <select id="program" name="program" required value={form.program} onChange={set('program')}>
             <option value="" disabled>Select your study track</option>
-            <option value="EMT">EMT</option><option value="Paramedic">Paramedic</option>
+            <option value="EMT">EMT</option><option value="Paramedic">Paramedic</option><option value="Nursing">Nursing</option>
           </select>
-          <small>Current study tracks: EMT and Paramedic.</small>
+          <small>Choose EMT, Paramedic, or Nursing revision.</small>
         </div>
         <div className="field">
           <label htmlFor="password">Password</label>

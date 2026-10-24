@@ -8,24 +8,24 @@ import { getSignedPdfUrl } from '../services/storage.js';
 
 const router = Router();
 router.use(authenticate, requireRole('student'));
-const programSql = "CASE WHEN lower(program) IN ('paramedic','emt-paramedic') THEN 'Paramedic' WHEN lower(program) IN ('emt','emt-basic','emt-intermediate') THEN 'EMT' ELSE NULL END";
+const programSql = "CASE WHEN lower(program) IN ('paramedic','emt-paramedic') THEN 'Paramedic' WHEN lower(program) IN ('emt','emt-basic','emt-intermediate') THEN 'EMT' WHEN lower(program) IN ('nurse','nursing') THEN 'Nursing' ELSE NULL END";
 router.get('/summary', asyncHandler(async (req, res) => {
   const program = req.query.program || req.user.program;
-  if (!['EMT', 'Paramedic'].includes(program)) return res.status(400).json({ error: 'Select EMT or Paramedic.' });
+  if (!['EMT', 'Paramedic', 'Nursing'].includes(program)) return res.status(400).json({ error: 'Select EMT, Paramedic, or Nursing.' });
   const { rows } = await query(`SELECT destination_key,count(*)::int AS count FROM ai_published_content
     WHERE status='published' AND (${programSql})=$1 GROUP BY destination_key`, [program]);
   res.json({ counts: Object.fromEntries(rows.map((row) => [row.destination_key, row.count])) });
 }));
 router.get('/responses', asyncHandler(async (req, res) => {
   const program = req.query.program || req.user.program;
-  if (!['EMT', 'Paramedic'].includes(program)) return res.status(400).json({ error: 'Select EMT or Paramedic.' });
+  if (!['EMT', 'Paramedic', 'Nursing'].includes(program)) return res.status(400).json({ error: 'Select EMT, Paramedic, or Nursing.' });
   const { rows } = await query(`SELECT id,content_id,submitted_at,grading_status,score,feedback FROM published_content_responses
     WHERE student_id=$1 AND program=$2 ORDER BY submitted_at DESC LIMIT 100`, [req.user.sub, program]);
   res.json({ submissions: rows });
 }));
 router.get('/activity', asyncHandler(async (req, res) => {
   const program = req.query.program || req.user.program;
-  if (!['EMT', 'Paramedic'].includes(program)) return res.status(400).json({ error: 'Select EMT or Paramedic.' });
+  if (!['EMT', 'Paramedic', 'Nursing'].includes(program)) return res.status(400).json({ error: 'Select EMT, Paramedic, or Nursing.' });
   const { rows } = await query(`SELECT a.id AS attempt_id, a.percentage AS score_pct, a.completed_at,
     m.title, 'completed' AS status FROM student_mcq_attempts a JOIN mcq_modules m ON m.id=a.module_id
     WHERE a.student_id=$1 AND m.program=$2 ORDER BY a.completed_at DESC LIMIT 100`, [req.user.sub, program]);
@@ -37,7 +37,7 @@ router.get('/activity', asyncHandler(async (req, res) => {
 router.post('/:id/responses', asyncHandler(async (req, res) => {
   const { program, response, clientToken } = req.body || {};
   if (clientToken && !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(clientToken)) return res.status(400).json({ error: 'Invalid submission token.' });
-  if (!['EMT', 'Paramedic'].includes(program) || typeof response !== 'string' || !response.trim() || response.length > 20000) {
+  if (!['EMT', 'Paramedic', 'Nursing'].includes(program) || typeof response !== 'string' || !response.trim() || response.length > 20000) {
     return res.status(400).json({ error: 'Select a pathway and provide a response (up to 20,000 characters).' });
   }
   const { rows } = await query(`INSERT INTO published_content_responses (student_id, content_id, program, response, content_snapshot, client_token)
@@ -59,7 +59,7 @@ router.post('/:id/responses', asyncHandler(async (req, res) => {
 }));
 router.get('/', asyncHandler(async (req, res) => {
   const program = req.query.program || req.user.program;
-  if (!['EMT', 'Paramedic'].includes(program)) return res.status(400).json({ error: 'Select EMT or Paramedic.' });
+  if (!['EMT', 'Paramedic', 'Nursing'].includes(program)) return res.status(400).json({ error: 'Select EMT, Paramedic, or Nursing.' });
   const { rows } = await query(`SELECT id, title, topic, destination_key, source_citation, published_at,
     content_json, $1::text AS program FROM ai_published_content
     WHERE status = 'published' AND (${programSql}) = $1 AND destination_key = $2

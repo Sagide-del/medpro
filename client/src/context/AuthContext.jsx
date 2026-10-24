@@ -1,11 +1,8 @@
+import { normalizeProgram } from '../data/programs';
 import { createContext, useContext, useState } from 'react';
 import { loginRequest, registerRequest, setToken, clearToken } from '../services/auth';
 
 const AuthContext = createContext(null);
-
-function normalizeProgram(program) {
-  return String(program || '').toLowerCase().includes('paramedic') ? 'Paramedic' : 'EMT';
-}
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(() => {

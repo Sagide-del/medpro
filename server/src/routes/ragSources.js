@@ -21,7 +21,7 @@ router.get('/sources', asyncHandler(async (req, res) => {
 router.post('/sources', upload.single('file'), asyncHandler(async (req, res) => {
   const { program, subject, sourceType, version } = req.body;
   if (!req.file || req.file.buffer.subarray(0, 5).toString() !== '%PDF-') throw ragError('Upload a PDF file, up to 20 MB.');
-  if (!['EMT', 'Paramedic', 'both'].includes(program) || !sourceTypes.includes(sourceType) ||
+  if (!['EMT', 'Paramedic', 'Nursing', 'both'].includes(program) || !sourceTypes.includes(sourceType) ||
       !String(subject || '').trim() || !String(version || '').trim() || subject.length > 200 || version.length > 100) {
     throw ragError('Provide a pathway, subject, source type and document edition/version.');
   }

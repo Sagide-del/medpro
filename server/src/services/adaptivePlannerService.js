@@ -8,7 +8,7 @@ const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
 const dayMs = 86400000;
 function invalid(message) { return Object.assign(new Error(message), { status: 400, publicMessage: message }); }
 export function plannerOptions({ program, examDate = null, dailyStudyHours = 1 } = {}) {
-  if (!['EMT', 'Paramedic'].includes(program)) throw invalid('Select EMT or Paramedic.');
+  if (!['EMT', 'Paramedic', 'Nursing'].includes(program)) throw invalid('Select EMT, Paramedic, or Nursing.');
   const hours = Number(dailyStudyHours);
   if (!Number.isFinite(hours) || hours < 0.5 || hours > 8 || !Number.isInteger(hours * 2)) throw invalid('Study hours must be between 0.5 and 8 in half-hour increments.');
   if (examDate && (!/^\d{4}-\d{2}-\d{2}$/.test(examDate) || !Number.isFinite(Date.parse(examDate)) || new Date(examDate).toISOString().slice(0, 10) !== examDate)) throw invalid('Provide a valid exam date.');

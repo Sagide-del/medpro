@@ -12,13 +12,16 @@ function dbExecutor(executor) {
 async function ensureModuleProgress(studentId, executor) {
   const db = dbExecutor(executor);
   const { rows: modules } = await db.query(
-    `SELECT id, order_number
+    `SELECT id, order_number, program
      FROM mcq_modules
      WHERE is_active = true
      ORDER BY order_number ASC`
   );
 
   if (!modules.length) return [];
+  const firstByProgram = new Map();
+  for (const module of modules) if (!firstByProgram.has(module.program)) firstByProgram.set(module.program, module.id);
+  const firstIds = new Set(firstByProgram.values());
 
   const { rows: existing } = await db.query(
     `SELECT module_id, status
@@ -30,11 +33,12 @@ async function ensureModuleProgress(studentId, executor) {
   const existingIds = new Set(existing.map((row) => row.module_id));
 
   if (!existing.length) {
-    for (const [index, module] of modules.entries()) {
+    for (const module of modules) {
       await db.query(
         `INSERT INTO student_module_progress (student_id, module_id, status)
-         VALUES ($1, $2, $3)`,
-        [studentId, module.id, index === 0 ? 'available' : 'locked']
+         VALUES ($1, $2, $3)
+         ON CONFLICT (student_id, module_id) DO NOTHING`,
+        [studentId, module.id, firstIds.has(module.id) ? 'available' : 'locked']
       );
     }
     return modules;
@@ -44,24 +48,19 @@ async function ensureModuleProgress(studentId, executor) {
     if (!existingIds.has(module.id)) {
       await db.query(
         `INSERT INTO student_module_progress (student_id, module_id, status)
-         VALUES ($1, $2, 'locked')
+         VALUES ($1, $2, $3)
          ON CONFLICT (student_id, module_id) DO NOTHING`,
-        [studentId, module.id]
+        [studentId, module.id, firstIds.has(module.id) ? 'available' : 'locked']
       );
     }
   }
 
-  const hasOpenModule = existing.some((row) => ['available', 'completed'].includes(row.status));
-  if (!hasOpenModule && modules[0]) {
-    await db.query(
-      `UPDATE student_module_progress
-       SET status = 'available'
-       WHERE student_id = $1
-         AND module_id = $2
-         AND status = 'locked'`,
-      [studentId, modules[0].id]
-    );
-  }
+  // Start each study track independently, preserving completed progress.
+  await db.query(
+    `UPDATE student_module_progress SET status='available'
+     WHERE student_id=$1 AND module_id=ANY($2::uuid[]) AND status='locked'`,
+    [studentId, [...firstIds]]
+  );
 
   return modules;
 }

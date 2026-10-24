@@ -7,11 +7,13 @@ export async function ensureQuestionBankSchema() {
   const contentSql = await readFile(new URL('../migrations/published-content.sql', import.meta.url), 'utf8');
   const ragSql = await readFile(new URL('../migrations/rag-sources.sql', import.meta.url), 'utf8');
   const plannerSql = await readFile(new URL('../migrations/planner-state.sql', import.meta.url), 'utf8');
+  const nursingSql = await readFile(new URL('../migrations/nursing-pathway.sql', import.meta.url), 'utf8');
   await withTransaction(async (db) => {
     await db.query("SELECT pg_advisory_xact_lock(72603128)");
     await db.query(sql);
     await db.query(contentSql);
     await db.query(ragSql);
     await db.query(plannerSql);
+    await db.query(nursingSql);
   });
 }

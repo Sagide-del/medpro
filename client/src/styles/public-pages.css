@@ -82,3 +82,16 @@
  .public-auth .auth-brand-copy p { display: none; }
  .public-auth .auth-form-panel h1 { font-size: 28px; }
 }
+.shell .program-switcher-options { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.revision-hero { padding: 50px max(24px, calc((100vw - 1124px) / 2)) 64px; background: #0d4f78; color: #fff; }
+.revision-hero nav { margin-bottom: 36px; font-size: 13px; }
+.revision-hero nav a { color: #d5edf7; }
+.revision-hero .section-kicker { color: #b9e7f6; }
+.revision-hero h1 { max-width: 850px; color: #fff; font: 700 clamp(34px, 5vw, 58px)/1.12 'Roboto', sans-serif; letter-spacing: -.035em; }
+.revision-hero > p { max-width: 65ch; color: #d5edf7; line-height: 1.8; margin: 24px 0; }
+.revision-hero .btn-solid { background: #fff; color: #0d4f78; border-color: #fff; }
+.revision-hero .revision-access-note { font-size: 12px; margin-bottom: 0; }
+.revision-topics { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 16px; list-style: none; padding: 0; margin: 30px 0; }
+.revision-topics li { padding: 18px; background: #eaf4f8; border-radius: 8px; color: #17344c; }
+.revision-links a { display: inline-block; padding: 12px 24px 12px 0; color: #09658b; }
+@media (max-width: 600px) { .revision-topics { grid-template-columns: 1fr; } }

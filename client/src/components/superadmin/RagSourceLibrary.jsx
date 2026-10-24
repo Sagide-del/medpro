@@ -66,7 +66,7 @@ export default function RagSourceLibrary({ program, subject, onSubjectChange }) 
     <p>Private PDFs with page-linked evidence. Sources require review before indexing; drafts still require clinical approval. Institution-private sources are draft-only.</p>
     <div className="grid-auto">
       <label className="field">PDF (up to 20 MB)<input type="file" accept="application/pdf" onChange={(e) => setFile(e.target.files?.[0] || null)} /></label>
-      <label className="field">Source pathway<select value={uploadProgram} onChange={(e) => setUploadProgram(e.target.value)}><option>EMT</option><option>Paramedic</option><option value="both">Both (reviewed for both scopes)</option></select></label>
+      <label className="field">Source pathway<select value={uploadProgram} onChange={(e) => setUploadProgram(e.target.value)}><option>EMT</option><option>Paramedic</option><option>Nursing</option><option value="both">EMT and Paramedic (reviewed for both)</option></select></label>
       <label className="field">Source type<select value={sourceType} onChange={(e) => setSourceType(e.target.value)}>{sourceTypes.map((type) => <option key={type} value={type}>{type.replaceAll('_', ' ')}</option>)}</select></label>
       <label className="field">Clinical subject<input value={uploadSubject} onChange={(e) => setUploadSubject(e.target.value)} placeholder="Airway & Breathing" maxLength={200} /></label>
       <label className="field">Edition / version<input value={version} onChange={(e) => setVersion(e.target.value)} placeholder="Edition and publication year" maxLength={100} /></label>

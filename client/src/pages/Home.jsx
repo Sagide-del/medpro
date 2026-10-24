@@ -98,7 +98,7 @@ export default function Home() {
       <section className="split-hero">
         <div className="split-hero-text">
           <div className="home-eyebrow">FOR THE NEXT GENERATION OF CLINICIANS</div>
-          <h1>EMT &amp; paramedic revision.<br /><b>Ready for what’s next.</b></h1>
+          <h1>EMT, paramedic &amp; nursing revision.<br /><b>Ready for what’s next.</b></h1>
           <p className="split-hero-sub">
             Turn study time into clinical confidence. Practise exam questions, work through patient scenarios, and revisit the topics that matter — wherever you are in your training.
           </p>
@@ -134,17 +134,17 @@ export default function Home() {
         <h2 id="program-heading">Clinical learning, with a clear direction.</h2>
         <p className="section-lead">Study support for learners in Kenya and beyond. Choose a study track or explore the clinical foundations shared across healthcare.</p>
         <div className="program-cards">
-          <article><span className="program-number">01 / EMT</span><h3>Build your emergency care foundation</h3><p>Revise EMT topics including patient assessment, airway management, trauma, and emergency care with questions and case-based practice.</p><Link to="/register">Start EMT revision →</Link></article>
-          <article><span className="program-number">02 / PARAMEDIC</span><h3>Think through the next clinical decision</h3><p>Support your paramedic studies with clinical scenarios, exam practice, flashcards, and structured revision resources.</p><Link to="/register">Explore paramedic study →</Link></article>
-          <article><span className="program-number">03 / NURSING FOUNDATIONS</span><h3>Connect the fundamentals of patient care</h3><p>Studying nursing? Explore shared topics such as patient assessment, anatomy, and emergency care. Current study tracks are EMT and Paramedic; a dedicated nursing curriculum is not yet available.</p><a href="#study-faq">Learn about study coverage →</a></article>
+          <article><span className="program-number">01 / EMT</span><h3>Build your emergency care foundation</h3><p>Revise EMT topics including patient assessment, airway management, trauma, and emergency care with questions and case-based practice.</p><Link to="/emt-revision">Explore EMT revision →</Link></article>
+          <article><span className="program-number">02 / PARAMEDIC</span><h3>Think through the next clinical decision</h3><p>Support your paramedic studies with clinical scenarios, exam practice, flashcards, and structured revision resources.</p><Link to="/paramedic-revision">Explore paramedic study →</Link></article>
+          <article><span className="program-number">03 / NURSING</span><h3>Connect the fundamentals of patient care</h3><p>Begin nursing revision with a starter bank covering patient assessment, infection prevention, communication, and medication safety. Eight questions across four fundamentals modules.</p><Link to="/nursing-revision">Explore nursing revision →</Link></article>
         </div>
       </section>
       <section className="home-study-banner"><div><div className="section-kicker">A SMALL HABIT. A STRONGER FOUNDATION.</div><h2>Practise. Reflect. Keep moving forward.</h2><p>Use practice questions to identify gaps, revisit a topic with flashcards, then apply what you’ve learned to a clinical case.</p></div><Link to="/register" className="btn-solid">Build your study routine →</Link></section>
       <section className="home-section home-faq" id="study-faq" aria-labelledby="faq-heading"><div className="section-kicker">BEFORE YOU GET STARTED</div><h2 id="faq-heading">Your study questions, answered.</h2>
         <details><summary>What can I use for EMT and paramedic exam preparation?</summary><p>MedProHub brings together practice questions, clinical cases, flashcards, and revision resources to supplement your EMT or paramedic training. Available content depends on your account and subscription.</p></details>
-        <details><summary>Can nursing students use MedProHub?</summary><p>Nursing students may find shared clinical foundations useful, including patient assessment and emergency care. MedProHub currently offers EMT and Paramedic study tracks, rather than a dedicated nursing or nursing licensing exam course.</p></details>
+        <details><summary>Can nursing students use MedProHub?</summary><p>Nursing students can register and select their own revision track. Choose the Nursing track for a starter bank of eight fundamentals questions across four modules. It is not a complete nursing curriculum or nursing licensing exam course.</p></details>
         <details><summary>Is MedProHub a qualification or an accredited training college?</summary><p>MedProHub is a supplementary study platform. It does not replace accredited training, clinical supervision, or professional certification.</p></details>
-        <details><summary>How do I get started?</summary><p>Create a student account, choose the EMT or Paramedic track, and sign in to explore the learning platform. Check the subscription page for current access and pricing.</p></details>
+        <details><summary>How do I get started?</summary><p>Create a student account, choose the EMT, Paramedic, or Nursing track, and sign in to explore the learning platform. Check the subscription page for current access and pricing.</p></details>
       </section>
       </main>
       <div className="home-footer-line">MedProHub · Keep learning. Be ready.</div>

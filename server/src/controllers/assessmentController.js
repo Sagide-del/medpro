@@ -170,7 +170,7 @@ export const submitMcqModule = asyncHandler(async (req, res) => {
   await Notification.create({
     userId: req.user.sub,
     type: 'grade',
-    title: 'EMT-B module submitted',
+    title: 'Revision module submitted',
     message: `You scored ${result.attempt.percentage}% in ${result.progress.title}.`,
   });
 

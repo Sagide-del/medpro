@@ -5,8 +5,8 @@ import { readFile, access } from 'node:fs/promises';
 const read = (name) => readFile(new URL(`../dist/${name}`, import.meta.url), 'utf8');
 test('built homepage exposes content and canonical metadata without JavaScript', async () => {
   const html = await read('index.html');
-  assert.match(html, /<h1>EMT &amp; paramedic revision/);
-  assert.match(html, /NURSING FOUNDATIONS/);
+  assert.match(html, /<h1>EMT, paramedic &amp; nursing revision/);
+  assert.match(html, /03 \/ NURSING/);
   assert.match(html, /<link rel="canonical" href="https:\/\/www.medprohub.co.ke\/"/);
   assert.match(html, /<meta name="robots" content="index, follow"/);
   assert.equal((html.match(/<h1[ >]/g) || []).length, 1);
@@ -33,4 +33,20 @@ test('crawler files list the public homepage and exclude account URLs from sitem
   const sitemap = await read('sitemap.xml');
   assert.match(sitemap, /<loc>https:\/\/www.medprohub.co.ke\/<\/loc>/);
   assert.doesNotMatch(sitemap, /login|register|student|admin/);
+});
+
+test('all revision landing pages have unique crawlable content and sitemap entries', async () => {
+  const sitemap = await read('sitemap.xml');
+  const titles = new Set();
+  for (const track of ['emt', 'paramedic', 'nursing']) {
+    const html = await read(`${track}-revision.html`);
+    const title = html.match(/<title>(.*?)<\/title>/)[1];
+    assert(!titles.has(title)); titles.add(title);
+    assert.equal((html.match(/<h1[ >]/g) || []).length, 1);
+    assert.match(html, /<meta name="robots" content="index, follow"/);
+    assert(html.includes(`href="https://www.medprohub.co.ke/${track}-revision"`));
+    assert(sitemap.includes(`<loc>https://www.medprohub.co.ke/${track}-revision</loc>`));
+    assert.match(html, /register\?program=/);
+  }
+  assert.match(await read('nursing-revision.html'), /eight original practice questions/);
 });

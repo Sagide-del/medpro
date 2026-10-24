@@ -14,7 +14,7 @@ After deployment confirm:
 - The preferred canonical is `https://www.medprohub.co.ke/`; redirect HTTP and the non-www hostname to the equivalent HTTPS www URL using the host's domain settings.
 - Login still calls the correct production API. Preserve the deployment's current `VITE_API_BASE_URL` and API routing.
 
-The sitemap includes only the public homepage. Account and authenticated portal pages are not acquisition landing pages. Robots rules are crawler guidance, not access control; server authentication remains required.
+The sitemap includes the homepage and the EMT, Paramedic, and Nursing revision pages. Account and authenticated portal pages are not acquisition landing pages. Robots rules are crawler guidance, not access control; server authentication remains required.
 
 ## Google Search Console ownership and submission
 
@@ -31,4 +31,12 @@ If DNS access is unavailable, use a URL-prefix property for `https://www.medproh
 
 ## Content scope
 
-The home page describes EMT and paramedic revision and shared clinical foundations relevant to nursing students. A dedicated nursing curriculum, accreditation, guaranteed exam results, testimonials, and invented usage statistics are not claimed. Expand nursing-specific acquisition pages only when there is matching learning content. Keep future public topic pages useful and unique and include them in the sitemap when published.
+The home page describes all three study tracks. Nursing is explicitly a starter fundamentals bank, not a full curriculum or licensing exam course. Accreditation, guaranteed exam results, testimonials, and invented usage statistics are not claimed. Keep future public topic pages useful and unique and include them in the sitemap when published.
+
+## Maintaining the public acquisition pages
+
+Edit `client/src/data/publicSeo.js` for the home page metadata and the EMT, Paramedic, and Nursing landing-page titles, descriptions, topic lists, and copy. The build pre-renders all four pages and generates the sitemap from this one configuration. Nursing begins with eight fundamentals questions in four modules, not a full licensing-exam course.
+
+For Google URL-prefix HTML-tag verification, set the **public, non-secret** build variable `GOOGLE_SITE_VERIFICATION` to the exact token supplied by Google and redeploy. The build adds its meta tag to public and account HTML. Do not use a Google access token or password for this setting. After the deployed tag is visible in View Source, click Verify in your Google account, submit the sitemap, and request indexing for the four public URLs. An empty platform credential configuration cannot grant access to your Google property.
+
+Validation: `npm --prefix client run build`, `node --test client/tests/seo.test.mjs`, and `node --test server/tests/nursing-pathway.test.mjs`. The bundled API startup migration creates the nursing modules and starter questions idempotently while retaining existing EMT and Paramedic content.

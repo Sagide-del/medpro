@@ -28,7 +28,7 @@ Each case has a stable `case_code` and `level` (`EMT`, `Paramedic`, or `Nursing`
 }
 ```
 
-`title` also accepts `incident_name`; `program` accepts `level`; `reported_facts` accepts `verified_facts`. Patient details are explicitly labelled as simulated. Supported patient keys are age, sex, findings, history, chief_complaint, and observations. Worksheet table keys and optional row keys must be safe unique identifiers. There are up to 20 tables per case, 30 rows per table, and four response columns. Imports are limited to 100 cases and 2 MB. Each response cell is limited to 4,000 characters.
+`title` also accepts `incident_name`; `program` accepts `level`; `reported_facts` accepts `verified_facts`. Patient details are explicitly labelled as simulated. Supported patient keys are age, sex, findings, history, chief_complaint, and observations. Worksheet table keys and optional row keys must be safe unique identifiers. There are up to 20 tables per case, 30 rows per table, and four response columns. Imports are limited to 1,000 cases and 8 MB. Each response cell is limited to 4,000 characters.
 
 A row can supply `hidden_answer`; otherwise the table's `reference_answer` supplies its reference discussion. Required rows default to true. The student receives only the briefing, column labels and prompts before submitting. Answer keys, scoring keywords and accepted answers stay on the server. References are returned only in that student's submitted attempt, never in the course list or another student's worksheet.
 
@@ -49,3 +49,6 @@ The startup schema adds `ke_cases`, revision-specific drafts, and idempotent stu
 ## Validation
 
 Integration tests cover draft/publication review, stable-code updates, track isolation, direct locked-case access, partial worksheet rejection, saved drafts, answer privacy, idempotent submissions, revisions and retained attempts. A real local browser/database workflow imported the four supplied cases, rendered all six tables per worksheet at a 390px viewport, saved responses, submitted the first EMT case, revealed reference answers, and unlocked its next case. The Paramedic course retained its independent locks. User-supplied incident and clinical claims were preserved as draft material, not independently verified or automatically published to production.
+
+
+Repository growth: each upload accepts up to 1,000 cases / 8 MB. New case codes append to the existing track. Cases absent from an upload are never deleted or unpublished. Matching track and case code explicitly update that case; saving an updated case as a draft unpublishes only that updated case. Saved drafts can be selected across repository pages and published after review. For larger collections, upload successive files.

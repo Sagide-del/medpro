@@ -75,7 +75,7 @@ const AdminUsers = lazy(() => import('./components/admin/Users'));
 const AdminRevenue = lazy(() => import('./components/admin/Revenue'));
 const AdminClinicalRotations = lazy(() => import('./components/admin/ClinicalRotations'));
 const AdminContentBank = lazy(() => import('./pages/admin/ContentBank'));
-const MedProhubEmsBankManager = lazy(() => import('./components/medprohub/admin/EmsBankManager'));
+
 const MedProhubEmsCaseGenerator = lazy(() => import('./components/medprohub/admin/EmsCaseGenerator'));
 
 const SuperAdminDashboard = lazy(() => import('./components/superadmin/Dashboard'));
@@ -213,18 +213,8 @@ const SUPERADMIN_LINKS = [
     items: [
       {
         to: '/superadmin/content',
-        label: 'Upload Content',
+        label: 'Content Studio',
         icon: 'document',
-      },
-      {
-        to: '/superadmin/ai-generator',
-        label: 'Master AI Generator',
-        icon: 'activity',
-      },
-      {
-        to: '/superadmin/medprohub/bank',
-        label: 'EMS Bank',
-        icon: 'cases',
       },
       {
         to: '/superadmin/elibrary',
@@ -455,7 +445,7 @@ function AppRoutes() {
           <Route path="/superadmin/content" element={<SuperAdminContentUpload />} />
           <Route path="/superadmin/ai-generator" element={<SuperAdminAiGenerator />} />
           <Route path="/superadmin/medprohub/generator" element={<MedProhubEmsCaseGenerator />} />
-          <Route path="/superadmin/medprohub/bank" element={<MedProhubEmsBankManager />} />
+          <Route path="/superadmin/medprohub/bank" element={<Navigate to="/superadmin/kenya-ems-cases" replace />} />
           <Route path="/superadmin/elibrary" element={<SuperAdminELibraryManager />} />
           <Route path="/superadmin/reference-cards" element={<SuperAdminClinicalReferenceCardsManager />} />
           <Route path="/superadmin/revenue" element={<SuperAdminRevenueAnalytics />} />

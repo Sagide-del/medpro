@@ -6,8 +6,8 @@ const active="c.status='published' AND (c.published_content_id IS NULL OR EXISTS
 const courseLock=(db,program,shared=false)=>db.query(`SELECT pg_advisory_xact_lock${shared?'_shared':''}(hashtext($1))`,[`ke-course:${program}`]);
 export async function importKenyaCases(user,input) {
  const raw=Array.isArray(input)?input:input.cases;
- if(JSON.stringify(input).length>2*1024*1024)throw ragError('Use a case JSON payload up to 2 MB.');
- if(!Array.isArray(raw) || !raw.length || raw.length>100)throw ragError('Upload a cases array containing 1–100 cases.');
+ if(Buffer.byteLength(JSON.stringify(input),'utf8')>8*1024*1024)throw ragError('Use a case JSON payload up to 8 MB.');
+ if(!Array.isArray(raw) || !raw.length || raw.length>1000)throw ragError('Upload a cases array containing 1–1,000 cases.');
  const cases=raw.map(normalizeKenyaCase);
  if(new Set(cases.map(doc=>doc.program+':'+doc.case_code)).size!==cases.length)throw ragError('The upload contains duplicate case codes within a track.');
  const publish=input.publish===true;

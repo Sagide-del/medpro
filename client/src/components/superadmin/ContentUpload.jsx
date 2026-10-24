@@ -2,10 +2,11 @@ import { Link } from 'react-router-dom';
 import UiIcon from '../shared/UiIcon';
 import './contentWorkspace.css';
 
+const workspaces = [
+  ['/superadmin/ai-generator?workspace=books', 'learn', 'Books & learning resources', 'Turn reviewed PDFs into questions, clinical scenarios, and learning resources.', 'Add a learning resource'],
+  ['/superadmin/kenya-ems-cases', 'cases', 'Kenya EMS Cases', 'Build your permanent case repository. Upload JSON, save drafts, and publish cases for each student track.', 'Manage case repository'],
+  ['/superadmin/ai-generator?workspace=advanced', 'document', 'Generated drafts', 'Review generated material, check evidence, and manage publication across student sections.', 'Review drafts'],
+];
 export default function ContentUpload() {
-  return <section className="page-stack"><header className="content-workspace-intro"><span className="platform-eyebrow">Super admin · Content studio</span><h1>Build your student learning library</h1><p>Start with a book, a report, or an existing draft. Publish reviewed material to EMT, Paramedic, or Nursing students.</p><ol className="content-workspace-steps"><li>Add source</li><li>Choose sections</li><li>Review drafts</li><li>Publish to students</li></ol></header><div className="grid-auto">{[
-    ['books','Books & learning resources','Upload a PDF once. Select chapters, question formats, difficulty, and student sections.','learn'],
-    ['incidents','Kenya EMS incidents','Paste a news link or incident report. Create attributed incident learning studies.','cases'],
-    ['advanced','Draft review & archive','Review generated content, resolve duplicates, and manage publication.','document'],
-  ].map(([key,title,description,icon])=><Link className="card" to={`/superadmin/ai-generator?workspace=${key}`} key={key} style={{textDecoration:'none'}}><UiIcon name={icon} /><h2>{title}</h2><p>{description}</p><strong>Open workspace →</strong></Link>)}</div><details className="card"><summary>Manage sequential case worksheets</summary><p>Upload JSON worksheets, update case content, and publish a sequence for each student track.</p><Link to="/superadmin/kenya-ems-cases">Open Kenya EMS case manager</Link></details></section>;
+  return <section className="page-stack content-studio-home"><header className="content-workspace-intro"><span className="platform-eyebrow">Super admin · Content management</span><h1>Your learning content, in one place</h1><p>Choose what you want to add. Each workspace takes you from a source or upload to reviewed student content.</p></header><div className="content-studio-grid">{workspaces.map(([to,icon,title,description,action])=><Link className="content-studio-card" to={to} key={to}><span className="content-studio-icon"><UiIcon name={icon}/></span><h2>{title}</h2><p>{description}</p><strong>{action} <span aria-hidden="true">→</span></strong></Link>)}</div><aside className="content-studio-note"><h2>Adding cases over time?</h2><p>Every JSON upload adds to Kenya EMS Cases. Existing cases stay in your repository. Reuse a case code only when you intend to update that case.</p><Link to="/superadmin/ai-generator?workspace=incidents">Create a draft from a news link or incident report →</Link></aside></section>;
 }

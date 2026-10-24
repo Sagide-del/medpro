@@ -34,6 +34,12 @@ test('JSON case management and track-scoped sequential worksheets enforce locks,
   assert.equal((await call('/student')).data.cases.length,0,'Drafts must not appear to students');
   assert.equal((await call('/admin/import',{actor:0,method:'POST',body:{cases:docs,publish:true}})).status,400);
   imported=await call('/admin/import',{actor:0,method:'POST',body:{cases:docs,publish:true,reviewConfirmed:true}});assert.equal(imported.status,201);assert.equal(imported.data.cases[0].id,first.id);
+  const extra=await call('/admin/import',{actor:0,method:'POST',body:{cases:[fixture(prefix+'-later')]}});
+  assert.equal(extra.status,201);
+  const retained=(await call('/admin',{actor:0})).data.cases.filter(item=>item.case_code.startsWith(prefix));
+  assert.equal(retained.length,3,'Later JSON uploads append without deleting earlier cases');
+  assert.equal(retained.find(item=>item.id===first.id).status,'published','Saving a new upload preserves publication of older cases');
+  assert(extra.data.cases[0].order_number>second.order_number,'New cases append to the existing course');
   const list=(await call('/student')).data.cases;assert.deepEqual(list.map(item=>item.status),['available','locked']);assert(!JSON.stringify(list).includes('PRIVATE'));
   assert.equal((await call('/student/'+second.id)).status,423);
   assert.equal((await call('/student/'+second.id+'/draft',{method:'POST',body:{revision:1,responses:{}}})).status,423);

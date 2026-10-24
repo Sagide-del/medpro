@@ -13,8 +13,6 @@ const RESOURCES = [
   ['Mnemonics', 'Easy ways to remember important information.', 'result', 'Other', 'mnemonics', '/student/mnemonics'],
   ['Images & Diagrams', 'Visual aids for complex topics.', 'cases', 'Other', 'diagrams', '/student/published-diagrams'],
   ['Drug Reference', 'Reviewed medicine references for your pathway.', 'pill', 'Other', 'drug_reference', '/student/drug-reference'],
-  ['Clinical Protocols', 'Structured clinical guidance.', 'document', 'Guides', 'clinical_protocols', '/student/clinical-protocols'],
-  ['Skills Videos', 'Published demonstrations and skills scripts.', 'play', 'Videos', 'skills_videos', '/student/skills-videos'],
 ];
 
 export default function MyContent() {

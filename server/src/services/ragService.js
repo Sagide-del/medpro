@@ -18,13 +18,12 @@ export function readableScopes(user) {
 export const sourceTypes = ['protocol', 'research_article', 'textbook', 'drug_reference', 'kenya_case', 'psychometric_case'];
 export const retrievalRoutes = {
   question_bank: ['protocol', 'research_article', 'textbook'],
-  psychometric_clinical: ['psychometric_case'],
-  psychometric_situational: ['psychometric_case'],
-  psychometric_readiness: ['psychometric_case'],
+  psychometric_clinical: ['psychometric_case','textbook','protocol','research_article'],
+  psychometric_situational: ['psychometric_case','textbook','protocol','research_article'],
+  psychometric_readiness: ['psychometric_case','textbook','protocol','research_article'],
   kenya_cases: ['kenya_case'],
   study_plans: ['protocol', 'research_article'],
-  drug_reference: ['drug_reference'],
-  clinical_protocols: ['protocol'],
+  drug_reference: ['drug_reference','textbook','protocol','research_article'],
   study_guides: ['protocol', 'research_article', 'textbook'],
   notes: ['protocol', 'textbook'],
   cheat_sheets: ['protocol', 'drug_reference', 'textbook'],
@@ -32,7 +31,6 @@ export const retrievalRoutes = {
   flashcards: ['protocol', 'textbook'],
   mnemonics: ['protocol', 'textbook'],
   diagrams: ['protocol', 'textbook'],
-  skills_videos: ['protocol', 'textbook'],
 };
 export function retrievalDestination(destination) {
   return ({ ems_cases: 'kenya_cases', case_study: 'kenya_cases', podcast: 'podcasts',

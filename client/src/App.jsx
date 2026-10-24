@@ -34,7 +34,6 @@ const StudentWorksheets = lazy(() => import('./components/student/Worksheets'));
 const StudentFlashcards = lazy(() => import('./components/student/Flashcards'));
 const StudentGraphics = lazy(() => import('./components/student/Graphics'));
 const StudentLogbook = lazy(() => import('./components/student/Logbook'));
-const StudentVideos = lazy(() => import('./components/student/Videos'));
 const PublishedPodcasts = lazy(() => import('./components/student/PublishedPodcasts'));
 const PublishedLibrary = lazy(() => import('./components/student/PublishedLibrary'));
 const StudentPayments = lazy(() => import('./components/student/Payments'));
@@ -93,7 +92,6 @@ const STUDENT_LINKS = [
     group: 'Exam Prep',
     items: [
       { to: '/student/mcq-questions', label: 'Question Bank', icon: 'exam' },
-      { to: '/student/clinical-cases', label: 'Clinical Case Scenarios', icon: 'cases' },
       { to: '/student/learn/kenya-ems', label: 'Kenya EMS Cases', icon: 'cases' },
     ],
   },
@@ -149,7 +147,6 @@ const LECTURIO_STUDENT_LINKS = [
   { group: 'Home', items: [{ to: '/student/dashboard', label: 'Dashboard', end: true, icon: 'dashboard' }] },
   { group: 'Revision', items: [
     { to: '/student/question-bank', label: 'Question Bank', icon: 'exam' },
-    { to: '/student/clinical-cases', label: 'Clinical Case Scenarios', icon: 'cases' },
     { to: '/student/mock-prep-tests', label: 'Psychometric Test', icon: 'practice' },
     { to: '/student/study-planner', label: 'Study Plans', icon: 'calendar' },
     { to: '/student/learn/kenya-ems', label: 'Kenya EMS Cases', icon: 'cases' },
@@ -161,10 +158,8 @@ const LECTURIO_STUDENT_LINKS = [
     { to: '/student/my-content', label: 'Resources', icon: 'learn', end: true },
     { to: '/student/study-guides', label: 'Study Guides', icon: 'learn', nested: true },
     { to: '/student/drug-reference', label: 'Drug Reference', icon: 'pill', nested: true },
-    { to: '/student/clinical-protocols', label: 'Clinical Protocols', icon: 'document', nested: true },
     { to: '/student/videos', label: 'Podcasts', icon: 'activity', nested: true },
     { to: '/student/cheat-sheets', label: 'Cheat Sheets', icon: 'learn', nested: true },
-    { to: '/student/skills-videos', label: 'Skills Videos', icon: 'play', nested: true },
   ] },
   { group: 'Account', items: [{ to: '/student/settings', label: 'Settings', icon: 'settings' }] },
 ];
@@ -321,7 +316,7 @@ function AppRoutes() {
           <Route path="/student/my-content" element={<StudentMyContent />} />
           <Route path="/student/study-guides" element={<StudentResourceLibrary kind="guides" />} />
           <Route path="/student/drug-reference" element={<StudentResourceLibrary kind="drugs" />} />
-          <Route path="/student/clinical-protocols" element={<StudentResourceLibrary kind="protocols" />} />
+          <Route path="/student/clinical-protocols" element={<Navigate to="/student/study-guides" replace />} />
           <Route path="/student/notes" element={<StudentNotes />} />
           <Route path="/student/learning-paths" element={<StudentLearningPaths />} />
           <Route path="/student/learning-paths/:id" element={<StudentLearningPaths />} />
@@ -329,7 +324,7 @@ function AppRoutes() {
           <Route path="/student/spaced-repetition" element={<StudentSpacedRepetition />} />
           <Route path="/student/bookmarks" element={<StudentBookmarks />} />
           <Route path="/student/kenya-ems-hub" element={<StudentKenyaEMSHub />} />
-          <Route path="/student/clinical-cases" element={<PublishedLibrary destination="psychometric_clinical" title="Clinical Case Scenarios" />} />
+          <Route path="/student/clinical-cases" element={<Navigate to="/student/mock-prep-tests" replace />} />
           <Route path="/student/dashboard" element={<StudentDashboard />} />
           <Route path="/student/settings" element={<StudentSettings />} />
           <Route path="/student/exam-preparation" element={<StudentExamPreparation />} />
@@ -379,7 +374,7 @@ function AppRoutes() {
           <Route path="/student/progress-analytics" element={<StudentProgressAnalytics />} />
           <Route path="/student/logbook" element={<StudentLogbook />} />
           <Route path="/student/videos" element={<PublishedPodcasts />} />
-          <Route path="/student/skills-videos" element={<><PublishedLibrary destination="skills_videos" title="Skills Videos" /><StudentVideos assignmentsOnly /></>} />
+          <Route path="/student/skills-videos" element={<Navigate to="/student/study-guides" replace />} />
           <Route path="/student/mnemonics" element={<PublishedLibrary destination="mnemonics" title="Mnemonics" />} />
           <Route path="/student/published-flashcards" element={<PublishedLibrary destination="flashcards" title="Flashcards" />} />
           <Route path="/student/published-diagrams" element={<PublishedLibrary destination="diagrams" title="Images & Diagrams" />} />

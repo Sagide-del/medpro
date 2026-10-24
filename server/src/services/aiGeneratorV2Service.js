@@ -13,6 +13,7 @@ function expiresAt() {
 }
 
 export async function createPersistentJob({ id = randomUUID(), adminId, contentType, title, request, source }) {
+  if(['clinical_protocol','clinical_protocols','skills_videos','video_script'].includes(request?.publishDestination || contentType))throw ragError('This content section has been retired.',410);
   const { rows } = await query(
     `INSERT INTO ai_generation_jobs
       (id, admin_id, content_type, title, request_json, source_type, source_url, source_excerpt, citation, kenya_specific, county, historical_year, extended_processing, expires_at)
@@ -177,6 +178,7 @@ export async function publishApproved({ job, adminId, decisions, items }) {
       drug_references: 'drug_reference',
       cheat_sheets: 'cheat_sheets',
     }[job.request_json?.publishDestination] || job.content_type;
+    if(['clinical_protocols','skills_videos','video_script'].includes(destination))throw ragError('This content section has been retired. Existing drafts are retained.',410);
     for (const item of approved) {
       if (job.request_json?.useRag) {
         const references = item.source_references || [item.source_reference];

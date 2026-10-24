@@ -5,7 +5,7 @@ import { generateRetrievedDraft } from '../src/services/groundedGenerationServic
 const quote='Cells are the structural and functional units of living organisms.';
 const chunks=[{document_id:'book',chunk_id:'passage',text:quote,page_number:3,version:'1',source_document:'anatomy.pdf'}];
 test('provider requests preserve evidence, screen questions and cases, and reject fabricated citations', async()=>{
-  let calls=0,bad=false;
+  let calls=0,bad=false,empty=false;
   const server=http.createServer(async(req,res)=>{
     let body='';for await(const piece of req)body+=piece;
     const payload=JSON.parse(body),data=JSON.parse(payload.messages[1].content);calls++;
@@ -13,6 +13,7 @@ test('provider requests preserve evidence, screen questions and cases, and rejec
     let result;
     if(data.task) result={preview_questions:Array.from({length:data.count},(_,i)=>({question:`What is the role of cell structure ${i}?`,options:['Cell','Tissue'],answer:'Cell',feedback:quote,type:'multiple_choice',difficulty:'intermediate',chunk_id:bad?'invented':'passage',evidence_quote:quote}))};
     else if(data.questions) result={checks:data.questions.map((_,index)=>({index,supported:true,scope_appropriate:true,numeric_consistent:true}))};
+    else if(data.schema && empty) result={items:[]};
     else if(data.schema) result={items:[{title:'Cell scenario',summary:'Source-grounded scenario',question:'Explain the cell concept.',sections:[{heading:'Evidence',text:quote,chunk_id:'passage',evidence_quote:quote}],rubric:[{criterion:'Cell',expected:quote,points:1}],cards:[{front:'Cell concept',back:quote,visual:{kind:'sequence',steps:['Structure','Function']}}]}]};
     else result={supported:true,scope_appropriate:true,numeric_consistent:true};
     res.setHeader('Content-Type','application/json');res.end(JSON.stringify({choices:[{message:{content:'```json\n'+JSON.stringify(result)+'\n```'}}]}));
@@ -27,11 +28,13 @@ test('provider requests preserve evidence, screen questions and cases, and rejec
     const cases=await generateRetrievedDraft({...options,destination:'psychometric_clinical'});
     assert.equal(cases.preview_questions[0].rubric.length,1);
     assert.equal(calls,4);
-    for(const destination of ['flashcards','study_guides','clinical_protocols','drug_reference','podcasts','kenya_cases']){
+    for(const destination of ['flashcards','study_guides','cheat_sheets','drug_reference','podcasts','kenya_cases']){
       const resource=await generateRetrievedDraft({...options,destination});
       assert.equal(resource.preview_questions[0].source_reference.chunk_id,'passage');
       if(destination==='flashcards')assert.equal(resource.preview_questions[0].cards[0].visual.steps.length,2);
     }
+    for(const destination of ['clinical_protocols','skills_videos'])await assert.rejects(()=>generateRetrievedDraft({...options,destination}),/retired/);
+    empty=true;const unsupported=await generateRetrievedDraft({...options,destination:'drug_reference'});assert.equal(unsupported.preview_questions.length,0);empty=false;
     bad=true;await assert.rejects(()=>generateRetrievedDraft({...options,destination:'question_bank'}),/source-evidence/);
   }finally{
     if(previous.key===undefined)delete process.env.DEEPSEEK_API_KEY;else process.env.DEEPSEEK_API_KEY=previous.key;

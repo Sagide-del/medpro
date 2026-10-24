@@ -96,7 +96,7 @@ export async function getBookRun(user, id) {
     WHERE r.id=$1 AND ($2::uuid IS NULL OR r.created_by=$2) AND s.scope_key=ANY($3::text[])`,
   [id, user.role === 'super_admin' ? null : user.sub, readableScopes(user)]);
   if (!rows[0]) throw ragError('Book run not found in your scope.', 404);
-  const tasks = await query(`SELECT t.*,j.status AS job_status,j.title,
+  const tasks = await query(`SELECT t.*,j.status AS job_status,j.title,j.result_json->'contentNotes' AS content_notes,
     (SELECT count(*)::int FROM ai_published_content p WHERE p.job_id=t.job_id AND p.status='published') AS published_count FROM book_generation_tasks t JOIN ai_generation_jobs j ON j.id=t.job_id
     WHERE run_id=$1 ORDER BY t.created_at,t.first_page,t.program,t.destination`, [id]);
   return { run: rows[0], tasks: tasks.rows };
@@ -139,7 +139,7 @@ export async function processNextBookTask({ generate = generateRetrievedDraft, r
     const job = (await query('SELECT request_json FROM ai_generation_jobs WHERE id=$1', [task.job_id])).rows[0];
     const generated = await generate({ chunks, program: task.program, topic: task.chapter_title,
       destination: task.destination, count: job.request_json.questionCount, types: job.request_json.questionTypes || ['multiple_choice'], difficulty: job.request_json.difficulty || 'intermediate' });
-    if (!Array.isArray(generated.preview_questions) || !generated.preview_questions.length) throw ragError('No supported content was generated for this passage batch.', 422);
+    if (!Array.isArray(generated.preview_questions) || (task.destination==='question_bank' && !generated.preview_questions.length)) throw ragError('No supported content was generated for this passage batch.', 422);
     await withTransaction(async (db) => {
       const claim = await db.query("SELECT id FROM book_generation_tasks WHERE id=$1 AND claim_token=$2 AND status='generating' FOR UPDATE", [task.id, task.token]);
       if (!claim.rows.length) return;

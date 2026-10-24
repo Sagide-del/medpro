@@ -31,7 +31,7 @@ test('book queue creates scoped drafts, pauses, resumes, deduplicates, and publi
   const quote = 'Cells are the structural and functional units of living organisms.';
   const generate = async ({chunks,program,destination,count,difficulty,types}) => {
     if(destination==='question_bank') return {preview_questions:validateGroundedQuestions(Array.from({length:count},(_,index)=>({question:`${program} cell knowledge check ${difficulty} ${types[0]} ${index+1}?`,options:types[0]==='true_false'?['True','False']:['Cell','Tissue','Organ','System'],answer:types[0]==='true_false'?'True':'Cell',feedback:quote,type:types[0],difficulty,chunk_id:chunks[0].chunk_id,evidence_quote:quote})),chunks,count,types,difficulty)};
-    return {preview_questions:validateGroundedArtifacts([{title:`${program} ${destination} cell assessment`,question:'Explain how the cell concept informs your assessment.',summary:'A source-based learning scenario.',sections:[{heading:'Evidence',text:quote,chunk_id:chunks[0].chunk_id,evidence_quote:quote}],rubric:[{criterion:'Cell concept',expected:quote,points:1}],cards:[{front:'What is a cell?',back:quote,visual:{kind:'sequence',steps:['Structure','Function']}}]}],chunks,destination)};
+    return {preview_questions:validateGroundedArtifacts([{title:`${program} ${destination} cell assessment`,question:({psychometric_situational:'Describe evidence based communication when explaining cellular function to your clinical team.',psychometric_readiness:'Reflect on preparation gaps before studying cell structure and function.'}[destination] || 'Explain how the cell concept informs your assessment.'),summary:'A source-based learning scenario.',sections:[{heading:'Evidence',text:quote,chunk_id:chunks[0].chunk_id,evidence_quote:quote}],rubric:[{criterion:'Cell concept',expected:quote,points:1}],cards:[{front:'What is a cell?',back:quote,visual:{kind:'sequence',steps:['Structure','Function']}}]}],chunks,destination)};
   };
   try {
     await pool.query(`INSERT INTO rag_sources(id,scope_key,filename,file_hash,source_type,program,subject,version,status,created_by,approved_by,page_count,chunk_count)
@@ -91,6 +91,10 @@ test('book queue creates scoped drafts, pauses, resumes, deduplicates, and publi
         assert.equal(filtered.questions.reduce((sum,item)=>sum+(item.question_text.startsWith('Nursing cell knowledge')?1:0),0),5);
         assert(filtered.questions.every(item=>counts[item.module_id]>0));
       }
+      const unsupportedRun=await createBookRun(actor,{...settings,targets:[{program:'Nursing'}],destinations:['drug_reference'],clientToken:randomUUID()});
+      while(await processNextBookTask({generate:async()=>({preview_questions:[],content_notes:['No suitable medication evidence.']}),runId:unsupportedRun.id})){}
+      const unsupportedDetail=await getBookRun(actor,unsupportedRun.id);assert(unsupportedDetail.tasks.every(task=>task.status==='review' && task.generated_count===0));assert(unsupportedDetail.tasks[0].content_notes.includes('No suitable medication evidence.'));
+      assert.equal((await listBookRuns(actor)).find(run=>run.id===unsupportedRun.id).failed,0,'Unsupported destinations should complete without inventing artifacts or failing the queue');
       const resources=BOOK_DESTINATIONS.filter(destination=>!['question_bank','psychometric_clinical'].includes(destination));
       const run=await createBookRun(actor,{...settings,targets:[{program:'Nursing'}],destinations:resources,clientToken:randomUUID()});
       while(await processNextBookTask({generate,runId:run.id})){}

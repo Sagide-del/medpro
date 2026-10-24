@@ -2,7 +2,7 @@ import { createHash } from 'node:crypto';
 import { PROGRAMS } from '../utils/programs.js';
 import { ragError } from './ragService.js';
 
-export const BOOK_DESTINATIONS = ['question_bank', 'psychometric_clinical', 'psychometric_situational', 'psychometric_readiness', 'study_guides', 'drug_reference', 'clinical_protocols', 'cheat_sheets', 'podcasts', 'skills_videos', 'flashcards', 'notes', 'mnemonics', 'diagrams'];
+export const BOOK_DESTINATIONS = ['question_bank', 'psychometric_clinical', 'psychometric_situational', 'psychometric_readiness', 'study_guides', 'drug_reference', 'cheat_sheets', 'podcasts', 'flashcards', 'notes', 'mnemonics', 'diagrams'];
 export function sourceSupportsProgram(sourceProgram, program) {
   return sourceProgram === program || sourceProgram === 'all' || (sourceProgram === 'both' && ['EMT', 'Paramedic'].includes(program));
 }

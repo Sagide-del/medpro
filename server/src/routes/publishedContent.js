@@ -1,7 +1,8 @@
+import { nextPsychometricActivity,PSYCHOMETRIC_AREAS } from '../services/psychometricPractice.js';
 import { Router } from 'express';
 import { authenticate } from '../middleware/auth.js';
 import { requireRole } from '../middleware/roleCheck.js';
-import { query } from '../config/database.js';
+import { query, withTransaction } from '../config/database.js';
 import { asyncHandler } from '../utils/helpers.js';
 import { gradePublishedResponse } from '../services/publishedGrading.js';
 import { getSignedPdfUrl } from '../services/storage.js';
@@ -40,11 +41,16 @@ router.post('/:id/responses', asyncHandler(async (req, res) => {
   if (!['EMT', 'Paramedic', 'Nursing'].includes(program) || typeof response !== 'string' || !response.trim() || response.length > 20000) {
     return res.status(400).json({ error: 'Select a pathway and provide a response (up to 20,000 characters).' });
   }
-  const { rows } = await query(`INSERT INTO published_content_responses (student_id, content_id, program, response, content_snapshot, client_token)
+  const { rows } = await withTransaction(async db=>{
+    await db.query('SELECT pg_advisory_xact_lock(hashtext($1))',[`psychometric-response:${req.user.sub}:${req.params.id}`]);
+    return db.query(`INSERT INTO published_content_responses (student_id, content_id, program, response, content_snapshot, client_token)
     SELECT $1, id, $3, $4, content_json, $5 FROM ai_published_content WHERE id = $2 AND status = 'published'
     AND (${programSql}) = $3 AND destination_key IN ('psychometric_clinical', 'psychometric_situational', 'psychometric_readiness')
+    AND EXISTS(SELECT 1 FROM psychometric_assignments a WHERE a.student_id=$1 AND a.content_id=ai_published_content.id)
+    AND NOT EXISTS(SELECT 1 FROM published_content_responses r WHERE r.student_id=$1 AND r.content_id=ai_published_content.id)
     ON CONFLICT (student_id,client_token) DO NOTHING
     RETURNING id, submitted_at, content_snapshot`, [req.user.sub, req.params.id, program, response.trim(), clientToken || null]);
+  });
   if (!rows.length) {
     if (clientToken) {
       const existing = await query(`SELECT id,submitted_at,grading_status,score,feedback FROM published_content_responses
@@ -58,10 +64,11 @@ router.post('/:id/responses', asyncHandler(async (req, res) => {
   res.status(201).json({ submission: { id: rows[0].id, submitted_at: rows[0].submitted_at, score: grade.score, feedback: grade.feedback }, status: grade.status });
 }));
 router.get('/', asyncHandler(async (req, res) => {
+  if(['clinical_protocols','skills_videos'].includes(req.query.destination))return res.status(410).json({error:'This section has been retired.'});
   if(req.query.destination==='kenya_cases')return res.json({content:[],course:'/student/learn/kenya-ems'});
   const program = req.query.program || req.user.program;
   if (!['EMT', 'Paramedic', 'Nursing'].includes(program)) return res.status(400).json({ error: 'Select EMT, Paramedic, or Nursing.' });
-  const { rows } = await query(`SELECT id, title, topic, destination_key, source_citation, published_at,
+  const { rows } = PSYCHOMETRIC_AREAS.includes(req.query.destination)?{rows:await nextPsychometricActivity(req.user.sub,program,req.query.destination)}:await query(`SELECT id, title, topic, destination_key, source_citation, published_at,
     content_json, $1::text AS program FROM ai_published_content
     WHERE status = 'published' AND (${programSql}) = $1 AND destination_key = $2
     ORDER BY published_at DESC, id LIMIT 200`, [program, req.query.destination]);
@@ -70,7 +77,7 @@ router.get('/', asyncHandler(async (req, res) => {
   if (!assessment) for (const row of rows) {
     if (row.content_json.media_url) row.content_json.media_url = await getSignedPdfUrl(row.content_json.media_url, 3600);
   }
-  res.json({ content: rows.map((row) => assessment ? { ...row, content_json: {
+  res.json({ content: rows.map((row) => assessment ? { id:row.id,title:row.title,topic:row.topic,destination_key:row.destination_key,source_citation:row.source_citation,program, content_json: {
     question: row.content_json.question || row.content_json.prompt,
     scenario: row.content_json.scenario,
     options: Array.isArray(row.content_json.options) ? row.content_json.options.map((option) => typeof option === 'string' ? option : { text: option?.text || option?.label, key: option?.key }) : [],

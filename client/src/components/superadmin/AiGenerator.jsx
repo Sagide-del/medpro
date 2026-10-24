@@ -27,8 +27,6 @@ const CONTENT_TYPES = [
   { value: 'notes', label: 'Quick Notes', destination: 'Notes', icon: 'document' },
   { value: 'study_guide', label: 'Study Guides', destination: 'Study Guides', icon: 'learn' },
   { value: 'drug_reference', label: 'Drug Reference', destination: 'Drug Reference', icon: 'pill' },
-  { value: 'clinical_protocol', label: 'Clinical Protocols', destination: 'Clinical Protocols', icon: 'document' },
-  { value: 'video_script', label: 'Video Scripts', destination: 'Video Script Bank', icon: 'activity' },
 ];
 
 const AUDIENCES = [
@@ -61,7 +59,6 @@ const OUTPUT_DESTINATIONS = [
   { value: 'psychometric_clinical', label: 'Psychometric - Clinical Judgment', icon: 'exam', tint: '#eff6ff' },
   { value: 'psychometric_situational', label: 'Psychometric - Situational Judgment', icon: 'cases', tint: '#eff6ff' },
   { value: 'psychometric_readiness', label: 'Psychometric - Psychological Readiness', icon: 'activity', tint: '#eff6ff' },
-  { value: 'skills_videos', label: 'Resources - Skills Videos', icon: 'activity', tint: '#eff6ff' },
   { value: 'flashcards', label: 'Resources - Flashcards', icon: 'learn', tint: '#eff6ff' },
   { value: 'mnemonics', label: 'Resources - Mnemonics', icon: 'learn', tint: '#eff6ff' },
   { value: 'diagrams', label: 'Resources - Images & Diagrams', icon: 'learn', tint: '#eff6ff' },
@@ -74,7 +71,6 @@ const OUTPUT_DESTINATIONS = [
   { value: 'podcast', label: 'Resources - Podcasts', icon: 'activity', tint: '#eff6ff' },
   { value: 'notes', label: 'Resources - Notes', icon: 'document', tint: '#ecfeff' },
   { value: 'study_guides', label: 'Resources - Study Guides', icon: 'learn', tint: '#eff6ff' },
-  { value: 'clinical_protocols', label: 'Resources - Clinical Protocols', icon: 'document', tint: '#f5f3ff' },
   { value: 'drug_reference', label: 'Resources - Drug Reference', icon: 'pill', tint: '#ecfdf5' },
   { value: 'cheat_sheets', label: 'Resources - Cheat Sheets', icon: 'learn', tint: '#fdf2dc' },
 ];

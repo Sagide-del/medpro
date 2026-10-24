@@ -1,7 +1,7 @@
 import UiIcon from '../shared/UiIcon';
 import { useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
-import PublishedLibrary from './PublishedLibrary';
+import PsychometricActivity from './PsychometricActivity';
 import { useAuth } from '../../context/AuthContext';
 import { api } from '../../services/api';
 
@@ -9,9 +9,9 @@ const SECTIONS = [
   {
     number: '01',
     title: 'Clinical Judgment',
-    simulatorTitle: 'Written Exam Simulator',
-    tag: 'PROMETRIC-STYLE CBT',
-    format: 'Adaptive assessment',
+    simulatorTitle: 'Clinical Judgment',
+    tag: 'CLINICAL REASONING',
+    format: 'Clinical assessment',
     detail: 'Clinical reasoning and decision-making across emergency basics, trauma, and medical emergencies.',
     icon: 'exam',
     tone: 'blue',
@@ -21,10 +21,10 @@ const SECTIONS = [
   {
     number: '02',
     title: 'Situational Judgment',
-    simulatorTitle: 'Practical Skills Simulator',
+    simulatorTitle: 'Situational Judgment',
     tag: 'SCENARIO-BASED',
     format: 'Scenario assessment',
-    detail: 'Ethics, leadership, professionalism, patient safety, and communication in EMS situations.',
+    detail: 'Ethics, leadership, professionalism, patient safety, and communication in healthcare situations.',
     icon: 'cases',
     tone: 'violet',
     meta: ['Dynamic vitals', '4 decision points'],
@@ -32,11 +32,11 @@ const SECTIONS = [
   },
   {
     number: '03',
-    title: 'Psychological Readiness',
-    simulatorTitle: 'Psychometric & Ethics Lab',
-    tag: 'SJT + STRUCTURED WRITING',
+    title: 'Readiness Reflection',
+    simulatorTitle: 'Readiness Reflection',
+    tag: 'EDUCATIONAL REFLECTION',
     format: 'Scale and scenarios',
-    detail: 'Emotional stability, empathy, resilience, stress management, and readiness for EMS work.',
+    detail: 'Emotional stability, empathy, resilience, stress management, and readiness for clinical learning.',
     icon: 'activity',
     tone: 'green',
     meta: ['600 words', '45 min', 'Real-world dilemmas'],
@@ -58,15 +58,15 @@ export default function PsychometricTest() {
     api(`/published-content/summary?program=${program}`).then((data) => { if (active) setCounts(data.counts || {}); }).catch((err) => { if (active) setError(err.message); });
     return () => { active = false; };
   }, [program]);
-  if (area) return <><button type="button" onClick={() => setArea(null)}>Back to assessment areas</button><PublishedLibrary destination={area} title={SECTIONS[areas.indexOf(area)].title} /></>;
+  if (area) return <><button type="button" onClick={() => setArea(null)}>Back to assessment areas</button><PsychometricActivity key={area} destination={area} title={SECTIONS[areas.indexOf(area)].title} /></>;
   const destinations = areas;
   return (
     <div className="psychometric-page psychometric-simulator-page">
-      <header className="psychometric-simulator-head"><div><span className="platform-eyebrow">Assessment workspace</span><h1>Choose your simulation</h1><p>Practise clinical reasoning, situational judgment, and readiness for your {program} pathway.</p></div><span className="psychometric-simulator-count"><UiIcon name="practice" />3 formats</span></header>
+      <header className="psychometric-simulator-head"><div><span className="platform-eyebrow">Assessment workspace</span><h1>Psychometric Test</h1><p>Practise clinical reasoning, situational judgment, and readiness for your {program} pathway.</p></div><span className="psychometric-simulator-count"><UiIcon name="practice" />3 formats</span></header>
       <div className="psychometric-card-grid">
         {error && <p role="alert">{error}</p>}
         {SECTIONS.map((definition, index) => {
-          const section = { ...definition, meta: [`${counts[areas[index]] || 0} published activities`, `${program} pathway`, 'Saved responses'], action: 'Open activities' };
+          const section = { ...definition, meta: [`${counts[areas[index]] || 0} published activities`, `${program} pathway`, 'Saved responses'], action: 'Start practice' };
           return (
           <article className={`psychometric-card ${section.tone}`} key={section.number}>
             <div className="psychometric-card-top"><span className="psychometric-card-icon"><UiIcon name={section.icon} /></span><span className="psychometric-card-tag">{section.tag}</span></div><span className="psychometric-card-area">{section.number} · {section.title}</span><h2>{section.simulatorTitle}</h2><strong>{section.format}</strong><p>{section.detail}</p>{section.number === '02' && <div className="psychometric-scenario-steps">{['Scene', 'Primary', 'Treatment', 'Transport'].map((step, index) => <span key={step}><b>{index + 1}</b>{step}</span>)}</div>}{section.number === '03' && <div className="psychometric-framework"><span>S</span><span>A</span><span>R</span></div>}<div className="psychometric-card-meta">{section.meta.map((item) => <span key={item}><UiIcon name={item.includes('question') || item.includes('words') ? 'document' : item.includes('review') || item.includes('vitals') ? 'activity' : 'simulation'} />{item}</span>)}</div><button type="button" onClick={() => setArea(destinations[Number(section.number) - 1])}>{section.action} <UiIcon name="arrowRight" /></button>

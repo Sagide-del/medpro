@@ -31,7 +31,7 @@ export default function Layout({ links, roleLabel }) {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const caseWorkspace=user?.role==='student' && location.pathname.startsWith('/student/learn/kenya-ems/');
+  const caseWorkspace=user?.role==='student' && (location.pathname.startsWith('/student/learn/kenya-ems/') || location.pathname==='/student/drug-reference');
   const [caseSearchOpen,setCaseSearchOpen]=useState(false);
   const sidebarRef = useRef(null);
   const menuRef = useRef(null);

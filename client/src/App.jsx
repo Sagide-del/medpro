@@ -73,6 +73,7 @@ const AdminInstitutions = lazy(() => import('./components/admin/Institutions'));
 const AdminUsers = lazy(() => import('./components/admin/Users'));
 const AdminRevenue = lazy(() => import('./components/admin/Revenue'));
 const AdminClinicalRotations = lazy(() => import('./components/admin/ClinicalRotations'));
+const DrugReferenceImages = lazy(() => import('./components/superadmin/DrugReferenceImages'));
 const AdminContentBank = lazy(() => import('./pages/admin/ContentBank'));
 
 const MedProhubEmsCaseGenerator = lazy(() => import('./components/medprohub/admin/EmsCaseGenerator'));
@@ -440,6 +441,7 @@ function AppRoutes() {
           <Route path="/superadmin/users" element={<SuperAdminUserCommunications defaultTab="users" />} />
           <Route path="/superadmin/communications" element={<SuperAdminUserCommunications defaultTab="communications" />} />
           <Route path="/superadmin/kenya-ems-cases" element={<KenyaCaseManager />} />
+          <Route path="/superadmin/drug-reference-images" element={<DrugReferenceImages />} />
           <Route path="/superadmin/content" element={<SuperAdminContentUpload />} />
           <Route path="/superadmin/ai-generator" element={<SuperAdminAiGenerator />} />
           <Route path="/superadmin/medprohub/generator" element={<MedProhubEmsCaseGenerator />} />

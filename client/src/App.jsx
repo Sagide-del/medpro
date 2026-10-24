@@ -261,6 +261,7 @@ function RequireStudentSubscription({ children }) {
   const { user } = useAuth();
   const location = useLocation();
   const [state, setState] = useState({ loading: user?.role === 'student', allowed: false });
+  const [retry,setRetry]=useState(0);
 
   useEffect(() => {
     let ignore = false;
@@ -270,21 +271,23 @@ function RequireStudentSubscription({ children }) {
       return () => {};
     }
 
+    setState({loading:true,allowed:false});
     api('/subscriptions/student/current')
       .then((data) => {
         if (!ignore) setState({ loading: false, allowed: !!data.subscription?.allowed });
       })
-      .catch(() => {
-        if (!ignore) setState({ loading: false, allowed: false });
+      .catch(error => {
+        if (!ignore) setState({ loading: false, allowed: false, error:error.message });
       });
 
     return () => {
       ignore = true;
     };
-  }, [user?.role, user?.sub]);
+  }, [user?.role, user?.sub, retry]);
 
   if (user?.role !== 'student') return children;
   if (state.loading) return <Loading label="Checking subscription..." />;
+  if(state.error)return <main className="auth-wrap"><section className="card"><h1>Unable to check access</h1><p role="alert">{state.error}</p><button type="button" onClick={()=>setRetry(value=>value+1)}>Try again</button></section></main>;
 
   const allowedPaths = ['/student/subscription', '/student/payments'];
   if (!state.allowed && !allowedPaths.includes(location.pathname)) {

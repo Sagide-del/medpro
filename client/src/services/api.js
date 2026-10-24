@@ -17,7 +17,9 @@ export async function api(path, { method = 'GET', body, headers = {} } = {}) {
   });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
-    const error = new Error(data.error || `Request failed (${res.status})`);
+    const retryAfterSeconds=Number(data.retryAfterSeconds || res.headers.get('Retry-After')) || null;
+    const error = new Error(data.error || (res.status===429?`Too many requests. ${retryAfterSeconds?`Try again in ${retryAfterSeconds} seconds.`:'Please wait a moment and try again.'}`:`Request failed (${res.status})`));
+    error.retryAfterSeconds=retryAfterSeconds;
     error.status = res.status;
     error.code = data.code;
     error.subscription = data.subscription;

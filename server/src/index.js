@@ -4,7 +4,7 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import compression from 'compression';
-import rateLimit from 'express-rate-limit';
+import {createRateLimits} from './middleware/rateLimits.js';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import 'dotenv/config';
@@ -86,21 +86,12 @@ app.use(
   })
 );
 
-app.use(
-  '/api',
-  rateLimit({ windowMs: 15 * 60 * 1000, max: 300, standardHeaders: true, legacyHeaders: false })
-);
-const strictLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 20,
-  standardHeaders: true,
-  legacyHeaders: false,
-  message: { error: 'Too many attempts. Please try again in a few minutes.' },
-});
-app.use('/api/auth/login', strictLimiter);
-app.use('/api/auth/register', strictLimiter);
-app.use('/api/payments/purchase', strictLimiter);
-app.use('/api/payments/subscribe', strictLimiter);
+const {apiLimiter,loginLimiter,registrationLimiter,paymentLimiter}=createRateLimits();
+app.use('/api',apiLimiter);
+app.use('/api/auth/login',loginLimiter);
+app.use('/api/auth/register',registrationLimiter);
+app.use('/api/payments/purchase',paymentLimiter);
+app.use('/api/payments/subscribe',paymentLimiter);
 
 app.use(express.json({ limit: '10mb' }));
 app.use('/uploads', express.static(path.join(__dirname, '..', 'uploads')));

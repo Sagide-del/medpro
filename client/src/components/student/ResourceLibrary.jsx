@@ -4,6 +4,7 @@ import UiIcon from '../shared/UiIcon';
 import { useAuth } from '../../context/AuthContext';
 import PublishedLibrary from './PublishedLibrary';
 import DrugReference from './DrugReference';
+import CheatSheets from './CheatSheets';
 
 const LIBRARIES = {
   guides: {
@@ -61,6 +62,7 @@ const PARAMEDIC_ITEMS = {
 
 export default function ResourceLibrary({ kind = 'guides' }) {
   if(kind==='drugs')return <DrugReference/>;
+  if(kind==='sheets')return <CheatSheets/>;
   const destinations = { guides: 'study_guides', protocols: 'clinical_protocols', drugs: 'drug_reference', sheets: 'cheat_sheets' };
   return <PublishedLibrary destination={destinations[kind] || 'study_guides'} title={(LIBRARIES[kind] || LIBRARIES.guides).title} />;
 }

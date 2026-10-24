@@ -1,11 +1,12 @@
 import { PROGRAMS } from '../data/programs';
-import { useState } from 'react';
-import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom';
+import { useEffect, useRef, useState } from 'react';
+import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import ErrorBoundary from './ErrorBoundary';
 import PlatformFooter from './shared/PlatformFooter';
 import UiIcon from './shared/UiIcon';
 import '../styles/platform-v2.css';
+import '../styles/platform-shell.css';
 
 function MedProMark() {
   return <img className="brand-logo-image" src="/medpro-logo.png" alt="MedPro" />;
@@ -30,13 +31,41 @@ function MedProMark() {
 export default function Layout({ links, roleLabel }) {
   const { user, logout, setProgram } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const sidebarRef = useRef(null);
+  const menuRef = useRef(null);
+  const [mobile,setMobile] = useState(() => window.matchMedia('(max-width: 900px)').matches);
   const [navigationOpen, setNavigationOpen] = useState(false);
+  useEffect(() => {
+    const media=window.matchMedia('(max-width: 900px)');
+    const change=()=>{setMobile(media.matches);setNavigationOpen(false);};
+    media.addEventListener('change',change);
+    return ()=>media.removeEventListener('change',change);
+  },[]);
+  useEffect(()=>setNavigationOpen(false),[location.pathname]);
+  useEffect(()=>{
+    if(!mobile || !navigationOpen) return undefined;
+    const previous=document.body.style.overflow;
+    document.body.style.overflow='hidden';
+    const nodes=()=>[...sidebarRef.current.querySelectorAll('a[href],button:not([disabled]),select')];
+    sidebarRef.current.querySelector('.nav-toggle')?.focus();
+    const onKey=event=>{
+      if(event.key==='Escape'){setNavigationOpen(false);event.preventDefault();}
+      if(event.key==='Tab'){
+        const items=nodes(),first=items[0],last=items.at(-1);
+        if(event.shiftKey && document.activeElement===first){event.preventDefault();last?.focus();}
+        else if(!event.shiftKey && document.activeElement===last){event.preventDefault();first?.focus();}
+      }
+    };
+    document.addEventListener('keydown',onKey);
+    return ()=>{document.body.style.overflow=previous;document.removeEventListener('keydown',onKey);menuRef.current?.focus();};
+  },[mobile,navigationOpen]);
   const visibleLinks = links.filter((item) => item.group !== 'Aliases');
 
   return (
-    <div className={`shell${user?.role === 'student' ? ' role-student' : ''}`}>
+    <div className={`shell platform-shell${user?.role === 'student' ? ' role-student' : ''}`}>
 
-      <aside className={`sidebar${navigationOpen ? ' open' : ''}`}>
+      <aside id="platform-navigation" ref={sidebarRef} aria-label="Main navigation" inert={mobile && !navigationOpen ? '' : undefined} className={`sidebar${navigationOpen ? ' open' : ''}`}>
 
         <div className="sidebar-top">
           <Link to="/" className="brand" style={{ textDecoration: 'none' }}>
@@ -50,7 +79,7 @@ export default function Layout({ links, roleLabel }) {
             aria-expanded={navigationOpen}
             onClick={() => setNavigationOpen((current) => !current)}
           >
-            <span /><span /><span />
+            <span className="navigation-close-glyph" aria-hidden="true">×</span>
           </button>
         </div>
 
@@ -134,11 +163,14 @@ export default function Layout({ links, roleLabel }) {
       </aside>
 
 
-      <main className="main">
+      {mobile && navigationOpen && <button type="button" className="navigation-backdrop" aria-label="Dismiss navigation" tabIndex={-1} onClick={()=>setNavigationOpen(false)} />}
+      <main className="main" inert={mobile && navigationOpen ? '' : undefined}>
 
         <header className="platform-topbar">
           <button
             type="button"
+            ref={menuRef}
+            aria-controls="platform-navigation"
             className="platform-mobile-menu"
             aria-label={navigationOpen ? 'Close navigation' : 'Open navigation'}
             aria-expanded={navigationOpen}

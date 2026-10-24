@@ -62,7 +62,7 @@ export default function PsychometricTest() {
   const destinations = areas;
   return (
     <div className="psychometric-page psychometric-simulator-page">
-      <header className="psychometric-simulator-head"><div><span className="platform-eyebrow">Assessment workspace</span><h1>Choose your simulation</h1><p>Train across all assessment formats used in the EMT and Paramedic process.</p></div><span className="psychometric-simulator-count"><UiIcon name="practice" />3 formats</span></header>
+      <header className="psychometric-simulator-head"><div><span className="platform-eyebrow">Assessment workspace</span><h1>Choose your simulation</h1><p>Practise clinical reasoning, situational judgment, and readiness for your {program} pathway.</p></div><span className="psychometric-simulator-count"><UiIcon name="practice" />3 formats</span></header>
       <div className="psychometric-card-grid">
         {error && <p role="alert">{error}</p>}
         {SECTIONS.map((definition, index) => {

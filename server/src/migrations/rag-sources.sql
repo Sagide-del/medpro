@@ -35,3 +35,7 @@ ALTER TABLE published_content_responses ADD COLUMN IF NOT EXISTS client_token UU
 CREATE UNIQUE INDEX IF NOT EXISTS published_response_idempotency ON published_content_responses(student_id,client_token);
 
 ALTER TABLE rag_sources ADD COLUMN IF NOT EXISTS upload_token UUID;
+
+ALTER TABLE rag_sources ADD COLUMN IF NOT EXISTS index_phase TEXT;
+ALTER TABLE rag_sources ADD COLUMN IF NOT EXISTS processed_pages INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE rag_sources ADD COLUMN IF NOT EXISTS indexing_started_at TIMESTAMPTZ;

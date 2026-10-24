@@ -77,3 +77,13 @@ A PDF transfer must receive an explicit storage acknowledgement before the sourc
 The UI distinguishes “Select PDF to retry upload” (transfer failed before approval) from “Retry indexing” (approved source indexing failed). Authentication rejection, upload registration/database mismatch, request-size rejection, service errors and connectivity failures now have separate messages. An upload error alone does not mean the book has been parsed or indexed. A zero-page source is still at the transfer stage.
 
 Upload recovery tests share a development database with schema-changing integration tests; run those files with `node --test --test-concurrency=1` to avoid concurrent migration DDL against another test's active transactions.
+
+### Indexing throughput and visible progress
+
+The indexing worker now combines passages from multiple PDF pages into batches of up to 32, while preserving each passage's original PDF page and ordinal. Embeddings still use the same multilingual-e5-base model, passage/query prefixes, 512-token check and normalized vectors. Each batch writes its private passages using PostgreSQL executemany rather than one round trip per row. CPU model threads default to two (`RAG_CPU_THREADS`, bounded to 1–8); tune only against the service's actual CPU allocation.
+
+The collection lock no longer covers an entire book or model encoding, so health checks can run while indexing. Extraction, initial model preparation and embedding are reported separately. Source listings include total PDF pages, processed pages and committed passage counts. Model preparation shows an explanation rather than a fictional completion percentage. Keep the persistent `/data` volume so later books reuse downloaded model files.
+
+A 15-second worker heartbeat prevents an active long index from being mistaken for an interrupted task. An index without activity for three minutes is eligible for requeue, replacing the previous thirty-minute delay. Progress updates respect withdrawal/cancellation, and the final ready transition still requires a successful complete index. Generation and publication remain blocked for unfinished sources.
+
+A deterministic 65-page regression fixture verifies three cross-page batches (32, 32, 1), four passage-storage database connections including initial cleanup, complete unique passage coverage, and the final page/chunk counters. This verifies reduced request overhead; it is not a production timing benchmark. First model download and actual Railway CPU/memory allocation still affect elapsed time.

@@ -22,6 +22,8 @@ from chunking import chunk_record, page_chunks, prefixed, chapter_starts, chapte
 DATA = Path(os.environ.get("RAG_DATA_DIR", "/data"))
 MODEL = "intfloat/multilingual-e5-base"
 lock = threading.RLock()
+model_lock = threading.RLock()
+INDEX_BATCH_SIZE = 32
 stop = threading.Event()
 _model = None
 _collection = None
@@ -42,84 +44,132 @@ def collection():
 
 def model():
     global _model
-    if _model is None:
-        from sentence_transformers import SentenceTransformer
-        _model = SentenceTransformer(MODEL)
-        _model.max_seq_length = 512
-    return _model
+    with model_lock:
+        if _model is None:
+            import torch
+            from sentence_transformers import SentenceTransformer
+            torch.set_num_threads(max(1, min(8, int(os.environ.get("RAG_CPU_THREADS", "2")))))
+            _model = SentenceTransformer(MODEL)
+            _model.max_seq_length = 512
+        return _model
 
 
 def embed(texts, kind):
-    # Both ingestion and retrieval pass through this function; prefix omission
-    # cannot silently switch the query into a different embedding space.
     inputs = prefixed(texts, kind)
-    encoder = model()
-    if any(len(encoder.tokenizer.encode(text)) > 512 for text in inputs):
-        raise ValueError("Embedding input exceeds 512 tokens; shorten the query or chunk")
-    return encoder.encode(inputs, normalize_embeddings=True, batch_size=16).tolist()
+    with model_lock:
+        encoder = model()
+        if any(len(encoder.tokenizer.encode(text)) > 512 for text in inputs):
+            raise ValueError("Embedding input exceeds 512 tokens; shorten the query or chunk")
+        return encoder.encode(inputs, normalize_embeddings=True, batch_size=16).tolist()
 
 
-def ingest(document):
+def ingest(document, progress=None):
+    def report(phase, total, processed, count):
+        if progress:
+            progress(phase, total, processed, count)
     path = DATA / "sources" / f"{document['id']}.pdf"
     if hashlib.sha256(path.read_bytes()).hexdigest() != document["file_hash"]:
         raise ValueError("Source file checksum mismatch; upload a verified document")
     reader = PdfReader(path)
     if reader.is_encrypted:
         raise ValueError("Encrypted PDF: upload an unlocked, authorized copy")
-    if not 1 <= len(reader.pages) <= 2000:
+    total = len(reader.pages)
+    if not 1 <= total <= 2000:
         raise ValueError("Upload a chapter or document containing 1-2000 pages")
+    report("extracting", total, 0, 0)
     pages = []
     for index, page in enumerate(reader.pages, 1):
         text = page.extract_text() or ""
         pages.append(text if len(text.strip()) >= 30 else "")
+        if index % 16 == 0 or index == total:
+            report("extracting", total, index, 0)
     if not any(pages):
         raise ValueError("No readable text found. Run OCR on the PDF and upload a new version")
     chapters = chapter_starts(reader)
+    report("loading_model", total, 0, 0)
+    tokenizer = model().tokenizer
     with connect() as db:
         db.execute("DELETE FROM rag_source_passages WHERE document_id=%s", [document["id"]])
     with lock:
-        store = collection()
-        store.delete(where={"document_id": str(document["id"])})
-        count = 0
-        for page_number, text in enumerate(pages, 1):
-            if not text:
-                continue
-            chunks = list(page_chunks(text, model().tokenizer))
-            for offset in range(0, len(chunks), 16):
-                batch = chunks[offset:offset + 16]
-                records = [chunk_record(document, page_number, offset + n, chunk) for n, chunk in enumerate(batch)]
-                store.upsert(ids=[r[0] for r in records], documents=batch,
-                             metadatas=[r[1] for r in records], embeddings=embed(batch, "passage"))
-                with connect() as db:
-                    for ordinal, record in enumerate(records, offset):
-                        db.execute("""INSERT INTO rag_source_passages
-                            (document_id,chunk_id,page_number,ordinal,chapter_title,passage_text)
-                            VALUES(%s,%s,%s,%s,%s,%s)""", [document["id"], record[0], page_number,
-                            ordinal, chapter_for_page(chapters, page_number), batch[ordinal-offset]])
-                count += len(batch)
-    return len(pages), count
+        collection().delete(where={"document_id": str(document["id"])})
+    count = 0
+    pending = []
+
+    def flush(batch):
+        nonlocal count
+        texts = [item[3] for item in batch]
+        vectors = embed(texts, "passage")
+        records = [chunk_record(document, page, ordinal, text) for page, ordinal, _, text in batch]
+        # Encoding never holds the Chroma lock; health and retrieval metadata stay responsive.
+        with lock:
+            collection().upsert(ids=[r[0] for r in records], documents=texts,
+                                metadatas=[r[1] for r in records], embeddings=vectors)
+        values = [(document["id"], record[0], item[0], item[1], item[2], item[3])
+                  for item, record in zip(batch, records)]
+        with connect() as db:
+            with db.cursor() as cursor:
+                cursor.executemany("""INSERT INTO rag_source_passages
+                    (document_id,chunk_id,page_number,ordinal,chapter_title,passage_text)
+                    VALUES(%s,%s,%s,%s,%s,%s)
+                    ON CONFLICT(document_id,chunk_id) DO UPDATE SET passage_text=EXCLUDED.passage_text,
+                    chapter_title=EXCLUDED.chapter_title""", values)
+        count += len(batch)
+        report("embedding", total, batch[-1][0], count)
+
+    report("embedding", total, 0, 0)
+    for page_number, text in enumerate(pages, 1):
+        if text:
+            for ordinal, chunk in enumerate(page_chunks(text, tokenizer)):
+                pending.append((page_number, ordinal, chapter_for_page(chapters, page_number), chunk))
+                if len(pending) == INDEX_BATCH_SIZE:
+                    flush(pending)
+                    pending = []
+    if pending:
+        flush(pending)
+    report("embedding", total, total, count)
+    return total, count
 
 
 def process_next():
     # A transaction-scoped claim survives API restarts. Interrupted jobs are
-    # retried after 30 minutes; idempotent upserts prevent duplicate chunks.
+    # retried after three minutes without a heartbeat; idempotent upserts prevent duplicate chunks.
     with connect() as db:
-        db.execute("UPDATE rag_sources SET status='queued' WHERE status='indexing' AND updated_at < now()-interval '30 minutes'")
+        db.execute("UPDATE rag_sources SET status='queued' WHERE status='indexing' AND updated_at < now()-interval '3 minutes'")
         document = db.execute("SELECT * FROM rag_sources WHERE status='queued' AND approved_by IS NOT NULL ORDER BY created_at FOR UPDATE SKIP LOCKED LIMIT 1").fetchone()
         if not document:
             return False
-        db.execute("UPDATE rag_sources SET status='indexing',error=NULL,updated_at=now() WHERE id=%s", [document["id"]])
-    try:
-        page_count, chunk_count = ingest(document)
+        db.execute("UPDATE rag_sources SET status='indexing',index_phase='extracting',processed_pages=0,chunk_count=0,indexing_started_at=now(),error=NULL,updated_at=now() WHERE id=%s", [document["id"]])
+    heartbeat_stop = threading.Event()
+    def heartbeat():
+        while not heartbeat_stop.wait(15):
+            try:
+                with connect() as db:
+                    db.execute("UPDATE rag_sources SET updated_at=now() WHERE id=%s AND status='indexing'", [document["id"]])
+            except Exception:
+                logging.warning("Indexing heartbeat unavailable for %s", document["id"])
+    def progress(phase, total, processed, count):
         with connect() as db:
-            db.execute("UPDATE rag_sources SET status='ready',page_count=%s,chunk_count=%s,updated_at=now() WHERE id=%s AND status='indexing'",
-                       [page_count, chunk_count, document["id"]])
+            changed = db.execute("""UPDATE rag_sources SET index_phase=%s,page_count=%s,processed_pages=%s,
+                chunk_count=%s,updated_at=now() WHERE id=%s AND status='indexing'""",
+                [phase, total, processed, count, document["id"]])
+            if changed.rowcount == 0:
+                raise ValueError("Source indexing was cancelled or withdrawn")
+    pulse = threading.Thread(target=heartbeat, daemon=True)
+    pulse.start()
+    try:
+        page_count, chunk_count = ingest(document, progress=progress)
+        with connect() as db:
+            db.execute("UPDATE rag_sources SET status='ready',index_phase='complete',processed_pages=%s,page_count=%s,chunk_count=%s,updated_at=now() WHERE id=%s AND status='indexing'",
+                       [page_count, page_count, chunk_count, document["id"]])
     except Exception as exc:
         logging.exception("Ingestion failed for source %s", document["id"])
         message = str(exc) if isinstance(exc, ValueError) else "Indexing failed. Check retrieval service logs, then retry."
         with connect() as db:
             db.execute("UPDATE rag_sources SET status='failed',error=%s,updated_at=now() WHERE id=%s AND status='indexing'",
                        [message[:500], document["id"]])
+    finally:
+        heartbeat_stop.set()
+        pulse.join(timeout=2)
     return True
 
 
@@ -199,8 +249,9 @@ def retrieve(body: Retrieval):
     ids = [str(row["id"]) for row in rows]
     if not ids:
         return {"chunks": []}
+    query_vectors = embed([body.query], "query")
     with lock:
-        result = collection().query(query_embeddings=embed([body.query], "query"),
+        result = collection().query(query_embeddings=query_vectors,
                                     where={"document_id": {"$in": ids}}, n_results=body.limit,
                                     include=["documents", "metadatas", "distances"])
     chunks = []

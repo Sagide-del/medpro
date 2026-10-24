@@ -29,7 +29,7 @@ const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 50 
 router.get('/sources', asyncHandler(async (req, res) => {
   await query(`UPDATE rag_sources SET status='failed',upload_token=NULL,error='PDF transfer was interrupted. Select the same PDF and classification to retry the upload.',updated_at=now()
     WHERE scope_key=$1 AND status='uploading' AND updated_at < now()-interval '3 minutes'`, [sourceScope(req.user)]);
-  const { rows } = await query(`SELECT id,filename,program,subject,source_type,version,status,error,page_count,chunk_count,created_at,approved_by,
+  const { rows } = await query(`SELECT id,filename,program,subject,source_type,version,status,error,page_count,chunk_count,created_at,approved_by,index_phase,processed_pages,indexing_started_at,updated_at,
     (scope_key=$2) AS can_manage FROM rag_sources WHERE scope_key=ANY($1::text[]) ORDER BY created_at DESC LIMIT 200`,
   [readableScopes(req.user), sourceScope(req.user)]);
   res.json({ sources: rows, canApprove: ['super_admin', 'institution_admin'].includes(req.user.role) });

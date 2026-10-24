@@ -233,3 +233,5 @@
 .book-review { margin-top: 24px; padding: 18px; border: 2px solid #1685e5; border-radius: 8px; }
 .book-review blockquote { border-left: 3px solid #b6d2e8; padding-left: 12px; color: #526b83; }
 @media(max-width:600px) { .book-track-row { grid-template-columns: 1fr; } }
+
+.source-index-progress{padding:14px;margin:12px 0;background:#eff7fc;border:1px solid #d8e8f3;border-radius:10px}.source-index-progress progress{display:block;width:100%;height:12px;margin:12px 0;accent-color:#087ec6}.source-index-progress small{color:#49677d}

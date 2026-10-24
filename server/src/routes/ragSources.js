@@ -19,7 +19,7 @@ router.get('/connection-check', requireRole('super_admin'), asyncHandler(async (
     if (Number(health.book_coverage_version || 0) < 1) return res.json({ok:false,code:'outdated_service',message:'Deploy the current rag service code before book-wide generation.'});
     res.json({ok:true,message:'API connected to the indexing service. Database and index health checks passed.'});
   } catch(error) {
-    const messages={authentication_failed:'The services could connect, but authentication failed. Set the same RAG_SERVICE_KEY on medpro and medpro-rag, then deploy both.',service_unhealthy:'The indexing service returned an error. Check medpro-rag deployment logs, shared database settings, and /data volume.',unreachable:'The API could not reach medpro-rag. Check its deployment status, private hostname, port 8010, and that both services share the same Railway environment.'};
+    const messages={authentication_failed:'The services could connect, but authentication failed. Set the same RAG_SERVICE_KEY on medpro and medpro-rag, then deploy both.',service_unhealthy:'The indexing service returned an error. Check medpro-rag deployment logs, shared database settings, and /data volume.',unreachable:'The API could not reach medpro-rag. Check its deployment status, private hostname, port 8010, and that both services share the same Railway environment. Use python serve.py as the rag start command for IPv4/IPv6 support.'};
     res.json({ok:false,code:error.diagnosticCode || 'unreachable',message:messages[error.diagnosticCode] || messages.unreachable});
   }
 }));
@@ -27,7 +27,9 @@ router.use((_req, _res, next) => next(ragEnabled() ? undefined : ragError('Sourc
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 50 * 1024 * 1024, files: 1 } });
 
 router.get('/sources', asyncHandler(async (req, res) => {
-  const { rows } = await query(`SELECT id,filename,program,subject,source_type,version,status,error,page_count,chunk_count,created_at,
+  await query(`UPDATE rag_sources SET status='failed',upload_token=NULL,error='PDF transfer was interrupted. Select the same PDF and classification to retry the upload.',updated_at=now()
+    WHERE scope_key=$1 AND status='uploading' AND updated_at < now()-interval '3 minutes'`, [sourceScope(req.user)]);
+  const { rows } = await query(`SELECT id,filename,program,subject,source_type,version,status,error,page_count,chunk_count,created_at,approved_by,
     (scope_key=$2) AS can_manage FROM rag_sources WHERE scope_key=ANY($1::text[]) ORDER BY created_at DESC LIMIT 200`,
   [readableScopes(req.user), sourceScope(req.user)]);
   res.json({ sources: rows, canApprove: ['super_admin', 'institution_admin'].includes(req.user.role) });
@@ -39,20 +41,35 @@ router.post('/sources', (req, res, next) => upload.single('file')(req, res, (err
       !String(subject || '').trim() || !String(version || '').trim() || subject.length > 200 || version.length > 100) {
     throw ragError('Provide a pathway, subject, source type and document edition/version.');
   }
-  const id = randomUUID();
+  const token = randomUUID();
   const hash = createHash('sha256').update(req.file.buffer).digest('hex');
-  const { rows } = await query(`INSERT INTO rag_sources(id,scope_key,filename,file_hash,source_type,program,subject,version,created_by)
-    VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9) ON CONFLICT DO NOTHING RETURNING id`,
-  [id, sourceScope(req.user), req.file.originalname.slice(0, 255), hash, sourceType, program, subject.trim(), version.trim(), req.user.sub]);
-  if (!rows.length) throw ragError('This document and classification already exist. Check the source library.', 409);
+  const scope = sourceScope(req.user);
+  const id = await withTransaction(async (db) => {
+    const inserted = await db.query(`INSERT INTO rag_sources(id,scope_key,filename,file_hash,source_type,program,subject,version,created_by,upload_token)
+      VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) ON CONFLICT DO NOTHING RETURNING id`,
+    [randomUUID(),scope,req.file.originalname.slice(0,255),hash,sourceType,program,subject.trim(),version.trim(),req.user.sub,token]);
+    if (inserted.rows[0]) return inserted.rows[0].id;
+    const existing = await db.query(`SELECT *,updated_at < now()-interval '3 minutes' AS stale FROM rag_sources
+      WHERE scope_key=$1 AND file_hash=$2 AND source_type=$3 AND program=$4 AND subject=$5 AND version=$6 FOR UPDATE`,
+    [scope,hash,sourceType,program,subject.trim(),version.trim()]);
+    const row = existing.rows[0];
+    if (!row || row.approved_by || !((row.status==='failed') || (row.status==='uploading' && row.stale))) {
+      throw ragError(row?.status === 'uploading' ? 'This PDF is already being transferred. Wait for the current upload to finish before retrying.' : 'This document and classification already exist. Use the existing source in the library.',409);
+    }
+    await db.query("UPDATE rag_sources SET status='uploading',error=NULL,upload_token=$2,updated_at=now() WHERE id=$1",[row.id,token]);
+    return row.id;
+  });
   try {
-    await ragRequest(`/files/${id}`, { method: 'PUT', bytes: req.file.buffer });
+    const stored=await ragRequest(`/files/${id}`, { method: 'PUT', bytes: req.file.buffer });
+    if (stored.stored !== true) throw ragError('The indexing service did not confirm PDF storage. Check the service deployment before retrying.',503);
     await withTransaction(async (db) => {
-      await db.query("UPDATE rag_sources SET status='uploaded',updated_at=now() WHERE id=$1", [id]);
+      const updated=await db.query("UPDATE rag_sources SET status='uploaded',error=NULL,upload_token=NULL,updated_at=now() WHERE id=$1 AND status='uploading' AND upload_token=$2 RETURNING id",[id,token]);
+      if (!updated.rows.length) throw ragError('This source changed during transfer. Refresh the library before retrying.',409);
       await db.query("INSERT INTO rag_source_events(source_id,actor_id,action) VALUES($1,$2,'uploaded')", [id, req.user.sub]);
     });
   } catch (error) {
-    await query('DELETE FROM rag_sources WHERE id=$1', [id]);
+    await query("UPDATE rag_sources SET status='failed',error=$3,upload_token=NULL,updated_at=now() WHERE id=$1 AND status='uploading' AND upload_token=$2",
+      [id,token,error.publicMessage || 'PDF transfer failed. Run Check connection, then select the same PDF and classification to retry.']);
     throw error;
   }
   res.status(201).json({ id, status: 'uploaded' });

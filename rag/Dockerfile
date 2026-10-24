@@ -7,4 +7,4 @@ RUN useradd --create-home rag && mkdir -p /data && chown rag:rag /data
 USER rag
 ENV RAG_DATA_DIR=/data HF_HOME=/data/models ANONYMIZED_TELEMETRY=False
 EXPOSE 8010
-CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8010", "--workers", "1"]
+CMD ["python", "serve.py"]

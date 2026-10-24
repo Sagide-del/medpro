@@ -1,5 +1,5 @@
 import BookGenerationPanel from './BookGenerationPanel';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { api } from '../../services/api';
 
 const sourceTypes = ['protocol', 'research_article', 'textbook', 'drug_reference', 'kenya_case', 'psychometric_case'];
@@ -17,6 +17,12 @@ export default function RagSourceLibrary({ program, subject, onSubjectChange }) 
     finally{setChecking(false);setRefresh(value=>value+1);}
   }
   const [file, setFile] = useState(null);
+  const fileInput = useRef(null);
+  function retryUpload(source){
+    setUploadProgram(source.program);setSourceType(source.source_type);setUploadSubject(source.subject);setVersion(source.version);setFile(null);
+    setStatus(`Select ${source.filename} again, then upload. The existing failed registration will be reused.`);
+    if(fileInput.current){fileInput.current.value='';fileInput.current.scrollIntoView({behavior:'smooth',block:'center'});fileInput.current.focus();}
+  }
   const [sourceType, setSourceType] = useState('textbook');
   const [uploadProgram, setUploadProgram] = useState(program);
   const [uploadSubject, setUploadSubject] = useState('');
@@ -55,7 +61,7 @@ export default function RagSourceLibrary({ program, subject, onSubjectChange }) 
       await api('/ai/rag/sources', { method: 'POST', body });
       setStatus('Uploaded privately. An administrator must approve this source before indexing.');
       setRefresh((value) => value + 1);
-    } catch (error) { setStatus(error.message); }
+    } catch (error) { setStatus(error.message); setRefresh(value=>value+1); }
     finally { setBusy(false); }
   }
   async function action(id, name) {
@@ -83,9 +89,9 @@ export default function RagSourceLibrary({ program, subject, onSubjectChange }) 
     <section className="card" aria-label="Book service setup"><h3>Book service connection</h3>{!config && <p>Checking API settings…</p>}{config && !config.ready && <><p role="alert">Book uploads are unavailable until the API settings below are corrected.</p><ul>{config.issues?.map(issue=><li key={issue.code}>{issue.message}</li>)}</ul><p>Save and deploy the variables in Railway’s production environment, then check the connection here.</p></>}{config?.ready && <p>The API has the required indexing settings. Use the connection check to verify the private service.</p>}<button type="button" disabled={checking} onClick={checkConnection}>{checking ? 'Checking connection…' : 'Check connection / refresh setup'}</button>{connection && <p role="status">{connection.message || connection.issues?.map(issue=>issue.message).join(' ')}</p>}</section>
     <fieldset disabled={!config?.ready || busy} style={{border:0,padding:0,margin:0}}><legend className="sr-only">Book upload details</legend>
     <div className="grid-auto">
-      <label className="field">PDF (up to 50 MB)<input type="file" accept="application/pdf" onChange={(e) => setFile(e.target.files?.[0] || null)} /></label>
-      <label className="field">Source pathway<select value={uploadProgram} onChange={(e) => setUploadProgram(e.target.value)}><option>EMT</option><option>Paramedic</option><option>Nursing</option><option value="all">Shared: EMT, Paramedic, Nursing (reviewed for all)</option><option value="both">EMT and Paramedic (reviewed for both)</option></select></label>
-      <label className="field">Source type<select value={sourceType} onChange={(e) => setSourceType(e.target.value)}>{sourceTypes.map((type) => <option key={type} value={type}>{type.replaceAll('_', ' ')}</option>)}</select></label>
+      <label className="field">PDF (up to 50 MB)<input ref={fileInput} type="file" accept="application/pdf" onChange={(e) => setFile(e.target.files?.[0] || null)} /></label>
+      <label className="field">Source pathway<select aria-label="Source pathway" value={uploadProgram} onChange={(e) => setUploadProgram(e.target.value)}><option>EMT</option><option>Paramedic</option><option>Nursing</option><option value="all">Shared: EMT, Paramedic, Nursing (reviewed for all)</option><option value="both">EMT and Paramedic (reviewed for both)</option></select></label>
+      <label className="field">Source type<select aria-label="Source type" value={sourceType} onChange={(e) => setSourceType(e.target.value)}>{sourceTypes.map((type) => <option key={type} value={type}>{type.replaceAll('_', ' ')}</option>)}</select></label>
       <label className="field">Clinical subject<input value={uploadSubject} onChange={(e) => setUploadSubject(e.target.value)} placeholder="Airway & Breathing" maxLength={200} /></label>
       <label className="field">Edition / version<input value={version} onChange={(e) => setVersion(e.target.value)} placeholder="Edition and publication year" maxLength={100} /></label>
     </div></fieldset>
@@ -96,10 +102,12 @@ export default function RagSourceLibrary({ program, subject, onSubjectChange }) 
       <strong>{source.filename}</strong><span className="source-status">{source.status}</span>
       <p>{source.program} / {source.subject} / {source.version} / {source.status} / {source.page_count} pages / {source.chunk_count} passages</p>
       {source.error && <p role="alert">{source.error}</p>}
+      {source.status === 'uploading' && <p>Transferring the PDF to private storage. Indexing begins only after transfer and approval.</p>}
+      {source.can_manage && source.status === 'failed' && !source.approved_by && <button type="button" disabled={busy || !config?.ready} onClick={()=>retryUpload(source)}>Select PDF to retry upload</button>}
       {canApprove && source.can_manage && <div className="button-row">
         {source.status === 'uploaded' && <button type="button" className="primary" disabled={busy} onClick={() => action(source.id, 'approve')}>Approve and index</button>}
         {source.status === 'ready' && <button type="button" disabled={busy} onClick={() => action(source.id, 'reindex')}>Reindex for book generation</button>}
-        {source.status === 'failed' && <button type="button" disabled={busy} onClick={() => action(source.id, 'retry')}>Retry indexing</button>}
+        {source.status === 'failed' && source.approved_by && <button type="button" disabled={busy} onClick={() => action(source.id, 'retry')}>Retry indexing</button>}
         {source.status !== 'withdrawn' && <button type="button" className="ghost" disabled={busy} onClick={() => action(source.id, 'withdraw')}>Withdraw</button>}
       </div>}
     </article>)}

@@ -33,3 +33,5 @@ ALTER TABLE published_content_responses ADD COLUMN IF NOT EXISTS feedback TEXT;
 ALTER TABLE published_content_responses ADD COLUMN IF NOT EXISTS content_snapshot JSONB NOT NULL DEFAULT '{}'::jsonb;
 ALTER TABLE published_content_responses ADD COLUMN IF NOT EXISTS client_token UUID;
 CREATE UNIQUE INDEX IF NOT EXISTS published_response_idempotency ON published_content_responses(student_id,client_token);
+
+ALTER TABLE rag_sources ADD COLUMN IF NOT EXISTS upload_token UUID;

@@ -60,7 +60,18 @@ export async function ragRequest(path, { body, bytes, method = 'POST', timeoutMs
     return await response.json();
   } catch (error) {
     console.error('RAG service request failed:', error.message);
-    throw Object.assign(ragError('Source retrieval is temporarily unavailable. Check source status and retry.', 503), { diagnosticCode: error.serviceStatus === 401 || error.serviceStatus === 403 ? 'authentication_failed' : error.serviceStatus ? 'service_unhealthy' : 'unreachable' });
+    const code = error.serviceStatus === 401 || error.serviceStatus === 403 ? 'authentication_failed'
+      : error.serviceStatus === 409 ? 'registration_mismatch'
+      : error.serviceStatus === 413 ? 'file_too_large'
+      : error.serviceStatus ? 'service_unhealthy' : 'unreachable';
+    const messages = {
+      authentication_failed: 'The indexing service rejected the service key. Set the same RAG_SERVICE_KEY on medpro and medpro-rag, then deploy both.',
+      registration_mismatch: 'The indexing service could not match this upload registration. Check that medpro and medpro-rag use the same database, then retry the PDF upload.',
+      file_too_large: 'The indexing service rejected the PDF size. Use a PDF up to 50 MB.',
+      service_unhealthy: 'The indexing service returned an error. Check medpro-rag logs and that its /data volume is writable.',
+      unreachable: 'The API could not reach the indexing service. Check medpro-rag deployment, private hostname, port 8010, and IPv4/IPv6 listening. Run Check connection before retrying.',
+    };
+    throw Object.assign(ragError(messages[code], 503), { diagnosticCode: code });
   }
 }
 

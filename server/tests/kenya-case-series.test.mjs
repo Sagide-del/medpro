@@ -1,0 +1,63 @@
+import 'dotenv/config';
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { randomUUID } from 'node:crypto';
+import express from 'express';
+import { pool } from '../src/config/database.js';
+import { ensureQuestionBankSchema } from '../src/services/questionBankSchema.js';
+import { User } from '../src/models/User.js';
+import { signToken } from '../src/config/auth.js';
+import { adminKenyaRouter,studentKenyaRouter } from '../src/routes/kenyaCaseSeries.js';
+import { normalizeKenyaCase,publicKenyaCase,evaluateWorksheet,validatePublication } from '../src/services/kenyaCaseFormat.js';
+const fixture=(code,level='Nursing')=>({case_code:code,level,incident_name:'Learning incident '+code,source:'Instructor-reviewed incident source',verified_facts:'Reported incident facts; scenario findings are separate.',patient:{age:30,findings:'Simulated findings',hidden_answer:'PATIENT-PRIVATE'},tables:[{table_key:'assessment',title:'Assessment',columns:['Finding','Reasoning'],reference_answer:'PRIVATE-MODEL-ANSWER',rows:[{prompt:'Describe your assessment.',scoring:'reflection'}]}]});
+test('worksheet format keeps references private, validates completion and avoids fabricated free-text scores',()=>{
+ const doc=normalizeKenyaCase(fixture('TEST'));const publicDoc=JSON.stringify(publicKenyaCase(doc));assert(!publicDoc.includes('PRIVATE'));assert(!publicDoc.includes('hidden_answer'));assert(!publicDoc.includes('reference_answer'));
+ assert.throws(()=>evaluateWorksheet(doc,{}),/required cells/);
+ const result=evaluateWorksheet(doc,{assessment:{'row-1':{'column-1':'Finding','column-2':'Reasoning'}}});assert.equal(result.completed,true);assert.equal(result.score,null);assert(result.review[0].hidden_answer.includes('PRIVATE'));
+ assert.throws(()=>validatePublication({...doc,completion_rule:'pass'}),/explicit automatic scoring/);
+ const objective=fixture('OBJECTIVE');objective.completion_rule='pass';objective.tables[0].columns=['Answer'];objective.tables[0].rows=[{prompt:'Choose the configured response.',scoring:'exact_match',hidden_answer:'Yes'}];const objectiveDoc=normalizeKenyaCase(objective);validatePublication(objectiveDoc);assert.equal(evaluateWorksheet(objectiveDoc,{assessment:{'row-1':{'column-1':'No'}}}).completed,false);assert.equal(evaluateWorksheet(objectiveDoc,{assessment:{'row-1':{'column-1':'Yes'}}}).completed,true);
+ const bad=fixture('BAD');bad.tables[0].table_key='__proto__';assert.throws(()=>normalizeKenyaCase(bad),/unique/);
+});
+test('JSON case management and track-scoped sequential worksheets enforce locks, revision checks, hidden answers and durable idempotent completion',{skip:process.env.RUN_DB_TESTS!=='true'},async()=>{
+ assert(['localhost','127.0.0.1'].includes(new URL(process.env.DATABASE_URL).hostname));await ensureQuestionBankSchema();
+ assert.equal((await pool.query("SELECT count(*)::int AS n FROM ke_cases WHERE program='Nursing' AND status='published'")).rows[0].n,0,'Use a fresh development Nursing case course for this fixture');
+ const prefix='CASE-'+randomUUID();const users=[];
+ for(const [role,program]of [['super_admin','Nursing'],['student','Nursing'],['student','EMT'],['student','Nursing']])users.push(await User.create({fullName:'Case course test',email:randomUUID()+'@example.test',password:'TestOnly123!',role,program}));
+ const tokens=users.map(user=>signToken({sub:user.user_id,role:user.role,program:user.program}));
+ const app=express();app.use(express.json());app.use('/admin',adminKenyaRouter);app.use('/student',studentKenyaRouter);app.use((error,_req,res,_next)=>res.status(error.status || error.statusCode || 500).json({error:error.publicMessage || error.message}));
+ const server=app.listen(0,'127.0.0.1');await new Promise(resolve=>server.once('listening',resolve));
+ const call=async(path,{actor=1,method='GET',body}={})=>{const response=await fetch(`http://127.0.0.1:${server.address().port}${path}`,{method,headers:{Authorization:'Bearer '+tokens[actor],'Content-Type':'application/json'},body:body?JSON.stringify(body):undefined});return {status:response.status,data:await response.json()};};
+ try{
+  assert.equal((await call('/admin')).status,403);
+  const docs=[fixture(prefix+'-1'),fixture(prefix+'-2')];
+  let imported=await call('/admin/import',{actor:0,method:'POST',body:{cases:docs}});assert.equal(imported.status,201);const [first,second]=imported.data.cases;
+  assert.equal((await call('/student')).data.cases.length,0,'Drafts must not appear to students');
+  assert.equal((await call('/admin/import',{actor:0,method:'POST',body:{cases:docs,publish:true}})).status,400);
+  imported=await call('/admin/import',{actor:0,method:'POST',body:{cases:docs,publish:true,reviewConfirmed:true}});assert.equal(imported.status,201);assert.equal(imported.data.cases[0].id,first.id);
+  const list=(await call('/student')).data.cases;assert.deepEqual(list.map(item=>item.status),['available','locked']);assert(!JSON.stringify(list).includes('PRIVATE'));
+  assert.equal((await call('/student/'+second.id)).status,423);
+  assert.equal((await call('/student/'+second.id+'/draft',{method:'POST',body:{revision:1,responses:{}}})).status,423);
+  assert.equal((await call('/student/'+second.id+'/submit',{method:'POST',body:{revision:1,clientToken:randomUUID(),responses:{}}})).status,423);
+  assert.equal((await call('/student/'+first.id,{actor:2})).status,404);
+  let opened=await call('/student/'+first.id);assert.equal(opened.status,200);assert(!JSON.stringify(opened.data).includes('PRIVATE'));assert.equal(opened.data.attempt,null);
+  const partial={assessment:{'row-1':{'column-1':'Finding'}}};assert.equal((await call('/student/'+first.id+'/draft',{method:'POST',body:{revision:1,responses:partial}})).status,200);
+  opened=await call('/student/'+first.id);assert.equal(opened.data.responses.assessment['row-1']['column-1'],'Finding');assert(!JSON.stringify(opened.data).includes('PRIVATE'));
+  assert.equal((await call('/student/'+first.id+'/submit',{method:'POST',body:{revision:1,responses:partial,clientToken:randomUUID()}})).status,400);
+  const responses={assessment:{'row-1':{'column-1':'Finding','column-2':'Reasoning'}}},clientToken=randomUUID();
+  const submitted=await call('/student/'+first.id+'/submit',{method:'POST',body:{revision:1,responses,clientToken}});assert.equal(submitted.status,200);assert.equal(submitted.data.attempt.completed,true);assert.equal(submitted.data.attempt.score,null);assert(JSON.stringify(submitted.data.attempt.review).includes('PRIVATE'));assert.equal(submitted.data.cases[1].status,'available');
+  const duplicate=await call('/student/'+first.id+'/submit',{method:'POST',body:{revision:1,responses,clientToken}});assert.equal(duplicate.data.attempt.id,submitted.data.attempt.id);
+  assert(!JSON.stringify((await call('/student/'+first.id,{actor:3})).data).includes('PRIVATE'),'A different student must not receive prior submissions or answers');
+  assert.equal((await call('/student/'+second.id+'/submit',{method:'POST',body:{revision:1,responses,clientToken:randomUUID()}})).data.attempt.completed,true);
+  docs[0].verified_facts='Updated incident brief';
+  const updated=await call('/admin/import',{actor:0,method:'POST',body:{cases:[docs[0]],publish:true,reviewConfirmed:true}});assert.equal(updated.data.cases[0].revision,2);assert.equal(updated.data.cases[0].id,first.id);
+  assert.equal((await call('/student/'+second.id)).status,423,'Updated prerequisites must be completed before advancing');
+  assert.equal((await call('/student/'+first.id)).data.attempt,null,'Old answers must not leak into a new revision');
+  assert.equal((await call('/student/'+first.id+'/submit',{method:'POST',body:{revision:1,responses,clientToken}})).status,409);
+  assert.equal((await pool.query('SELECT count(*)::int AS n FROM ke_case_attempts WHERE student_id=$1',[users[1].user_id])).rows[0].n,2,'Case updates preserve prior attempts');
+  await call('/admin/'+first.id+'/status',{actor:0,method:'PATCH',body:{publish:false}});assert.equal((await call('/student/'+first.id)).status,404);
+ }finally{
+  await new Promise(resolve=>server.close(resolve));const ids=users.map(user=>user.user_id);
+  await pool.query('DELETE FROM ke_case_drafts WHERE student_id=ANY($1::uuid[])',[ids]);await pool.query('DELETE FROM ke_case_attempts WHERE student_id=ANY($1::uuid[])',[ids]);await pool.query('DELETE FROM ke_cases WHERE created_by=$1',[users[0].user_id]);await pool.query('DELETE FROM users WHERE user_id=ANY($1::uuid[])',[ids]);
+ }
+});
+test.after(async()=>{await pool.end();});

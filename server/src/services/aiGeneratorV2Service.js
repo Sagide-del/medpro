@@ -1,3 +1,4 @@
+import { syncPublishedKenyaCase } from './kenyaCaseSeries.js';
 import { canonicalProgram } from '../utils/programs.js';
 import { randomUUID } from 'crypto';
 import { query, withTransaction } from '../config/database.js';
@@ -202,6 +203,7 @@ export async function publishApproved({ job, adminId, decisions, items }) {
         [job.id, String(item.id), job.content_type, destination, item.title || item.question || job.title, program, item.topic || job.request_json?.topic || null, JSON.stringify(item), item.source_citation || job.citation || null, JSON.stringify({ sourceType: job.source_type, sourceUrl: job.source_url, sourceExcerpt: job.source_excerpt, citation: item.source_citation || job.citation, reference: item.source_reference, references: item.source_references || (item.source_reference ? [item.source_reference] : []) }), adminId]
       );
       published.push(rows[0]);
+      if(destination==='kenya_cases')await syncPublishedKenyaCase(tx,rows[0]);
       if (destination === 'questions') await publishQuestion(tx, rows[0], job.request_json?.moduleId);
       await tx.query(
         `INSERT INTO content_registry (content_type, destination_key, content_id, program, source_citation, source_job_id, published_by, status)

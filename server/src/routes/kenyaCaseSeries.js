@@ -1,0 +1,18 @@
+import { Router } from 'express';
+import { authenticate } from '../middleware/auth.js';
+import { requireRole } from '../middleware/roleCheck.js';
+import { asyncHandler } from '../utils/helpers.js';
+import { ragError } from '../services/ragService.js';
+import { adminKenyaCases,importKenyaCases,setCaseStatus,studentKenyaCases,readKenyaCase,saveKenyaDraft,submitKenyaCase } from '../services/kenyaCaseSeries.js';
+export const adminKenyaRouter=Router();
+adminKenyaRouter.use(authenticate,requireRole('super_admin'));
+adminKenyaRouter.get('/',asyncHandler(async(_req,res)=>res.json({cases:await adminKenyaCases()})));
+adminKenyaRouter.post('/import',asyncHandler(async(req,res)=>res.status(201).json({cases:await importKenyaCases(req.user,req.body || {})})));
+adminKenyaRouter.patch('/:id/status',asyncHandler(async(req,res)=>res.json({caseStudy:await setCaseStatus(req.params.id,req.body.publish===true,req.body.reviewConfirmed===true)})));
+export const studentKenyaRouter=Router();
+studentKenyaRouter.use(authenticate,requireRole('student'));
+studentKenyaRouter.param('id',(_req,_res,next,id)=>next(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)?undefined:ragError('Invalid case identifier.')));
+studentKenyaRouter.get('/',asyncHandler(async(req,res)=>res.json({cases:await studentKenyaCases(req.user)})));
+studentKenyaRouter.get('/:id',asyncHandler(async(req,res)=>res.json(await readKenyaCase(req.user,req.params.id))));
+studentKenyaRouter.post('/:id/draft',asyncHandler(async(req,res)=>{await saveKenyaDraft(req.user,req.params.id,req.body.responses,req.body.revision);res.json({saved:true});}));
+studentKenyaRouter.post('/:id/submit',asyncHandler(async(req,res)=>res.json(await submitKenyaCase(req.user,req.params.id,req.body))));

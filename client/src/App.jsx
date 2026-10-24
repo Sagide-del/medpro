@@ -42,7 +42,8 @@ const StudentResearch = lazy(() => import('./components/student/Research'));
 const StudentSimulations = lazy(() => import('./components/student/Simulations'));
 const StudentGroups = lazy(() => import('./components/student/Groups'));
 const StudentProctoredExams = lazy(() => import('./components/student/ProctoredExams'));
-const StudentKenyaEmsCases = lazy(() => import('./pages/student/KenyaEmsCases'));
+const StudentKenyaEmsCases = lazy(() => import('./components/student/KenyaCaseCourse'));
+const KenyaCaseManager = lazy(() => import('./components/superadmin/KenyaCaseManager'));
 const StudentMockPreTest = lazy(() => import('./components/student/exams/mockPreTest/MockPreTestPage'));
 const StudentPsychometricTest = lazy(() => import('./components/student/PsychometricTest'));
 const MedProhubEmsAssignments = lazy(() => import('./components/medprohub/student/EmsAssignments'));
@@ -73,7 +74,6 @@ const AdminInstitutions = lazy(() => import('./components/admin/Institutions'));
 const AdminUsers = lazy(() => import('./components/admin/Users'));
 const AdminRevenue = lazy(() => import('./components/admin/Revenue'));
 const AdminClinicalRotations = lazy(() => import('./components/admin/ClinicalRotations'));
-const AdminKenyaEmsCasesManager = lazy(() => import('./components/admin/KenyaEmsCasesManager'));
 const AdminContentBank = lazy(() => import('./pages/admin/ContentBank'));
 const MedProhubEmsBankManager = lazy(() => import('./components/medprohub/admin/EmsBankManager'));
 const MedProhubEmsCaseGenerator = lazy(() => import('./components/medprohub/admin/EmsCaseGenerator'));
@@ -235,8 +235,9 @@ const SUPERADMIN_LINKS = [
         label: 'Clinical Reference Cards',
       },
       {
-        to: '/admin/kenya-ems-cases',
+        to: '/superadmin/kenya-ems-cases',
         label: 'Kenya EMS Cases',
+        icon: 'cases',
       },
     ],
   },
@@ -345,7 +346,7 @@ function AppRoutes() {
           <Route path="/student/exam-center" element={<StudentExamPreparation />} />
           <Route path="/student/clinical-library" element={<StudentClinicalReferenceCards />} />
           <Route path="/student/learn/kenya-ems" element={<StudentKenyaEmsCases />} />
-          <Route path="/student/published-cases" element={<PublishedLibrary destination="kenya_cases" title="Kenya EMS Cases" />} />
+          <Route path="/student/published-cases" element={<Navigate to="/student/learn/kenya-ems" replace />} />
           <Route path="/student/learn/kenya-ems/:caseNumber" element={<StudentKenyaEmsCases />} />
           <Route path="/student/medprohub/cases" element={<MedProhubEmsAssignments />} />
           <Route path="/student/medprohub/cases/:id" element={<MedProhubEmsPlayer />} />
@@ -435,7 +436,7 @@ function AppRoutes() {
           <Route path="/admin/dashboard" element={<AdminDashboard />} />
           <Route path="/admin/reference-cards" element={<AdminClinicalReferenceCardsManager />} />
           <Route path="/admin/content-bank" element={<AdminContentBank />} />
-          <Route path="/admin/kenya-ems-cases" element={<RequireRole role="super_admin"><AdminKenyaEmsCasesManager /></RequireRole>} />
+          <Route path="/admin/kenya-ems-cases" element={<RequireRole role="super_admin"><Navigate to="/superadmin/kenya-ems-cases" replace /></RequireRole>} />
           <Route path="/admin/institution" element={<AdminInstitutions />} />
           <Route path="/admin/users" element={<AdminUsers />} />
           <Route path="/admin/revenue" element={<AdminRevenue />} />
@@ -450,6 +451,7 @@ function AppRoutes() {
           <Route path="/superadmin/institutions" element={<SuperAdminInstitutions />} />
           <Route path="/superadmin/users" element={<SuperAdminUserCommunications defaultTab="users" />} />
           <Route path="/superadmin/communications" element={<SuperAdminUserCommunications defaultTab="communications" />} />
+          <Route path="/superadmin/kenya-ems-cases" element={<KenyaCaseManager />} />
           <Route path="/superadmin/content" element={<SuperAdminContentUpload />} />
           <Route path="/superadmin/ai-generator" element={<SuperAdminAiGenerator />} />
           <Route path="/superadmin/medprohub/generator" element={<MedProhubEmsCaseGenerator />} />

@@ -1,3 +1,4 @@
+import { adminKenyaRouter, studentKenyaRouter } from './routes/kenyaCaseSeries.js';
 import { startBookGenerationWorker, stopBookGenerationWorker } from './services/bookGenerationService.js';
 import express from 'express';
 import cors from 'cors';
@@ -158,6 +159,8 @@ app.use('/api/kenya-ems', kenyaEmsRoutes);
 // Exams -> MCQ -> Mock Pre-Test: separate, additive practice-exam feature.
 // Does not read/write the existing mcq_modules/mcq_questions tables used by
 // /api/assessments -- the formal MCQ exam system is untouched.
+app.use('/api/admin/kenya-cases',adminKenyaRouter);
+app.use('/api/kenya-cases',studentKenyaRouter);
 app.use('/api/mock-pretest', mockPreTestRoutes);
 
 app.use((req, res) => {

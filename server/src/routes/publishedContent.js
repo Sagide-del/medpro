@@ -58,6 +58,7 @@ router.post('/:id/responses', asyncHandler(async (req, res) => {
   res.status(201).json({ submission: { id: rows[0].id, submitted_at: rows[0].submitted_at, score: grade.score, feedback: grade.feedback }, status: grade.status });
 }));
 router.get('/', asyncHandler(async (req, res) => {
+  if(req.query.destination==='kenya_cases')return res.json({content:[],course:'/student/learn/kenya-ems'});
   const program = req.query.program || req.user.program;
   if (!['EMT', 'Paramedic', 'Nursing'].includes(program)) return res.status(400).json({ error: 'Select EMT, Paramedic, or Nursing.' });
   const { rows } = await query(`SELECT id, title, topic, destination_key, source_citation, published_at,

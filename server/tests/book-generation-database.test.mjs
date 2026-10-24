@@ -107,7 +107,7 @@ test('book queue creates scoped drafts, pauses, resumes, deduplicates, and publi
       const job=(await pool.query('SELECT * FROM ai_generation_jobs WHERE id=$1',[incident.id])).rows[0];assert.equal(job.status,'completed');
       const items=job.result_json.previewQuestions;assert.equal(items[0].source_citation,'https://example.com/report');
       await publishApproved({job,adminId:user.user_id,items,decisions:new Map(items.map(item=>[item.id,{decision:'approved'}]))});
-      const incidents=await (await fetch(`http://127.0.0.1:${server.address().port}/published?program=Nursing&destination=kenya_cases`,{headers:{Authorization:`Bearer ${token}`}})).json();assert(incidents.content.some(item=>item.source_citation==='https://example.com/report'));
+      const incidents=await (await fetch(`http://127.0.0.1:${server.address().port}/published?program=Nursing&destination=kenya_cases`,{headers:{Authorization:`Bearer ${token}`}})).json();assert.equal(incidents.content.length,0);assert.equal(incidents.course,'/student/learn/kenya-ems');
 
     } finally {await new Promise(resolve=>server.close(resolve));await pool.query('DELETE FROM users WHERE user_id=$1',[student.user_id]);}
     const second=await createBookRun(actor,{...settings,clientToken:randomUUID()});

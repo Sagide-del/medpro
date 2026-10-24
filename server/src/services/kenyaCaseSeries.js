@@ -8,8 +8,10 @@ export async function importKenyaCases(user,input) {
  const raw=Array.isArray(input)?input:input.cases;
  if(Buffer.byteLength(JSON.stringify(input),'utf8')>8*1024*1024)throw ragError('Use a case JSON payload up to 8 MB.');
  if(!Array.isArray(raw) || !raw.length || raw.length>1000)throw ragError('Upload a cases array containing 1–1,000 cases.');
- const cases=raw.map(normalizeKenyaCase);
- if(new Set(cases.map(doc=>doc.program+':'+doc.case_code)).size!==cases.length)throw ragError('The upload contains duplicate case codes within a track.');
+ const errors=[];
+ const cases=raw.map((item,index)=>{try{return normalizeKenyaCase(item);}catch(error){if(error.status!==400)throw error;errors.push(`Case ${index+1}${item?.case_code?` (${String(item.case_code).slice(0,120)})`:''}: ${error.publicMessage || error.message}`);return null;}});
+ if(errors.length)throw ragError(`Nothing was saved. Fix ${errors.length} invalid case(s): ${errors.slice(0,10).join(' | ')}${errors.length>10?' | More cases also need correction.':''}`);
+ if(new Set(cases.map(doc=>doc.program+':'+doc.case_code)).size!==cases.length)throw ragError('Nothing was saved. The upload contains duplicate case codes within a track. Give each new case a unique case_code.');
  const publish=input.publish===true;
  if(publish && input.reviewConfirmed!==true)throw ragError('Confirm source and clinical review before publishing.');
  if(publish)cases.forEach(validatePublication);
@@ -18,7 +20,7 @@ export async function importKenyaCases(user,input) {
   const saved=[];
   for(const doc of cases){
    const existing=(await db.query('SELECT * FROM ke_cases WHERE program=$1 AND case_code=$2 FOR UPDATE',[doc.program,doc.case_code])).rows[0];
-   const order=doc.order_number || existing?.order_number || (await db.query('SELECT COALESCE(max(order_number),0)+1 AS n FROM ke_cases WHERE program=$1',[doc.program])).rows[0].n;
+   const order=(input.appendNew===true?(existing?.order_number || null):(doc.order_number || existing?.order_number)) || (await db.query('SELECT COALESCE(max(order_number),0)+1 AS n FROM ke_cases WHERE program=$1',[doc.program])).rows[0].n;
    const document={...doc,order_number:undefined};
    const result=await db.query(`INSERT INTO ke_cases(case_code,program,order_number,title,document,status,created_by)
     VALUES($1,$2,$3,$4,$5::jsonb,$6,$7) ON CONFLICT(program,case_code) DO UPDATE SET order_number=EXCLUDED.order_number,title=EXCLUDED.title,

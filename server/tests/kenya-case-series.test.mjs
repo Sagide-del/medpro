@@ -40,6 +40,15 @@ test('JSON case management and track-scoped sequential worksheets enforce locks,
   assert.equal(retained.length,3,'Later JSON uploads append without deleting earlier cases');
   assert.equal(retained.find(item=>item.id===first.id).status,'published','Saving a new upload preserves publication of older cases');
   assert(extra.data.cases[0].order_number>second.order_number,'New cases append to the existing course');
+  const batch=Array.from({length:20},(_,index)=>({...fixture(prefix+'-batch-'+index),order_number:index+1}));
+  const appended=await call('/admin/import',{actor:0,method:'POST',body:{cases:batch,appendNew:true}});
+  assert.equal(appended.status,201,'A new batch restarting at order 1 must append when requested');
+  assert.equal(appended.data.cases.length,20);
+  assert(appended.data.cases[0].order_number>extra.data.cases[0].order_number);
+  const invalid=fixture(prefix+'-invalid');invalid.tables=[];
+  const rejected=await call('/admin/import',{actor:0,method:'POST',body:{cases:[fixture(prefix+'-not-saved'),invalid],appendNew:true}});
+  assert.equal(rejected.status,400);assert(rejected.data.error.includes('Case 2'));assert(rejected.data.error.includes(prefix+'-invalid'));
+  assert(!(await call('/admin',{actor:0})).data.cases.some(item=>item.case_code===prefix+'-not-saved'),'Invalid batches save nothing');
   const list=(await call('/student')).data.cases;assert.deepEqual(list.map(item=>item.status),['available','locked']);assert(!JSON.stringify(list).includes('PRIVATE'));
   assert.equal((await call('/student/'+second.id)).status,423);
   assert.equal((await call('/student/'+second.id+'/draft',{method:'POST',body:{revision:1,responses:{}}})).status,423);

@@ -52,3 +52,5 @@ Integration tests cover draft/publication review, stable-code updates, track iso
 
 
 Repository growth: each upload accepts up to 1,000 cases / 8 MB. New case codes append to the existing track. Cases absent from an upload are never deleted or unpublished. Matching track and case code explicitly update that case; saving an updated case as a draft unpublishes only that updated case. Saved drafts can be selected across repository pages and published after review. For larger collections, upload successive files.
+
+The case manager defaults to append mode (`appendNew: true`): new cases receive the next available track position and existing cases keep their positions, even when uploaded order numbers restart at 1. Disable this option to apply explicit JSON ordering. Invalid batches report the case index/code and save nothing.

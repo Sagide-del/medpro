@@ -82,7 +82,7 @@ const OUTPUT_DESTINATIONS = [
 export default function AiGenerator() {
   const [searchParams, setSearchParams] = useSearchParams();
   const pdfInputRef = useRef(null);
-  const [workspace, setWorkspace] = useState(() => ['books','incidents','advanced'].includes(searchParams.get('workspace')) ? searchParams.get('workspace') : 'books');
+  const [workspace, setWorkspace] = useState(() => ['books','incidents','advanced'].includes(searchParams.get('workspace')) ? searchParams.get('workspace') : searchParams.get('contentId') ? 'advanced' : 'books');
   const [cases, setCases] = useState(null);
   const [sourceMode, setSourceMode] = useState('article');
   const [sourceFile, setSourceFile] = useState(null);

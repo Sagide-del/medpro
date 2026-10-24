@@ -27,3 +27,11 @@ test('fingerprints ignore cosmetic spelling changes without exposing book text',
   assert.equal(contentFingerprint({question:'What is a cell?'}),contentFingerprint({question:'WHAT  is a cell!'}));
   assert.notEqual(contentFingerprint({question:'What is a tissue?'}),contentFingerprint({question:'What is a cell?'}));
 });
+
+test('page ranges let large unbookmarked sources be covered incrementally', () => {
+  const input = { targets:[{program:'Nursing'}],pageStart:4,pageEnd:8 };
+  const plan = buildBookPlan(source,passages,input);
+  assert.equal(plan.passageCount,5);
+  assert(plan.tasks.every(task=>task.firstPage>=4&&task.lastPage<=8));
+  assert.throws(()=>buildBookPlan(source,passages,{...input,pageStart:10,pageEnd:4}),/page range/);
+});

@@ -26,8 +26,11 @@ export function buildBookPlan(source, passages, input) {
   if (!Number.isInteger(count) || count < 5 || count > 20) throw ragError('Choose 5–20 questions per batch.');
   const chapters = input.chapters;
   if (chapters !== undefined && (!Array.isArray(chapters) || !chapters.length || chapters.some((title) => typeof title !== 'string'))) throw ragError('Select at least one chapter.');
-  const selected = passages.filter((passage) => !chapters || chapters.includes(passage.chapter_title));
-  if (!selected.length) throw ragError('No chapter passages are available. Reindex this source first.', 409);
+  const lastPage = Number(source.page_count || Math.max(0,...passages.map((passage) => passage.page_number)));
+  const pageStart = Number(input.pageStart ?? 1), pageEnd = Number(input.pageEnd ?? lastPage);
+  if (!Number.isInteger(pageStart) || !Number.isInteger(pageEnd) || pageStart < 1 || pageEnd < pageStart || pageEnd > lastPage) throw ragError('Choose a valid PDF page range within this book.');
+  const selected = passages.filter((passage) => (!chapters || chapters.includes(passage.chapter_title)) && passage.page_number >= pageStart && passage.page_number <= pageEnd);
+  if (!selected.length) throw ragError(passages.length ? 'No readable passages match this chapter/page selection.' : 'No chapter passages are available. Reindex this source first.', 409);
   const groups = [];
   for (const passage of selected) {
     let group = groups.at(-1);
@@ -41,7 +44,7 @@ export function buildBookPlan(source, passages, input) {
     chapter: group.chapter, firstPage: group.passages[0].page_number, lastPage: group.passages.at(-1).page_number,
     chunkIds: group.passages.map((passage) => passage.chunk_id),
   }))));
-  if (tasks.length > 200) throw ragError(`This plan requires ${tasks.length} batches. Select fewer chapters or destinations; each run is limited to 200 batches.`);
+  if (tasks.length > 200) throw ragError(`This plan requires ${tasks.length} batches. Select fewer chapters, destinations, or a smaller PDF page range; each run is limited to 200 batches.`);
   return { targets, destinations, questionsPerBatch: count, tasks, estimatedModelCalls: tasks.length * 2,
     passageCount: selected.length, readablePages: new Set(selected.map((passage) => passage.page_number)).size,
     questionDraftTarget: tasks.filter((task) => task.destination === 'question_bank').length * count };

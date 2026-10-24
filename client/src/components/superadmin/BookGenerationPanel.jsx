@@ -13,6 +13,8 @@ export default function BookGenerationPanel({ sources }) {
   const [moduleOptions, setModuleOptions] = useState({});
   const [destinations, setDestinations] = useState(['question_bank', 'psychometric_clinical']);
   const [count, setCount] = useState(10);
+  const [pageStart, setPageStart] = useState(1);
+  const [pageEnd, setPageEnd] = useState(1);
   const [plan, setPlan] = useState(null);
   const [clientToken, setClientToken] = useState('');
   const [runs, setRuns] = useState([]);
@@ -39,7 +41,7 @@ export default function BookGenerationPanel({ sources }) {
       .then((entries) => { if (active) setModuleOptions(Object.fromEntries(entries)); }).catch((error) => { if (active) setStatus(error.message); });
     return () => { active = false; };
   }, []);
-  useEffect(() => { setPlan(null); }, [sourceId, chapters, targets, destinations, count]);
+  useEffect(() => { setPlan(null); }, [sourceId, chapters, targets, destinations, count, pageStart, pageEnd]);
   useEffect(() => {
     if (!detail) return undefined;
     let active = true;
@@ -52,11 +54,12 @@ export default function BookGenerationPanel({ sources }) {
     if (!id) return;
     try {
       const data = await api(`/ai/books/sources/${id}/coverage`);
+      setPageStart(1); setPageEnd(data.source.pageCount);
       setCoverage(data); setChapters(data.chapters.map((chapter) => chapter.chapter_title));
       setTargets(PROGRAMS.filter((program) => supports(data.source, program)).map((program) => ({ program, moduleId: '' })));
     } catch (error) { setStatus(error.message); }
   }
-  const input = { sourceId, targets, destinations, questionsPerBatch: Number(count), chapters };
+  const input = { sourceId, targets, destinations, questionsPerBatch: Number(count), chapters, pageStart, pageEnd };
   async function act(action) {
     setBusy(true); setStatus('');
     try {
@@ -101,6 +104,7 @@ export default function BookGenerationPanel({ sources }) {
       <p>{coverage.source.pageCount} PDF pages · {coverage.chapters.length} sections with readable passages. PDFs without bookmarks use passage batches instead of invented chapter names.</p>
       {!coverage.source.global && <p>Private sources remain draft-only. Student publication requires an approved global source.</p>}
       {!coverage.chapters.length && <p role="alert">This source was indexed before book coverage was added. Deploy the updated private indexing service, then use “Reindex for book generation” in the source library.</p>}
+<div className="book-track-row"><label>PDF page from<input type="number" min="1" max={coverage.source.pageCount} value={pageStart} onChange={(event) => setPageStart(Number(event.target.value))} /></label><label>PDF page to<input type="number" min={pageStart} max={coverage.source.pageCount} value={pageEnd} onChange={(event) => setPageEnd(Number(event.target.value))} /></label></div>
       <fieldset><legend>Chapters to cover</legend><div className="book-chapters">{coverage.chapters.map((chapter) => <label key={chapter.chapter_title}><input type="checkbox" checked={chapters.includes(chapter.chapter_title)} onChange={() => setChapters(toggle(chapters, chapter.chapter_title))} />{chapter.chapter_title} · pages {chapter.first_page}–{chapter.last_page}</label>)}</div></fieldset>
       <fieldset><legend>Study tracks and Question Bank routing</legend>{PROGRAMS.filter((program) => supports(coverage.source, program)).map((program) => <div className="book-track-row" key={program}><label><input type="checkbox" checked={targets.some((target) => target.program === program)} onChange={() => setTargets(targets.some((target) => target.program === program) ? targets.filter((target) => target.program !== program) : [...targets, { program, moduleId: '' }])} />{program}</label><select aria-label={`${program} question module`} disabled={!targets.some((target) => target.program === program)} value={targets.find((target) => target.program === program)?.moduleId || ''} onChange={(event) => setTargets(targets.map((target) => target.program === program ? { ...target, moduleId: event.target.value } : target))}><option value="">Create/use “{coverage.source.subject}” module</option>{(moduleOptions[program] || []).map((module) => <option key={module.id} value={module.id}>{module.title}</option>)}</select></div>)}</fieldset>
       <fieldset><legend>Student sections</legend>{Object.entries(DESTINATIONS).map(([key, label]) => <label className="book-inline-choice" key={key}><input type="checkbox" checked={destinations.includes(key)} onChange={() => setDestinations(toggle(destinations, key))} />{label}</label>)}</fieldset>

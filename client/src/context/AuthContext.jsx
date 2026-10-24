@@ -10,7 +10,7 @@ export function AuthProvider({ children }) {
     if (!saved) return null;
     const parsed = JSON.parse(saved);
     const selectedProgram = sessionStorage.getItem('medpro_program');
-    return { ...parsed, program: selectedProgram || normalizeProgram(parsed.program) };
+    return { ...parsed, program: normalizeProgram(selectedProgram || parsed.program) };
   });
 
   async function login(email, password) {

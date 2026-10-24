@@ -1,3 +1,4 @@
+import { PROGRAMS } from '../data/programs';
 import { useState } from 'react';
 import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
@@ -57,7 +58,7 @@ export default function Layout({ links, roleLabel }) {
           <div className="program-switcher" aria-label="Choose revision track">
             <div className="program-switcher-label">Revision track</div>
             <div className="program-switcher-options">
-              {['EMT', 'Paramedic', 'Nursing'].map((program) => (
+              {PROGRAMS.map((program) => (
                 <button
                   key={program}
                   type="button"
@@ -150,6 +151,12 @@ export default function Layout({ links, roleLabel }) {
             <span className="sr-only">Search MedPro</span>
             <input type="search" placeholder="Search questions, topics, or keywords..." />
           </label>
+          {user?.role === 'student' && <label className="platform-track-picker">
+            <span>Revision track</span>
+            <select aria-label="Revision track" value={user.program} onChange={(event) => setProgram(event.target.value)}>
+              {PROGRAMS.map((program) => <option value={program} key={program}>{program}</option>)}
+            </select>
+          </label>}
           <div className="platform-topbar-actions">
             <button type="button" aria-label="Notifications"><UiIcon name="alert" /></button>
             <span className="platform-user-role">{roleLabel || user?.role || 'Account'}</span>

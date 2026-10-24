@@ -1,3 +1,4 @@
+import { isAssetLoadError, recoverAssetLoad } from '../utils/assetRecovery';
 import { Component } from 'react';
 import { Link } from 'react-router-dom';
 
@@ -26,19 +27,23 @@ export default class ErrorBoundary extends Component {
   componentDidCatch(error, info) {
     // eslint-disable-next-line no-console
     console.error('Caught a render error:', error, info?.componentStack);
+    recoverAssetLoad(error);
   }
 
   render() {
     if (this.state.error) {
       return (
         <div className="card" style={{ maxWidth: 560, margin: '40px auto' }}>
-          <h2>Something went wrong loading this page</h2>
+          <h2>{isAssetLoadError(this.state.error) ? 'Refresh to load the latest page' : 'Something went wrong loading this page'}</h2>
           <p style={{ color: 'var(--ink-soft)', marginBottom: 16 }}>
-            {this.state.error?.message || 'An unexpected error occurred.'} The rest of the app is
-            still working — you can try again or head back home.
+            {isAssetLoadError(this.state.error)
+              ? 'This page could not download. Check your connection, then refresh to load the current version. Your sign-in and selected track will be kept.'
+              : 'This page encountered an unexpected problem. You can try again or return home.'}
           </p>
           <div style={{ display: 'flex', gap: 8 }}>
-            <button onClick={() => this.setState({ error: null })}>Try again</button>
+            <button onClick={() => isAssetLoadError(this.state.error) ? window.location.reload() : this.setState({ error: null })}>
+              {isAssetLoadError(this.state.error) ? 'Refresh page' : 'Try again'}
+            </button>
             {this.props.homeLink !== false && (
               <Link to="/"><button className="ghost">Back to home</button></Link>
             )}

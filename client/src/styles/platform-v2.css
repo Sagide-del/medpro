@@ -211,3 +211,12 @@
 .psychometric-scheduled > button:not(.psychometric-more) { min-height: 35px; padding: 8px 12px; color: #fff; background: #087ff0; border: 0; border-radius: 6px; font: 700 11px Roboto, sans-serif; }
 .psychometric-more { padding: 7px 9px; color: #087ff0; background: #e8f4ff; border: 0; border-radius: 5px; font-weight: 700; letter-spacing: 2px; }
 @media (max-width: 760px) { .psychometric-simulator-head { align-items: flex-start; flex-direction: column; }.psychometric-simulator-page .psychometric-card-grid { grid-template-columns: 1fr; }.psychometric-simulator-page .psychometric-card { min-height: 0; }.psychometric-scheduled { grid-template-columns: 36px 1fr; }.psychometric-scheduled-detail { grid-column: 2; padding-left: 0; border-left: 0; }.psychometric-scheduled > button:not(.psychometric-more) { grid-column: 2; justify-self: start; }.psychometric-more { grid-column: 2; justify-self: start; } }
+/* Keep track selection visible even while the mobile sidebar is closed. */
+.platform-track-picker { display: grid; gap: 3px; flex: 0 0 auto; color: #526b83; font-size: 10px; }
+.platform-track-picker select { min-height: 36px; padding: 6px 28px 6px 10px; border: 1px solid #cbd9e6; border-radius: 7px; background: #fff; color: #163b61; font: 600 12px Roboto, sans-serif; }
+.platform-track-picker select:focus-visible { outline: 3px solid #1685e5; outline-offset: 2px; }
+@media (max-width: 600px) {
+ .role-student .platform-topbar { flex-wrap: wrap; }
+ .role-student .platform-search { order: 4; flex-basis: 100%; }
+ .platform-track-picker { margin-left: 6px; }
+}

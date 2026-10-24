@@ -76,3 +76,4 @@
 }
 
 .shell.platform-shell .platform-track-picker strong{display:block;padding:8px 12px;background:#edf6fc;color:#14547b;border-radius:8px;font-size:14px}.shell.platform-shell .program-switcher>strong{color:#14547b;font-size:14px}
+.shell.platform-shell .platform-case-search{display:none}@media(max-width:900px){.shell.platform-shell.case-workspace .platform-topbar{padding-top:10px;padding-bottom:10px}.shell.platform-shell.case-workspace:not(.case-search-open) .platform-search{display:none}.shell.platform-shell.case-workspace .platform-case-search{display:grid;place-items:center;min-width:40px;min-height:40px;border:1px solid #dce7ef;border-radius:9px;background:#fff;color:#254e65;cursor:pointer}}

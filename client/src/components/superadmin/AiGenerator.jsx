@@ -1,3 +1,4 @@
+import BookGenerationPanel from './BookGenerationPanel';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { api } from '../../services/api';
@@ -600,6 +601,7 @@ export default function AiGenerator() {
         }} /> Generate drafts from approved indexed sources</label>
         <p>Select a pathway, topic and destination in Generation Settings. Question Bank requires a module and generates 10-20 questions; resources generate one structured artifact. Media drafts are scripts, not playable files. Pasted text and uploads below are ignored in this mode.</p>
       </section>}
+      {!ragAvailable && <BookGenerationPanel sources={[]} />}
       {ragAvailable && <RagSourceLibrary program={audience === 'nursing' ? 'Nursing' : audience === 'emt-paramedic' ? 'Paramedic' : 'EMT'} subject={ragSubject} onSubjectChange={setRagSubject} />}
 
       <div className="grid-auto">

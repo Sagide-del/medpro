@@ -220,3 +220,16 @@
  .role-student .platform-search { order: 4; flex-basis: 100%; }
  .platform-track-picker { margin-left: 6px; }
 }
+.book-generation-panel { margin-top: 24px; border-top: 3px solid #1685e5; }
+.book-generation-panel fieldset { min-width: 0; padding: 16px; margin: 18px 0; border: 1px solid #dce7f1; border-radius: 8px; }
+.book-generation-panel legend { padding: 0 7px; font-weight: 700; color: #163b61; }
+.book-chapters { display: grid; gap: 10px; max-height: 240px; overflow-y: auto; }
+.book-inline-choice { display: inline-flex; gap: 7px; align-items: center; margin: 6px 18px 6px 0; }
+.book-generation-panel input[type=checkbox] { width: auto; margin-right: 7px; }
+.book-track-row { display: grid; grid-template-columns: 130px minmax(0,1fr); align-items: center; gap: 14px; margin: 12px 0; }
+.book-track-row select { width: 100%; min-width: 0; padding: 9px; }
+.book-plan-summary { padding: 16px; background: #edf6ff; margin-top: 14px; }
+.book-run-row,.book-task-row { border-bottom: 1px solid #dce7f1; padding: 18px 0; }
+.book-review { margin-top: 24px; padding: 18px; border: 2px solid #1685e5; border-radius: 8px; }
+.book-review blockquote { border-left: 3px solid #b6d2e8; padding-left: 12px; color: #526b83; }
+@media(max-width:600px) { .book-track-row { grid-template-columns: 1fr; } }

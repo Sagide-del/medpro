@@ -93,7 +93,8 @@ const STUDENT_LINKS = [
     group: 'Exam Prep',
     items: [
       { to: '/student/mcq-questions', label: 'Question Bank', icon: 'exam' },
-      { to: '/student/learn/kenya-ems', label: 'Clinical Cases', icon: 'cases' },
+      { to: '/student/clinical-cases', label: 'Clinical Case Scenarios', icon: 'cases' },
+      { to: '/student/learn/kenya-ems', label: 'Kenya EMS Cases', icon: 'cases' },
     ],
   },
   {
@@ -148,6 +149,7 @@ const LECTURIO_STUDENT_LINKS = [
   { group: 'Home', items: [{ to: '/student/dashboard', label: 'Dashboard', end: true, icon: 'dashboard' }] },
   { group: 'Revision', items: [
     { to: '/student/question-bank', label: 'Question Bank', icon: 'exam' },
+    { to: '/student/clinical-cases', label: 'Clinical Case Scenarios', icon: 'cases' },
     { to: '/student/mock-prep-tests', label: 'Psychometric Test', icon: 'practice' },
     { to: '/student/study-planner', label: 'Study Plans', icon: 'calendar' },
     { to: '/student/learn/kenya-ems', label: 'Kenya EMS Cases', icon: 'cases' },
@@ -336,6 +338,7 @@ function AppRoutes() {
           <Route path="/student/spaced-repetition" element={<StudentSpacedRepetition />} />
           <Route path="/student/bookmarks" element={<StudentBookmarks />} />
           <Route path="/student/kenya-ems-hub" element={<StudentKenyaEMSHub />} />
+          <Route path="/student/clinical-cases" element={<PublishedLibrary destination="psychometric_clinical" title="Clinical Case Scenarios" />} />
           <Route path="/student/dashboard" element={<StudentDashboard />} />
           <Route path="/student/settings" element={<StudentSettings />} />
           <Route path="/student/exam-preparation" element={<StudentExamPreparation />} />

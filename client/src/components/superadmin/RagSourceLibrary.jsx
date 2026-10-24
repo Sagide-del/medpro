@@ -1,3 +1,4 @@
+import BookGenerationPanel from './BookGenerationPanel';
 import { useEffect, useState } from 'react';
 import { api } from '../../services/api';
 
@@ -65,8 +66,8 @@ export default function RagSourceLibrary({ program, subject, onSubjectChange }) 
     <h2>Approved source library</h2>
     <p>Private PDFs with page-linked evidence. Sources require review before indexing; drafts still require clinical approval. Institution-private sources are draft-only.</p>
     <div className="grid-auto">
-      <label className="field">PDF (up to 20 MB)<input type="file" accept="application/pdf" onChange={(e) => setFile(e.target.files?.[0] || null)} /></label>
-      <label className="field">Source pathway<select value={uploadProgram} onChange={(e) => setUploadProgram(e.target.value)}><option>EMT</option><option>Paramedic</option><option>Nursing</option><option value="both">EMT and Paramedic (reviewed for both)</option></select></label>
+      <label className="field">PDF (up to 50 MB)<input type="file" accept="application/pdf" onChange={(e) => setFile(e.target.files?.[0] || null)} /></label>
+      <label className="field">Source pathway<select value={uploadProgram} onChange={(e) => setUploadProgram(e.target.value)}><option>EMT</option><option>Paramedic</option><option>Nursing</option><option value="all">Shared: EMT, Paramedic, Nursing (reviewed for all)</option><option value="both">EMT and Paramedic (reviewed for both)</option></select></label>
       <label className="field">Source type<select value={sourceType} onChange={(e) => setSourceType(e.target.value)}>{sourceTypes.map((type) => <option key={type} value={type}>{type.replaceAll('_', ' ')}</option>)}</select></label>
       <label className="field">Clinical subject<input value={uploadSubject} onChange={(e) => setUploadSubject(e.target.value)} placeholder="Airway & Breathing" maxLength={200} /></label>
       <label className="field">Edition / version<input value={version} onChange={(e) => setVersion(e.target.value)} placeholder="Edition and publication year" maxLength={100} /></label>
@@ -80,14 +81,16 @@ export default function RagSourceLibrary({ program, subject, onSubjectChange }) 
       {source.error && <p role="alert">{source.error}</p>}
       {canApprove && source.can_manage && <div className="button-row">
         {source.status === 'uploaded' && <button type="button" className="primary" disabled={busy} onClick={() => action(source.id, 'approve')}>Approve and index</button>}
+        {source.status === 'ready' && <button type="button" disabled={busy} onClick={() => action(source.id, 'reindex')}>Reindex for book generation</button>}
         {source.status === 'failed' && <button type="button" disabled={busy} onClick={() => action(source.id, 'retry')}>Retry indexing</button>}
         {source.status !== 'withdrawn' && <button type="button" className="ghost" disabled={busy} onClick={() => action(source.id, 'withdraw')}>Withdraw</button>}
       </div>}
     </article>)}
+    <BookGenerationPanel sources={sources} />
     <h3>Check Question Bank evidence</h3>
     <label className="field">Source subject filter<select value={subject} onChange={(e) => { onSubjectChange(e.target.value); setPassages([]); }}>
       <option value="">All subjects</option>
-      {[...new Set(sources.filter((source) => [program, 'both'].includes(source.program)).map((source) => source.subject))].sort().map((name) => <option key={name}>{name}</option>)}
+      {[...new Set(sources.filter((source) => (source.program === program || source.program === 'all' || (program !== 'Nursing' && source.program === 'both'))).map((source) => source.subject))].sort().map((name) => <option key={name}>{name}</option>)}
     </select></label>
     <label className="field">Evidence search<input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Describe the topic to retrieve" /></label>
     <button type="button" className="ghost" onClick={preview} disabled={busy || !search.trim()}>Preview retrieved passages</button>

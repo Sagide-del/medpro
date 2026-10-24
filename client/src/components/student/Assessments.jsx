@@ -347,7 +347,7 @@ function ModuleList() {
 
             <div className="mcq-module-meta">
               <span>{module.total_questions} questions</span>
-              <span>70% pass mark</span>
+              <span>{module.passing_score ?? 70}% pass mark</span>
             </div>
 
             <div className="progress-bar mcq-module-progress">

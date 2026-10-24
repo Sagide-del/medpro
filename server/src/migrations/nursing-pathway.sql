@@ -2,7 +2,7 @@
 ALTER TABLE published_content_responses DROP CONSTRAINT IF EXISTS published_content_responses_program_check;
 ALTER TABLE published_content_responses ADD CONSTRAINT published_content_responses_program_check CHECK (program IN ('EMT','Paramedic','Nursing'));
 ALTER TABLE rag_sources DROP CONSTRAINT IF EXISTS rag_sources_program_check;
-ALTER TABLE rag_sources ADD CONSTRAINT rag_sources_program_check CHECK (program IN ('EMT','Paramedic','Nursing','both'));
+ALTER TABLE rag_sources ADD CONSTRAINT rag_sources_program_check CHECK (program IN ('EMT','Paramedic','Nursing','both','all'));
 
 INSERT INTO mcq_modules(program,title,description,order_number,total_questions,passing_score)
 VALUES

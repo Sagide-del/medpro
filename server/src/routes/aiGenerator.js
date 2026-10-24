@@ -1,3 +1,4 @@
+import bookGeneration from './bookGeneration.js';
 import { Router } from 'express';
 import { query } from '../config/database.js';
 import ragSources from './ragSources.js';
@@ -22,6 +23,7 @@ const { upload } = createUploader('ai-generator-sources');
 
 router.use(authenticate);
 router.use('/rag', ragSources);
+router.use('/books', bookGeneration);
 router.use('/v2/content', masterContentActions);
 router.get('/v2/modules', requireRole('teacher', 'institution_admin', 'super_admin'), asyncHandler(async (req, res) => {
   const { rows } = await query('SELECT id, title, program FROM mcq_modules WHERE is_active=true AND program=$1 ORDER BY order_number', [req.query.program]);

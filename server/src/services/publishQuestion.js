@@ -35,5 +35,5 @@ export async function publishQuestion(tx, record, moduleId) {
       module_id=EXCLUDED.module_id, topic=EXCLUDED.topic, program=EXCLUDED.program`,
   [record.id, moduleId, record.program, record.topic || 'General', item.question || item.prompt,
     ...options, normalized.correct, item.feedback || item.explanation || '', normalized.difficulty, normalized.type]);
-  await tx.query('UPDATE mcq_modules SET total_questions=(SELECT count(*) FROM mcq_questions WHERE module_id=$1) WHERE id=$1', [moduleId]);
+  await tx.query(`UPDATE mcq_modules SET total_questions=(SELECT count(*) FROM mcq_questions q WHERE module_id=$1 AND (published_content_id IS NULL OR EXISTS(SELECT 1 FROM ai_published_content p WHERE p.id=q.published_content_id AND p.status='published'))) WHERE id=$1`, [moduleId]);
 }

@@ -56,7 +56,7 @@ Model name changes require a new collection and complete reindexing.
 
 1. Open Master AI Generator. When enabled, the approved source library appears.
 2. Upload an authorized, text-searchable PDF with pathway, source type, subject and
-   edition/version. Uploads are limited to 20 MB and 500 pages. Use chapters rather
+   edition/version. Uploads are limited to 50 MB and 2,000 pages. Use chapters rather
    than complete textbooks. A new edition is a separate immutable source record.
 3. Review its classification and clinical suitability, then approve it. Status moves
    `uploaded -> queued -> indexing -> ready`. Error messages explain required action.
@@ -156,3 +156,5 @@ Do not enable RAG in production until its real-model smoke test passes there.
   content remain available; do not drop source tables or the retrieval volume.
 - Planner rollback: disable both planner flags and rebuild the client. Keep the
   additive planner tables, stored history and FSRS state for a later re-enable.
+
+For deterministic whole-book coverage and the questions/clinical-case generation queue, see [Book content pipeline](BOOK-CONTENT-PIPELINE.md). Redeploy the updated private RAG service and reindex older sources to populate the private ordered passage catalog.

@@ -115,13 +115,16 @@ function similarity(left, right) {
   return intersection / new Set([...a, ...b]).size;
 }
 
-export async function findDuplicates(items = []) {
+export async function findDuplicates(items = [], program = null) {
   const { rows } = await query(`
-    SELECT bank_question_id AS id, prompt AS text FROM question_bank WHERE prompt IS NOT NULL
+    SELECT bank_question_id AS id, prompt AS text FROM question_bank q WHERE prompt IS NOT NULL
+      AND ($1::text IS NULL OR lower(COALESCE(to_jsonb(q)->>'program','EMT'))=lower($1))
     UNION ALL
     SELECT id, question_text AS text FROM mcq_questions WHERE question_text IS NOT NULL
+      AND ($1::text IS NULL OR program=$1)
+      AND (published_content_id IS NULL OR EXISTS(SELECT 1 FROM ai_published_content p WHERE p.id=published_content_id AND p.status='published'))
     LIMIT 10000
-  `);
+  `, [program]);
   return items.map((item) => {
     const text = item.question || item.prompt || item.title || '';
     let best = null;
@@ -181,7 +184,7 @@ export async function publishApproved({ job, adminId, decisions, items }) {
           throw ragError('Source-grounded content must retain its original evidence reference.', 422);
         }
         const { rows: sources } = await tx.query(`SELECT id FROM rag_sources WHERE id=$1 AND version=$2
-          AND status='ready' AND approved_by IS NOT NULL AND (program=$3 OR ($3 <> 'Nursing' AND program='both')) AND scope_key='global' FOR SHARE`,
+          AND status='ready' AND approved_by IS NOT NULL AND (program IN ($3,'all') OR ($3 <> 'Nursing' AND program='both')) AND scope_key='global' FOR SHARE`,
         [reference.document_id, reference.version, program]);
         // Student feeds are currently global. Do not publish institution-private
         // source material into them until those feeds enforce institution scope.

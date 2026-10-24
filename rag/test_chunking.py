@@ -35,3 +35,25 @@ class ChunkTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class ChapterTests(unittest.TestCase):
+    def test_bookmarks_are_ordered_and_opening_pages_are_retained(self):
+        from chunking import chapter_starts, chapter_for_page
+        class Bookmark:
+            def __init__(self, title, page): self.title, self.page = title, page
+        class Reader:
+            pages = [None] * 20
+            outline = [Bookmark('Cells', 2), [Bookmark('Tissues', 8)]]
+            def get_destination_page_number(self, entry): return entry.page
+        starts = chapter_starts(Reader())
+        self.assertEqual(starts, [(1, 'Opening pages'), (3, 'Cells'), (9, 'Tissues')])
+        self.assertEqual(chapter_for_page(starts, 5), 'Cells')
+        self.assertEqual(chapter_for_page(starts, 15), 'Tissues')
+
+    def test_a_book_without_bookmarks_has_an_honest_fallback(self):
+        from chunking import chapter_starts
+        class Reader:
+            pages = [None] * 3
+            outline = []
+        self.assertEqual(chapter_starts(Reader()), [(1, 'Book content (no PDF chapter bookmarks)')])

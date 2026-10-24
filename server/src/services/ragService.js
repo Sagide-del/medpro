@@ -72,7 +72,7 @@ export async function retrieveSources(user, { program, destination = 'question_b
   const normalizedSubject = ['all', 'All subjects', ''].includes(subject || '') ? null : subject;
   const { rows } = await query(`SELECT id,filename,version,program,subject FROM rag_sources
     WHERE status='ready' AND approved_by IS NOT NULL AND scope_key=ANY($1::text[])
-    AND (program=$2 OR ($2 <> 'Nursing' AND program='both')) AND source_type=ANY($3::text[]) AND ($4::text IS NULL OR subject=$4)`,
+    AND (program IN ($2,'all') OR ($2 <> 'Nursing' AND program='both')) AND source_type=ANY($3::text[]) AND ($4::text IS NULL OR subject=$4)`,
   [readableScopes(user), program, types, normalizedSubject]);
   if (!rows.length) throw ragError('No approved, indexed sources match this pathway and subject. Upload and approve sources first.', 422);
   const result = await ragRequest('/retrieve', { body: {

@@ -38,3 +38,32 @@ def chunk_record(document, page, ordinal, text):
         "version": document["version"], "scope_key": document["scope_key"],
         "embedding_model": "intfloat/multilingual-e5-base",
     }
+
+
+def chapter_starts(reader):
+    """Use PDF bookmarks when available; missing bookmarks get a clear fallback."""
+    starts = {}
+
+    def visit(entries):
+        for entry in entries:
+            if isinstance(entry, list):
+                visit(entry)
+                continue
+            try:
+                page = reader.get_destination_page_number(entry) + 1
+                title = str(entry.title).strip()[:200]
+                if title and 1 <= page <= len(reader.pages):
+                    starts.setdefault(page, title)
+            except (AttributeError, TypeError, ValueError, KeyError):
+                continue
+    try:
+        visit(reader.outline)
+    except (AttributeError, TypeError, ValueError, KeyError):
+        pass
+    if 1 not in starts:
+        starts[1] = "Opening pages" if starts else "Book content (no PDF chapter bookmarks)"
+    return sorted(starts.items())
+
+
+def chapter_for_page(starts, page):
+    return next((title for start, title in reversed(starts) if start <= page), "Book content")

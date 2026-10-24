@@ -1,3 +1,4 @@
+import { startBookGenerationWorker, stopBookGenerationWorker } from './services/bookGenerationService.js';
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
@@ -173,6 +174,7 @@ app.use((err, _req, res, _next) => {
 // Do not report healthy while required Question Bank columns are missing.
 const { ensureQuestionBankSchema } = await import('./services/questionBankSchema.js');
 await ensureQuestionBankSchema();
+startBookGenerationWorker();
 
 const server = app.listen(port, () => {
   logger.info(`MedPro Server running on port ${port}`);
@@ -181,6 +183,7 @@ const server = app.listen(port, () => {
 });
 
 function shutdown(signal) {
+  stopBookGenerationWorker();
   logger.info(`${signal} received, shutting down gracefully...`);
   server.close(async () => {
     try {

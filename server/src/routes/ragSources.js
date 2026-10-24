@@ -10,7 +10,7 @@ const router = Router();
 router.use(requireRole('teacher', 'institution_admin', 'super_admin'));
 router.get('/config', (_req, res) => res.json({ enabled: ragEnabled() }));
 router.use((_req, _res, next) => next(ragEnabled() ? undefined : ragError('Source retrieval is not enabled.', 503)));
-const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 20 * 1024 * 1024, files: 1 } });
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 50 * 1024 * 1024, files: 1 } });
 
 router.get('/sources', asyncHandler(async (req, res) => {
   const { rows } = await query(`SELECT id,filename,program,subject,source_type,version,status,error,page_count,chunk_count,created_at,
@@ -18,10 +18,10 @@ router.get('/sources', asyncHandler(async (req, res) => {
   [readableScopes(req.user), sourceScope(req.user)]);
   res.json({ sources: rows, canApprove: ['super_admin', 'institution_admin'].includes(req.user.role) });
 }));
-router.post('/sources', upload.single('file'), asyncHandler(async (req, res) => {
+router.post('/sources', (req, res, next) => upload.single('file')(req, res, (error) => next(error?.code === 'LIMIT_FILE_SIZE' ? ragError('PDF exceeds the 50 MB upload limit.', 413) : error)), asyncHandler(async (req, res) => {
   const { program, subject, sourceType, version } = req.body;
-  if (!req.file || req.file.buffer.subarray(0, 5).toString() !== '%PDF-') throw ragError('Upload a PDF file, up to 20 MB.');
-  if (!['EMT', 'Paramedic', 'Nursing', 'both'].includes(program) || !sourceTypes.includes(sourceType) ||
+  if (!req.file || req.file.buffer.subarray(0, 5).toString() !== '%PDF-') throw ragError('Upload a PDF file, up to 50 MB.');
+  if (!['EMT', 'Paramedic', 'Nursing', 'both', 'all'].includes(program) || !sourceTypes.includes(sourceType) ||
       !String(subject || '').trim() || !String(version || '').trim() || subject.length > 200 || version.length > 100) {
     throw ragError('Provide a pathway, subject, source type and document edition/version.');
   }
@@ -44,7 +44,7 @@ router.post('/sources', upload.single('file'), asyncHandler(async (req, res) => 
   res.status(201).json({ id, status: 'uploaded' });
 }));
 router.post('/sources/:id/:action', requireRole('institution_admin', 'super_admin'), asyncHandler(async (req, res) => {
-  if (!['approve', 'withdraw', 'retry'].includes(req.params.action)) throw ragError('Unknown source action.');
+  if (!['approve', 'withdraw', 'retry', 'reindex'].includes(req.params.action)) throw ragError('Unknown source action.');
   if (!/^[0-9a-f-]{36}$/i.test(req.params.id)) throw ragError('Invalid source identifier.');
   const source = await withTransaction(async (db) => {
     const { rows } = await db.query('SELECT * FROM rag_sources WHERE id=$1 AND scope_key=$2 FOR UPDATE', [req.params.id, sourceScope(req.user)]);
@@ -52,6 +52,7 @@ router.post('/sources/:id/:action', requireRole('institution_admin', 'super_admi
     if (!row) throw ragError('Source not found in your administration scope.', 404);
     const action = req.params.action;
     if (action === 'approve' && row.status !== 'uploaded') throw ragError('Only uploaded sources can be approved.', 409);
+    if (action === 'reindex' && (row.status !== 'ready' || !row.approved_by)) throw ragError('Only approved ready sources can be reindexed.', 409);
     if (action === 'retry' && (row.status !== 'failed' || !row.approved_by)) throw ragError('Only approved failed sources can be retried.', 409);
     const { rows: updated } = await db.query(`UPDATE rag_sources SET status=$2, error=NULL,
       approved_by=CASE WHEN $3='approve' THEN $4 ELSE approved_by END,
@@ -59,9 +60,22 @@ router.post('/sources/:id/:action', requireRole('institution_admin', 'super_admi
     [row.id, action === 'withdraw' ? 'withdrawn' : 'queued', action, req.user.sub]);
     await db.query('INSERT INTO rag_source_events(source_id,actor_id,action) VALUES($1,$2,$3)', [row.id, req.user.sub, action]);
     if (action === 'withdraw') {
+      await db.query('UPDATE book_generation_runs SET paused=true WHERE source_id=$1', [row.id]);
+      await db.query(`UPDATE ai_generation_jobs SET status='failed' WHERE id IN
+        (SELECT t.job_id FROM book_generation_tasks t JOIN book_generation_runs r ON r.id=t.run_id
+         WHERE r.source_id=$1 AND t.status='queued')`, [row.id]);
+      await db.query(`UPDATE book_generation_tasks SET status='cancelled',error='Source withdrawn',updated_at=now()
+        WHERE run_id IN (SELECT id FROM book_generation_runs WHERE source_id=$1) AND status='queued'`, [row.id]);
+      await db.query(`DELETE FROM book_content_fingerprints f USING ai_generation_jobs j WHERE f.job_id=j.id
+        AND j.request_json->'sourceReferences' @> $1::jsonb`, [JSON.stringify([{ document_id: row.id }])]);
+
       const { rows: removed } = await db.query(`UPDATE ai_published_content SET status='withdrawn'
         WHERE (source_metadata->'reference'->>'document_id'=$1 OR source_metadata->'references' @> $2::jsonb)
         AND status='published' RETURNING id,job_id`, [String(row.id), JSON.stringify([{ document_id: row.id }])]);
+      if (removed.length) await db.query(`UPDATE mcq_modules m SET total_questions=(
+        SELECT count(*) FROM mcq_questions q WHERE q.module_id=m.id AND (q.published_content_id IS NULL OR EXISTS
+        (SELECT 1 FROM ai_published_content p WHERE p.id=q.published_content_id AND p.status='published')))
+        WHERE m.id IN (SELECT DISTINCT module_id FROM mcq_questions WHERE published_content_id=ANY($1::uuid[]))`, [removed.map((item) => item.id)]);
       for (const item of removed) {
         await db.query("UPDATE content_registry SET status='withdrawn' WHERE content_id=$1", [item.id]);
         await db.query(`INSERT INTO content_audit_log(content_id,action,admin_id,job_id,changes)

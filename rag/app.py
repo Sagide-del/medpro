@@ -17,7 +17,7 @@ from psycopg.rows import dict_row
 from fastapi import Depends, FastAPI, HTTPException, Request
 from pydantic import BaseModel, Field
 from pypdf import PdfReader
-from chunking import chunk_record, page_chunks, prefixed
+from chunking import chunk_record, page_chunks, prefixed, chapter_starts, chapter_for_page
 
 DATA = Path(os.environ.get("RAG_DATA_DIR", "/data"))
 MODEL = "intfloat/multilingual-e5-base"
@@ -66,25 +66,36 @@ def ingest(document):
     reader = PdfReader(path)
     if reader.is_encrypted:
         raise ValueError("Encrypted PDF: upload an unlocked, authorized copy")
-    if not 1 <= len(reader.pages) <= 500:
-        raise ValueError("Upload a chapter or document containing 1-500 pages")
+    if not 1 <= len(reader.pages) <= 2000:
+        raise ValueError("Upload a chapter or document containing 1-2000 pages")
     pages = []
     for index, page in enumerate(reader.pages, 1):
         text = page.extract_text() or ""
-        if len(text.strip()) < 30:
-            raise ValueError(f"PDF page {index} has insufficient text. Run OCR or remove blank pages and upload a new version")
-        pages.append(text)
+        pages.append(text if len(text.strip()) >= 30 else "")
+    if not any(pages):
+        raise ValueError("No readable text found. Run OCR on the PDF and upload a new version")
+    chapters = chapter_starts(reader)
+    with connect() as db:
+        db.execute("DELETE FROM rag_source_passages WHERE document_id=%s", [document["id"]])
     with lock:
         store = collection()
         store.delete(where={"document_id": str(document["id"])})
         count = 0
         for page_number, text in enumerate(pages, 1):
+            if not text:
+                continue
             chunks = list(page_chunks(text, model().tokenizer))
             for offset in range(0, len(chunks), 16):
                 batch = chunks[offset:offset + 16]
                 records = [chunk_record(document, page_number, offset + n, chunk) for n, chunk in enumerate(batch)]
                 store.upsert(ids=[r[0] for r in records], documents=batch,
                              metadatas=[r[1] for r in records], embeddings=embed(batch, "passage"))
+                with connect() as db:
+                    for ordinal, record in enumerate(records, offset):
+                        db.execute("""INSERT INTO rag_source_passages
+                            (document_id,chunk_id,page_number,ordinal,chapter_title,passage_text)
+                            VALUES(%s,%s,%s,%s,%s,%s)""", [document["id"], record[0], page_number,
+                            ordinal, chapter_for_page(chapters, page_number), batch[ordinal-offset]])
                 count += len(batch)
     return len(pages), count
 
@@ -150,7 +161,7 @@ def health():
         db.execute("SELECT 1 FROM rag_sources LIMIT 1")
     with lock:
         collection().count()
-    return {"ok": True, "model_loaded": _model is not None, "embedding_model": MODEL}
+    return {"ok": True, "model_loaded": _model is not None, "embedding_model": MODEL, "book_coverage_version": 1}
 
 
 @app.put("/files/{document_id}")
@@ -158,8 +169,8 @@ async def store_file(document_id: UUID, request: Request):
     data = bytearray()
     async for block in request.stream():
         data.extend(block)
-        if len(data) > 20 * 1024 * 1024:
-            raise HTTPException(413, "PDF exceeds 20 MB")
+        if len(data) > 50 * 1024 * 1024:
+            raise HTTPException(413, "PDF exceeds 50 MB")
     if not data.startswith(b"%PDF-"):
         raise HTTPException(400, "PDF required")
     with connect() as db:

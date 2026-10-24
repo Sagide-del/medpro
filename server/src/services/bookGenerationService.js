@@ -1,3 +1,4 @@
+import { ragConfiguration } from './ragConfiguration.js';
 import { processNextIncidentTask } from './incidentGenerationService.js';
 import { randomUUID } from 'node:crypto';
 import { query, withTransaction } from '../config/database.js';
@@ -6,7 +7,7 @@ import { buildBookPlan, contentFingerprint } from './bookGenerationPlan.js';
 import { generateRetrievedDraft } from './groundedGenerationService.js';
 
 export function bookGenerationConfig() {
-  return { indexingEnabled: ragEnabled(), generationConfigured: Boolean(process.env.DEEPSEEK_API_KEY), maxTasks: 200 };
+  return { indexingEnabled: ragEnabled(), indexingConfigured: ragConfiguration().configured, indexingIssues: ragConfiguration().issues, generationConfigured: Boolean(process.env.DEEPSEEK_API_KEY), maxTasks: 200 };
 }
 async function sourceFor(user, id) {
   const { rows } = await query('SELECT * FROM rag_sources WHERE id=$1 AND scope_key=ANY($2::text[])', [id, readableScopes(user)]);

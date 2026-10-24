@@ -1,3 +1,4 @@
+import { ragConfiguration } from '../services/ragConfiguration.js';
 import { Router } from 'express';
 import multer from 'multer';
 import { randomUUID, createHash } from 'node:crypto';
@@ -8,7 +9,20 @@ import { ragEnabled, ragError, ragRequest, sourceScope, readableScopes, sourceTy
 
 const router = Router();
 router.use(requireRole('teacher', 'institution_admin', 'super_admin'));
-router.get('/config', (_req, res) => res.json({ enabled: ragEnabled() }));
+router.get('/config', (_req, res) => res.json(ragConfiguration()));
+router.get('/connection-check', requireRole('super_admin'), asyncHandler(async (_req,res) => {
+  const config=ragConfiguration();
+  if (!config.ready) return res.json({ok:false,...config});
+  try {
+    const health=await ragRequest('/health',{method:'GET',timeoutMs:10000});
+    if (health.ok !== true) return res.json({ok:false,code:'service_unhealthy',message:'The indexing service did not report healthy. Check medpro-rag deployment logs.'});
+    if (Number(health.book_coverage_version || 0) < 1) return res.json({ok:false,code:'outdated_service',message:'Deploy the current rag service code before book-wide generation.'});
+    res.json({ok:true,message:'API connected to the indexing service. Database and index health checks passed.'});
+  } catch(error) {
+    const messages={authentication_failed:'The services could connect, but authentication failed. Set the same RAG_SERVICE_KEY on medpro and medpro-rag, then deploy both.',service_unhealthy:'The indexing service returned an error. Check medpro-rag deployment logs, shared database settings, and /data volume.',unreachable:'The API could not reach medpro-rag. Check its deployment status, private hostname, port 8010, and that both services share the same Railway environment.'};
+    res.json({ok:false,code:error.diagnosticCode || 'unreachable',message:messages[error.diagnosticCode] || messages.unreachable});
+  }
+}));
 router.use((_req, _res, next) => next(ragEnabled() ? undefined : ragError('Source retrieval is not enabled.', 503)));
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 50 * 1024 * 1024, files: 1 } });
 

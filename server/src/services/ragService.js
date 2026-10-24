@@ -1,6 +1,7 @@
 import { query } from '../config/database.js';
 
-export const ragEnabled = () => process.env.RAG_ENABLED === 'true';
+import { ragConfiguration } from './ragConfiguration.js';
+export const ragEnabled = () => ragConfiguration().enabled;
 export function ragError(message, status = 400) {
   return Object.assign(new Error(message), { status, publicMessage: message });
 }
@@ -44,22 +45,22 @@ export function normalizeRagProgram(audience) {
   if (['Nursing', 'nursing', 'nurse'].includes(audience)) return 'Nursing';
   throw ragError('Choose EMT, Paramedic, or Nursing for source retrieval.');
 }
-export async function ragRequest(path, { body, bytes, method = 'POST' } = {}) {
+export async function ragRequest(path, { body, bytes, method = 'POST', timeoutMs = 120000 } = {}) {
   if (!ragEnabled()) throw ragError('Source retrieval is not enabled.', 503);
   if (!process.env.RAG_SERVICE_URL || !process.env.RAG_SERVICE_KEY) {
     throw ragError('Source retrieval service is not configured.', 503);
   }
   try {
     const response = await fetch(`${process.env.RAG_SERVICE_URL.replace(/\/$/, '')}${path}`, {
-      method, signal: AbortSignal.timeout(120000),
+      method, signal: AbortSignal.timeout(timeoutMs),
       headers: { Authorization: `Bearer ${process.env.RAG_SERVICE_KEY}`, 'Content-Type': bytes ? 'application/pdf' : 'application/json' },
       body: bytes || (body ? JSON.stringify(body) : undefined),
     });
-    if (!response.ok) throw new Error(`Retrieval service status ${response.status}`);
+    if (!response.ok) throw Object.assign(new Error(`Retrieval service status ${response.status}`), { serviceStatus: response.status });
     return await response.json();
   } catch (error) {
     console.error('RAG service request failed:', error.message);
-    throw ragError('Source retrieval is temporarily unavailable. Check source status and retry.', 503);
+    throw Object.assign(ragError('Source retrieval is temporarily unavailable. Check source status and retry.', 503), { diagnosticCode: error.serviceStatus === 401 || error.serviceStatus === 403 ? 'authentication_failed' : error.serviceStatus ? 'service_unhealthy' : 'unreachable' });
   }
 }
 

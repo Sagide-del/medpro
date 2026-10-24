@@ -6,6 +6,16 @@ const sourceTypes = ['protocol', 'research_article', 'textbook', 'drug_reference
 
 export default function RagSourceLibrary({ program, subject, onSubjectChange }) {
   const [sources, setSources] = useState([]);
+  const [config,setConfig] = useState(null);
+  const [loaded,setLoaded] = useState(false);
+  const [connection,setConnection] = useState(null);
+  const [checking,setChecking] = useState(false);
+  async function checkConnection(){
+    setChecking(true);setConnection(null);
+    try{setConnection(await api('/ai/rag/connection-check'));}
+    catch(error){setConnection({ok:false,message:error.message});}
+    finally{setChecking(false);setRefresh(value=>value+1);}
+  }
   const [file, setFile] = useState(null);
   const [sourceType, setSourceType] = useState('textbook');
   const [uploadProgram, setUploadProgram] = useState(program);
@@ -22,8 +32,12 @@ export default function RagSourceLibrary({ program, subject, onSubjectChange }) 
     let active = true;
     async function load() {
       try {
+        const setup = await api('/ai/rag/config');
+        if (!active) return;
+        setConfig(setup);
+        if (!setup.ready) { setLoaded(false); return; }
         const data = await api('/ai/rag/sources');
-        if (active) { setSources(data.sources || []); setCanApprove(data.canApprove); }
+        if (active) { setSources(data.sources || []); setCanApprove(data.canApprove); setLoaded(true); }
       } catch (error) { if (active) setStatus(error.message); }
     }
     load();
@@ -66,16 +80,18 @@ export default function RagSourceLibrary({ program, subject, onSubjectChange }) 
   return <section className="card page-stack">
     <h2>1. Add a book or learning resource</h2><ol className="content-workspace-steps"><li>Upload & classify</li><li>Approve & index</li><li>Select student sections</li><li>Review & publish</li></ol>
     <p>Private PDFs with page-linked evidence. Sources require review before indexing; drafts still require clinical approval. Institution-private sources are draft-only.</p>
+    <section className="card" aria-label="Book service setup"><h3>Book service connection</h3>{!config && <p>Checking API settings…</p>}{config && !config.ready && <><p role="alert">Book uploads are unavailable until the API settings below are corrected.</p><ul>{config.issues?.map(issue=><li key={issue.code}>{issue.message}</li>)}</ul><p>Save and deploy the variables in Railway’s production environment, then check the connection here.</p></>}{config?.ready && <p>The API has the required indexing settings. Use the connection check to verify the private service.</p>}<button type="button" disabled={checking} onClick={checkConnection}>{checking ? 'Checking connection…' : 'Check connection / refresh setup'}</button>{connection && <p role="status">{connection.message || connection.issues?.map(issue=>issue.message).join(' ')}</p>}</section>
+    <fieldset disabled={!config?.ready || busy} style={{border:0,padding:0,margin:0}}><legend className="sr-only">Book upload details</legend>
     <div className="grid-auto">
       <label className="field">PDF (up to 50 MB)<input type="file" accept="application/pdf" onChange={(e) => setFile(e.target.files?.[0] || null)} /></label>
       <label className="field">Source pathway<select value={uploadProgram} onChange={(e) => setUploadProgram(e.target.value)}><option>EMT</option><option>Paramedic</option><option>Nursing</option><option value="all">Shared: EMT, Paramedic, Nursing (reviewed for all)</option><option value="both">EMT and Paramedic (reviewed for both)</option></select></label>
       <label className="field">Source type<select value={sourceType} onChange={(e) => setSourceType(e.target.value)}>{sourceTypes.map((type) => <option key={type} value={type}>{type.replaceAll('_', ' ')}</option>)}</select></label>
       <label className="field">Clinical subject<input value={uploadSubject} onChange={(e) => setUploadSubject(e.target.value)} placeholder="Airway & Breathing" maxLength={200} /></label>
       <label className="field">Edition / version<input value={version} onChange={(e) => setVersion(e.target.value)} placeholder="Edition and publication year" maxLength={100} /></label>
-    </div>
-    <button type="button" className="primary" disabled={busy || !file || !uploadSubject.trim() || !version.trim()} onClick={upload}>Upload source for review</button>
+    </div></fieldset>
+    <button type="button" className="primary" disabled={!config?.ready || busy || !file || !uploadSubject.trim() || !version.trim()} onClick={upload}>Upload source for review</button>
     <div aria-live="polite">{status}</div>
-    {sources.length === 0 && <p>No sources uploaded yet.</p>}
+    {loaded && sources.length === 0 && <p>No sources uploaded yet.</p>}
     {sources.map((source) => <article className="card" key={source.id}>
       <strong>{source.filename}</strong><span className="source-status">{source.status}</span>
       <p>{source.program} / {source.subject} / {source.version} / {source.status} / {source.page_count} pages / {source.chunk_count} passages</p>
@@ -87,14 +103,14 @@ export default function RagSourceLibrary({ program, subject, onSubjectChange }) 
         {source.status !== 'withdrawn' && <button type="button" className="ghost" disabled={busy} onClick={() => action(source.id, 'withdraw')}>Withdraw</button>}
       </div>}
     </article>)}
-    <BookGenerationPanel sources={sources} />
+    <BookGenerationPanel key={String(config?.ready)} sources={sources} />
     <h3>Check Question Bank evidence</h3>
     <label className="field">Source subject filter<select value={subject} onChange={(e) => { onSubjectChange(e.target.value); setPassages([]); }}>
       <option value="">All subjects</option>
       {[...new Set(sources.filter((source) => (source.program === program || source.program === 'all' || (program !== 'Nursing' && source.program === 'both'))).map((source) => source.subject))].sort().map((name) => <option key={name}>{name}</option>)}
     </select></label>
     <label className="field">Evidence search<input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Describe the topic to retrieve" /></label>
-    <button type="button" className="ghost" onClick={preview} disabled={busy || !search.trim()}>Preview retrieved passages</button>
+    <button type="button" className="ghost" onClick={preview} disabled={!config?.ready || busy || !search.trim()}>Preview retrieved passages</button>
     {passages.map((passage) => <blockquote key={passage.chunk_id}><strong>{passage.source_document}, {passage.version}, PDF page {passage.page_number}</strong><p>{passage.text}</p></blockquote>)}
   </section>;
 }

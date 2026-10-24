@@ -35,6 +35,7 @@ export default function RagSourceLibrary({ program, subject, onSubjectChange }) 
     setBusy(true); setStatus('');
     try {
       const body = new FormData();
+      if (!file || file.size > 50 * 1024 * 1024) throw new Error('Choose a PDF up to 50 MB.');
       body.append('file', file); body.set('program', uploadProgram);
       body.set('sourceType', sourceType); body.set('subject', uploadSubject); body.set('version', version);
       await api('/ai/rag/sources', { method: 'POST', body });
@@ -63,7 +64,7 @@ export default function RagSourceLibrary({ program, subject, onSubjectChange }) 
     finally { setBusy(false); }
   }
   return <section className="card page-stack">
-    <h2>Approved source library</h2>
+    <h2>1. Add a book or learning resource</h2><ol className="content-workspace-steps"><li>Upload & classify</li><li>Approve & index</li><li>Select student sections</li><li>Review & publish</li></ol>
     <p>Private PDFs with page-linked evidence. Sources require review before indexing; drafts still require clinical approval. Institution-private sources are draft-only.</p>
     <div className="grid-auto">
       <label className="field">PDF (up to 50 MB)<input type="file" accept="application/pdf" onChange={(e) => setFile(e.target.files?.[0] || null)} /></label>
@@ -76,7 +77,7 @@ export default function RagSourceLibrary({ program, subject, onSubjectChange }) 
     <div aria-live="polite">{status}</div>
     {sources.length === 0 && <p>No sources uploaded yet.</p>}
     {sources.map((source) => <article className="card" key={source.id}>
-      <strong>{source.filename}</strong>
+      <strong>{source.filename}</strong><span className="source-status">{source.status}</span>
       <p>{source.program} / {source.subject} / {source.version} / {source.status} / {source.page_count} pages / {source.chunk_count} passages</p>
       {source.error && <p role="alert">{source.error}</p>}
       {canApprove && source.can_manage && <div className="button-row">

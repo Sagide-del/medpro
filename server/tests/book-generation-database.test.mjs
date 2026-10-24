@@ -1,3 +1,5 @@
+import { generateIncident, processNextIncidentTask } from '../src/services/incidentGenerationService.js';
+import { BOOK_DESTINATIONS } from '../src/services/bookGenerationPlan.js';
 import 'dotenv/config';
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -25,9 +27,9 @@ test('book queue creates scoped drafts, pauses, resumes, deduplicates, and publi
   const oldRag=process.env.RAG_ENABLED,oldKey=process.env.DEEPSEEK_API_KEY;
   process.env.RAG_ENABLED='true';process.env.DEEPSEEK_API_KEY='test-provider-not-a-real-key';
   const quote = 'Cells are the structural and functional units of living organisms.';
-  const generate = async ({chunks,program,destination,count,difficulty}) => {
-    if(destination==='question_bank') return {preview_questions:validateGroundedQuestions(Array.from({length:count},(_,index)=>({question:`${program} cell knowledge check ${index+1}?`,options:['Cell','Tissue','Organ','System'],answer:'Cell',feedback:quote,type:'multiple_choice',difficulty,chunk_id:chunks[0].chunk_id,evidence_quote:quote})),chunks,count,['multiple_choice'],difficulty)};
-    return {preview_questions:validateGroundedArtifacts([{title:`${program} cell assessment`,question:'Explain how the cell concept informs your assessment.',summary:'A source-based learning scenario.',sections:[{heading:'Evidence',text:quote,chunk_id:chunks[0].chunk_id,evidence_quote:quote}],rubric:[{criterion:'Cell concept',expected:quote,points:1}]}],chunks,'psychometric_clinical')};
+  const generate = async ({chunks,program,destination,count,difficulty,types}) => {
+    if(destination==='question_bank') return {preview_questions:validateGroundedQuestions(Array.from({length:count},(_,index)=>({question:`${program} cell knowledge check ${difficulty} ${types[0]} ${index+1}?`,options:types[0]==='true_false'?['True','False']:['Cell','Tissue','Organ','System'],answer:types[0]==='true_false'?'True':'Cell',feedback:quote,type:types[0],difficulty,chunk_id:chunks[0].chunk_id,evidence_quote:quote})),chunks,count,types,difficulty)};
+    return {preview_questions:validateGroundedArtifacts([{title:`${program} ${destination} cell assessment`,question:'Explain how the cell concept informs your assessment.',summary:'A source-based learning scenario.',sections:[{heading:'Evidence',text:quote,chunk_id:chunks[0].chunk_id,evidence_quote:quote}],rubric:[{criterion:'Cell concept',expected:quote,points:1}],cards:[{front:'What is a cell?',back:quote,visual:{kind:'sequence',steps:['Structure','Function']}}]}],chunks,destination)};
   };
   try {
     await pool.query(`INSERT INTO rag_sources(id,scope_key,filename,file_hash,source_type,program,subject,version,status,created_by,approved_by,page_count,chunk_count)
@@ -61,6 +63,35 @@ test('book queue creates scoped drafts, pauses, resumes, deduplicates, and publi
       const bank=await QuestionBank.listQuestions({studentId:student.user_id,program:'Nursing',limit:50});
       assert.equal(bank.questions.filter(item=>item.question_text.startsWith('Nursing cell knowledge')).length,5);
       assert(bank.questions.every(item=>!('correct_option' in item)));
+      for (const [difficulty,type] of [['beginner','true_false'],['advanced','multiple_choice']]) {
+        const run=await createBookRun(actor,{...settings,targets:[{program:'Nursing'}],destinations:['question_bank'],difficulty,questionTypes:[type],clientToken:randomUUID()});
+        while(await processNextBookTask({generate,runId:run.id})){}
+        for(const task of (await getBookRun(actor,run.id)).tasks){const job=(await pool.query('SELECT * FROM ai_generation_jobs WHERE id=$1',[task.job_id])).rows[0];const items=job.result_json.previewQuestions;assert.equal(items.length,5);await publishApproved({job,adminId:user.user_id,items,decisions:new Map(items.map(item=>[item.id,{decision:'approved'}]))});}
+        const filtered=await QuestionBank.listQuestions({studentId:student.user_id,program:'Nursing',difficulty:difficulty==='beginner'?'basic':'hard',questionType:type,limit:50});
+        assert.equal(filtered.questions.filter(item=>item.question_text.startsWith('Nursing cell knowledge')).length,5);
+        assert(filtered.questions.every(item=>item.difficulty===difficulty && item.question_type===type));
+        const counts=await QuestionBank.moduleCounts({program:'Nursing',difficulty,questionType:type});
+        assert.equal(filtered.questions.reduce((sum,item)=>sum+(item.question_text.startsWith('Nursing cell knowledge')?1:0),0),5);
+        assert(filtered.questions.every(item=>counts[item.module_id]>0));
+      }
+      const resources=BOOK_DESTINATIONS.filter(destination=>!['question_bank','psychometric_clinical'].includes(destination));
+      const run=await createBookRun(actor,{...settings,targets:[{program:'Nursing'}],destinations:resources,clientToken:randomUUID()});
+      while(await processNextBookTask({generate,runId:run.id})){}
+      for(const task of (await getBookRun(actor,run.id)).tasks){assert.equal(task.status,'review');const job=(await pool.query('SELECT * FROM ai_generation_jobs WHERE id=$1',[task.job_id])).rows[0];const items=job.result_json.previewQuestions;await publishApproved({job,adminId:user.user_id,items,decisions:new Map(items.map(item=>[item.id,{decision:'approved'}]))});
+        const feed=await (await fetch(`http://127.0.0.1:${server.address().port}/published?program=Nursing&destination=${task.destination}`,{headers:{Authorization:`Bearer ${token}`}})).json();
+        const item=feed.content.find(item=>item.title.includes(`${task.destination} cell assessment`));assert(item,task.destination+' must appear in its student feed');
+        if(task.destination==='flashcards') assert.equal(item.content_json.cards[0].visual.steps.length,2);
+        if(task.destination.startsWith('psychometric_')) assert(!('rubric' in item.content_json));
+      }
+      await assert.rejects(()=>generateIncident(actor,{title:'Invalid report',program:'Nursing',text:'Too short'}),/200 characters/);
+      const incident=await generateIncident(actor,{title:'Test incident',program:'Nursing',text:quote.repeat(5),url:'https://example.com/report'});
+      assert.equal((await pool.query('SELECT status FROM ai_generation_jobs WHERE id=$1',[incident.id])).rows[0].status,'queued');
+      await processNextIncidentTask({generate});
+      const job=(await pool.query('SELECT * FROM ai_generation_jobs WHERE id=$1',[incident.id])).rows[0];assert.equal(job.status,'completed');
+      const items=job.result_json.previewQuestions;assert.equal(items[0].source_citation,'https://example.com/report');
+      await publishApproved({job,adminId:user.user_id,items,decisions:new Map(items.map(item=>[item.id,{decision:'approved'}]))});
+      const incidents=await (await fetch(`http://127.0.0.1:${server.address().port}/published?program=Nursing&destination=kenya_cases`,{headers:{Authorization:`Bearer ${token}`}})).json();assert(incidents.content.some(item=>item.source_citation==='https://example.com/report'));
+
     } finally {await new Promise(resolve=>server.close(resolve));await pool.query('DELETE FROM users WHERE user_id=$1',[student.user_id]);}
     const second=await createBookRun(actor,{...settings,clientToken:randomUUID()});
     while(await processNextBookTask({generate,runId:second.id})){}
@@ -79,7 +110,7 @@ test('book queue creates scoped drafts, pauses, resumes, deduplicates, and publi
       const token=signToken({sub:user.user_id,role:'super_admin',program:'Nursing'});
       const response=await fetch(`http://127.0.0.1:${managementServer.address().port}/rag/sources/${sourceId}/withdraw`,{method:'POST',headers:{Authorization:`Bearer ${token}`}});
       assert.equal(response.status,200);
-      assert.equal((await pool.query("SELECT count(*)::int AS n FROM ai_published_content WHERE created_by=$1 AND status='published'",[user.user_id])).rows[0].n,0);
+      assert.equal((await pool.query("SELECT count(*)::int AS n FROM ai_published_content WHERE created_by=$1 AND status='published' AND job_id IN (SELECT job_id FROM book_generation_tasks)",[user.user_id])).rows[0].n,0);
       assert((await pool.query('SELECT total_questions FROM mcq_modules WHERE title=$1',[subject])).rows.every(row=>row.total_questions===0));
       assert.equal((await pool.query("SELECT count(*)::int AS n FROM book_generation_tasks t JOIN book_generation_runs r ON r.id=t.run_id WHERE r.source_id=$1 AND t.status='queued'",[sourceId])).rows[0].n,0);
     } finally {await new Promise(resolve=>managementServer.close(resolve));}

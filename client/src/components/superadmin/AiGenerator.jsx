@@ -1,4 +1,5 @@
-import BookGenerationPanel from './BookGenerationPanel';
+import IncidentSourcePanel from './IncidentSourcePanel';
+import './contentWorkspace.css';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { api } from '../../services/api';
@@ -81,6 +82,7 @@ const OUTPUT_DESTINATIONS = [
 export default function AiGenerator() {
   const [searchParams, setSearchParams] = useSearchParams();
   const pdfInputRef = useRef(null);
+  const [workspace, setWorkspace] = useState(() => ['books','incidents','advanced'].includes(searchParams.get('workspace')) ? searchParams.get('workspace') : 'books');
   const [cases, setCases] = useState(null);
   const [sourceMode, setSourceMode] = useState('article');
   const [sourceFile, setSourceFile] = useState(null);
@@ -577,6 +579,10 @@ export default function AiGenerator() {
         </div>
       </div>
 
+      <section className="content-workspace-intro"><span className="platform-eyebrow">Super admin · Content studio</span><h2>One source. A connected learning library.</h2><p>Choose a workflow, review the generated material, and publish to the right student track.</p><div className="content-workspace-tabs" role="group" aria-label="Content workflow">{[['books','Books & learning resources'],['incidents','Kenya EMS incidents'],['advanced','Single draft & review archive']].map(([key,label]) => <button type="button" aria-pressed={workspace === key} key={key} onClick={()=>setWorkspace(key)}>{label}</button>)}</div></section>
+      {workspace === 'incidents' && <IncidentSourcePanel />}
+      {workspace === 'books' && <RagSourceLibrary program={audience === 'nursing' ? 'Nursing' : audience === 'emt-paramedic' ? 'Paramedic' : 'EMT'} subject={ragSubject} onSubjectChange={setRagSubject} />}
+      <div hidden={workspace !== 'advanced'}>
       <div className="wizard-stepper" role="list" aria-label="Generator steps">
         {wizardSteps.map((item) => (
           <button
@@ -601,8 +607,6 @@ export default function AiGenerator() {
         }} /> Generate drafts from approved indexed sources</label>
         <p>Select a pathway, topic and destination in Generation Settings. Question Bank requires a module and generates 10-20 questions; resources generate one structured artifact. Media drafts are scripts, not playable files. Pasted text and uploads below are ignored in this mode.</p>
       </section>}
-      {!ragAvailable && <BookGenerationPanel sources={[]} />}
-      {ragAvailable && <RagSourceLibrary program={audience === 'nursing' ? 'Nursing' : audience === 'emt-paramedic' ? 'Paramedic' : 'EMT'} subject={ragSubject} onSubjectChange={setRagSubject} />}
 
       <div className="grid-auto">
         {currentStep === 1 ? (
@@ -1211,6 +1215,7 @@ export default function AiGenerator() {
           onSaved={() => setStatus(`Saved changes for ${selectedCase.title}.`)}
         />
       ) : null}
+      </div>
     </section>
   );
 }

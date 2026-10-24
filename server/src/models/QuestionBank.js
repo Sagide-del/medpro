@@ -2,7 +2,7 @@ import { query } from '../config/database.js';
 
 function normalizeDifficulty(value) {
   const normalized = String(value || '').trim().toLowerCase();
-  return ({ easy: 'beginner', medium: 'intermediate', hard: 'advanced' })[normalized] || value;
+  return ({ basic: 'beginner', easy: 'beginner', medium: 'intermediate', hard: 'advanced' })[normalized] || normalized;
 }
 
 function featureEnabled() {
@@ -36,9 +36,9 @@ export const QuestionBank = {
     const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
     const offset = (safePage - 1) * safeLimit;
     const select = includeAnswer
-      ? `q.id, q.topic, q.question_text, q.option_a, q.option_b, q.option_c, q.option_d,
+      ? `q.id, q.program, q.module_id, q.question_type, q.topic, q.question_text, q.option_a, q.option_b, q.option_c, q.option_d,
          q.correct_option, q.explanation, q.difficulty, true AS answer_included`
-      : `q.id, q.topic, q.question_text, q.option_a, q.option_b, q.option_c, q.option_d,
+      : `q.id, q.program, q.module_id, q.question_type, q.topic, q.question_text, q.option_a, q.option_b, q.option_c, q.option_d,
          q.difficulty, false AS answer_included`;
     const count = await query(`SELECT COUNT(*)::int AS total FROM mcq_questions q ${where}`, values);
     const rows = await query(
@@ -55,6 +55,16 @@ export const QuestionBank = {
       questions: rows.rows.map((row) => ({ ...row, source: 'MedPro question bank' })),
       pagination: { page: safePage, limit: safeLimit, total: count.rows[0]?.total || 0 },
     };
+  },
+
+  async moduleCounts({ program='EMT', topic, difficulty, questionType } = {}) {
+    this.assertEnabled();
+    const { rows } = await query(`SELECT q.module_id,count(*)::int AS count FROM mcq_questions q
+      WHERE lower(q.program)=lower($1) AND ($2::text IS NULL OR q.topic=$2)
+      AND ($3::text IS NULL OR q.difficulty=$3) AND ($4::text IS NULL OR q.question_type=$4)
+      AND (q.published_content_id IS NULL OR EXISTS(SELECT 1 FROM ai_published_content p WHERE p.id=q.published_content_id AND p.status='published'))
+      GROUP BY q.module_id`,[program,topic || null,normalizeDifficulty(difficulty) || null,questionType || null]);
+    return Object.fromEntries(rows.map(row=>[row.module_id,row.count]));
   },
 
   async setBookmark({ studentId, questionId, bookmarked = true }) {

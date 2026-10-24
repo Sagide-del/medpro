@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { requireRole } from '../middleware/roleCheck.js';
 import { asyncHandler } from '../utils/helpers.js';
 import { bookGenerationConfig, bookCoverage, planBook, createBookRun, listBookRuns, getBookRun, controlBookRun } from '../services/bookGenerationService.js';
+import { generateIncident } from '../services/incidentGenerationService.js';
 import { ragError } from '../services/ragService.js';
 const router = Router();
 for (const name of ['id', 'sourceId']) router.param(name, (_req, _res, next, value) => next(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value) ? undefined : ragError('Invalid identifier.')));
@@ -12,6 +13,7 @@ router.use((req, _res, next) => {
   }
   next();
 });
+router.post('/incidents', requireRole('super_admin'), asyncHandler(async (req,res) => res.status(201).json(await generateIncident(req.user,req.body || {}))));
 router.get('/config', (_req, res) => res.json(bookGenerationConfig()));
 router.get('/sources/:sourceId/coverage', asyncHandler(async (req, res) => res.json(await bookCoverage(req.user, req.params.sourceId))));
 router.post('/plan', asyncHandler(async (req, res) => {

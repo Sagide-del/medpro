@@ -120,7 +120,7 @@ export function validateGroundedArtifacts(items, chunks, destination) {
       type: destination.startsWith('psychometric_') ? 'short_answer' : destination,
       topic: item.topic || chunks[0]?.clinical_subject, sections: item.sections.map(({ heading, text }) => ({ heading, text })),
       ...(destination.startsWith('psychometric_') ? { rubric: item.rubric, scenario: item.summary } : {}),
-      ...(destination === 'flashcards' ? { cards: item.cards.map(({ front, back }) => ({ front, back })) } : {}),
+      ...(destination === 'flashcards' ? { cards: item.cards.map(({ front, back, visual }) => ({ front, back, ...(visual?.kind === 'sequence' && Array.isArray(visual.steps) && visual.steps.length >= 2 && visual.steps.length <= 5 && visual.steps.every(step => typeof step === 'string' && step.trim() && step.length <= 90) ? { visual: { kind: 'sequence', steps: visual.steps } } : {}) })) } : {}),
       ...(destination === 'podcasts' ? { transcript: item.sections.map((section) => `${section.heading}\n${section.text}`).join('\n\n') } : {}),
       source_reference: references[0], source_references: references,
       source_citation: [...new Set(references.map((reference) => reference.citation))].join('; '),

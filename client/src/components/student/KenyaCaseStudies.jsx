@@ -1,4 +1,4 @@
-﻿import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { api } from '../../services/api';
 import Loading from '../shared/Loading';
@@ -81,8 +81,8 @@ function CaseLibrary() {
       <header className="kenya-cases-v2-hero" style={{ '--kenya-cases-hero-image': `url(${heroImage})` }}>
         <div>
           <span className="platform-eyebrow">Kenya EMS case library</span>
-          <h1>Practise the calls that matter here.</h1>
-          <p>Real Kenyan locations, realistic constraints, and structured clinical decisions for EMT and Paramedic learners.</p>
+          <h1>Kenya EMS Incident Studies</h1>
+          <p>Reviewed incident reports with source attribution and learning discussions for EMT, Paramedic, and Nursing students.</p>
           <button type="button" className="kenya-cases-v2-browse" onClick={() => document.querySelector('.kenya-cases-v2-panel')?.scrollIntoView({ behavior: 'smooth' })}>Browse cases <UiIcon name="arrowRight" /></button>
         </div>
         <div className="kenya-cases-v2-hero-stat"><strong>{cases.length}</strong><span>{program} case scenarios</span></div>
@@ -99,7 +99,7 @@ function CaseLibrary() {
         <div className="kenya-cases-v2-panel-head"><div><span className="platform-eyebrow">Choose your revision track</span><h2>Case scenarios</h2></div><span>{visibleCases.length} shown</span></div>
         <div className="kenya-cases-v2-controls">
           <div className="kenya-cases-v2-programs" role="tablist" aria-label="Revision track">
-            {['EMT', 'Paramedic'].map((item) => <button type="button" role="tab" aria-selected={program === item} className={program === item ? 'is-active' : ''} onClick={() => { setProgram(item); setType('All types'); }} key={item}>{item}</button>)}
+            {['EMT', 'Paramedic', 'Nursing'].map((item) => <button type="button" role="tab" aria-selected={program === item} className={program === item ? 'is-active' : ''} onClick={() => { setProgram(item); setType('All types'); }} key={item}>{item}</button>)}
           </div>
           <label className="kenya-cases-v2-search"><UiIcon name="question" /><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search cases, counties, or skills" aria-label="Search Kenya EMS cases" /></label>
           <select value={type} onChange={(event) => setType(event.target.value)} aria-label="Filter by case type">{typeOptions.map((item) => <option key={item}>{item}</option>)}</select>
@@ -108,13 +108,13 @@ function CaseLibrary() {
           {visibleCases.map((studyCase) => {
             const caseType = studyCase.emergencyType || studyCase.type || 'Clinical';
             const icon = caseType.toLowerCase().includes('trauma') || caseType.toLowerCase().includes('burn') ? 'bandage' : caseType.toLowerCase().includes('medical') ? 'cross' : caseType.toLowerCase().includes('ob') ? 'maternity' : caseType.toLowerCase().includes('fire') ? 'alert' : 'cases';
-            return <button key={studyCase.id} type="button" className="kenya-case-v2-card" onClick={() => navigate(`/student/published-cases?id=${studyCase.id}`)}><div className="kenya-case-v2-card-top"><span>Case {String(studyCase.order_number || '').padStart(2, '0')}</span><span className="kenya-case-v2-card-icon"><UiIcon name={icon} /></span><UiIcon name="arrowRight" /></div><h3>{studyCase.title}</h3><div className="kenya-case-v2-meta"><span>{studyCase.location || 'Kenya'}</span>{studyCase.year && <span>{studyCase.year}</span>}<span>{caseType}</span></div><p>{studyCase.keySkill}</p><div className="kenya-case-v2-card-footer"><span><UiIcon name="progress" />{program}</span></div><span className="kenya-case-v2-action">Open case <UiIcon name="arrowRight" /></span></button>;
+            return <button key={studyCase.id} type="button" className="kenya-case-v2-card" onClick={() => navigate(`/student/published-cases?id=${studyCase.id}`)}><div className="kenya-case-v2-card-top"><span>Case {String(studyCase.order_number || '').padStart(2, '0')}</span><span className="kenya-case-v2-card-icon"><UiIcon name={icon} /></span><UiIcon name="arrowRight" /></div><h3>{studyCase.title}</h3><div className="kenya-case-v2-meta"><span>{studyCase.location || 'Location not reported'}</span>{studyCase.year && <span>{studyCase.year}</span>}<span>{caseType}</span></div><p>{studyCase.keySkill}</p>{studyCase.source_citation && <small>Source: {studyCase.source_citation}</small>}<div className="kenya-case-v2-card-footer"><span><UiIcon name="progress" />{program}</span></div><span className="kenya-case-v2-action">Open case <UiIcon name="arrowRight" /></span></button>;
           })}
         </div>
         {!visibleCases.length && <div className="kenya-cases-v2-empty">No cases match those filters. Try another county, type, or revision track.</div>}
       </section>
 
-      <section className="kenya-cases-v2-method"><div><span className="platform-eyebrow">Built for clinical reasoning</span><h2>Every case follows the same field-ready structure.</h2></div><div className="kenya-cases-v2-phases">{['Emergency activation', 'Scene assessment', 'Patient assessment', 'Treatment and vitals', 'Transport decision', 'SBAR handover', 'Post-call debrief', 'Clinical reasoning'].map((phase, index) => <span key={phase}><b>{String(index + 1).padStart(2, '0')}</b>{phase}</span>)}</div></section>
+      <section className="kenya-cases-v2-method"><div><span className="platform-eyebrow">Built for clinical reasoning</span><h2>Review the evidence, then discuss the clinical decisions.</h2></div><div className="kenya-cases-v2-phases">{['Emergency activation', 'Scene assessment', 'Patient assessment', 'Treatment and vitals', 'Transport decision', 'SBAR handover', 'Post-call debrief', 'Clinical reasoning'].map((phase, index) => <span key={phase}><b>{String(index + 1).padStart(2, '0')}</b>{phase}</span>)}</div></section>
     </section>
   );
 }

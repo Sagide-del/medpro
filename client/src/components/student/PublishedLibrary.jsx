@@ -1,3 +1,4 @@
+import VisualFlashcard from './VisualFlashcard';
 import { useEffect, useRef, useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { api, mediaUrl } from '../../services/api';
@@ -10,11 +11,6 @@ function ContentText({ value }) {
   if (typeof value !== 'object') return <p style={{ whiteSpace: 'pre-wrap' }}>{String(value)}</p>;
   if (Array.isArray(value)) return value.map((item, index) => <ContentText key={index} value={item} />);
   return Object.entries(value).filter(([key]) => !['id', 'source_item_id', 'source_reference', 'source_references', 'validation_status', 'media_url', 'media_type', 'cards'].includes(key)).map(([key, item]) => <section key={key}><h3>{key.replace(/_/g, ' ')}</h3><ContentText value={item} /></section>);
-}
-
-function Flashcard({ card }) {
-  const [revealed, setRevealed] = useState(false);
-  return <section className="resource-library-v2-card"><h3>{card.front}</h3>{revealed && <p>{card.back}</p>}<button type="button" onClick={() => setRevealed(!revealed)}>{revealed ? 'Hide answer' : 'Show answer'}</button></section>;
 }
 
 export default function PublishedLibrary({ destination, title }) {
@@ -64,7 +60,7 @@ export default function PublishedLibrary({ destination, title }) {
     window.addEventListener('focus', refresh);
     return () => { active = false; submissionContext.current += 1; window.removeEventListener('focus', refresh); };
   }, [program, destination, assessment, requestedId]);
-  const visible = items.filter((item) => `${item.title} ${item.topic || ''}`.toLowerCase().includes(search.toLowerCase()));
+  const visible = items.filter((item) => `${item.title} ${item.topic || ''} ${item.source_citation || ''}`.toLowerCase().includes(search.toLowerCase()));
   const current = items.find((item) => item.id === selected);
   return <div className="resource-library-v2">
     <header className="resource-library-v2-head"><div><span className="platform-eyebrow">{program} Resources</span><h1>{title}</h1></div><span className="resource-library-v2-count">{items.length} resources</span></header>
@@ -74,7 +70,7 @@ export default function PublishedLibrary({ destination, title }) {
       <h2>{current.title}</h2><ContentText value={current.content_json} />
       {mediaUrl(current.content_json.media_url) && current.content_json.media_type?.startsWith('video/') && <video src={mediaUrl(current.content_json.media_url)} controls preload="metadata" style={{ width: '100%' }} />}
       {mediaUrl(current.content_json.media_url) && current.content_json.media_type?.startsWith('image/') && <img src={mediaUrl(current.content_json.media_url)} alt={current.title} style={{ maxWidth: '100%' }} />}
-      {Array.isArray(current.content_json.cards) && current.content_json.cards.map((card, index) => <Flashcard key={`${current.id}-${index}`} card={card} />)}
+      {Array.isArray(current.content_json.cards) && current.content_json.cards.map((card, index) => <VisualFlashcard index={index} key={`${current.id}-${index}`} card={card} />)}
       {assessment && <form onSubmit={submit}>
         {current.content_json.options?.length ? <fieldset><legend>Your answer</legend>{current.content_json.options.map((option, index) => {
           const text = typeof option === 'string' ? option : option.text;

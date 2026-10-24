@@ -35,3 +35,10 @@ test('page ranges let large unbookmarked sources be covered incrementally', () =
   assert(plan.tasks.every(task=>task.firstPage>=4&&task.lastPage<=8));
   assert.throws(()=>buildBookPlan(source,passages,{...input,pageStart:10,pageEnd:4}),/page range/);
 });
+
+test('book plans accept student resources, formats and difficulty but keep incident and activity feeds separate',()=>{
+ const input={targets:[{program:'Paramedic'}],destinations:['study_guides','flashcards','clinical_protocols'],difficulty:'advanced',questionTypes:['scenario','true_false']};
+ const plan=buildBookPlan(source,passages,input);assert.equal(plan.difficulty,'advanced');assert.deepEqual(plan.questionTypes,input.questionTypes);assert.equal(plan.tasks.length,12);
+ for(const destination of ['kenya_cases','study_plans','performance'])assert.throws(()=>buildBookPlan(source,passages,{...input,destinations:[destination]}),/supported/);
+ assert.throws(()=>buildBookPlan(source,passages,{...input,questionTypes:[]}),/question types/);
+});

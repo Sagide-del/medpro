@@ -1,3 +1,4 @@
+import { processNextIncidentTask } from './incidentGenerationService.js';
 import { randomUUID } from 'node:crypto';
 import { query, withTransaction } from '../config/database.js';
 import { ragEnabled, ragError, readableScopes } from './ragService.js';
@@ -66,7 +67,7 @@ export async function createBookRun(user, input) {
       const references = task.chunkIds.map((id) => ({ document_id: source.id, chunk_id: id, version: source.version }));
       const request = { audience: task.program, moduleId: modules.get(task.program), useRag: true,
         sourceReferences: references, topic: task.chapter, publishDestination: task.destination,
-        bookRunId: runId, questionCount: plan.questionsPerBatch, difficulty: 'intermediate' };
+        bookRunId: runId, questionCount: plan.questionsPerBatch, difficulty: plan.difficulty, questionTypes: plan.questionTypes };
       await db.query(`INSERT INTO ai_generation_jobs(id,admin_id,content_type,title,request_json,source_type,citation)
         VALUES($1,$2,$3,$4,$5::jsonb,'indexed_book',$6)`, [jobId, user.sub, task.destination,
       `${source.subject}: ${task.chapter} · ${task.program} · ${task.destination}`, JSON.stringify(request), `${source.filename}, ${source.version}, PDF pages ${task.firstPage}–${task.lastPage}`]);
@@ -136,7 +137,7 @@ export async function processNextBookTask({ generate = generateRetrievedDraft, r
       version: row.version, source_document: row.filename, text: row.passage_text, clinical_subject: row.subject }));
     const job = (await query('SELECT request_json FROM ai_generation_jobs WHERE id=$1', [task.job_id])).rows[0];
     const generated = await generate({ chunks, program: task.program, topic: task.chapter_title,
-      destination: task.destination, count: job.request_json.questionCount, types: ['multiple_choice'], difficulty: 'intermediate' });
+      destination: task.destination, count: job.request_json.questionCount, types: job.request_json.questionTypes || ['multiple_choice'], difficulty: job.request_json.difficulty || 'intermediate' });
     if (!Array.isArray(generated.preview_questions) || !generated.preview_questions.length) throw ragError('No supported content was generated for this passage batch.', 422);
     await withTransaction(async (db) => {
       const claim = await db.query("SELECT id FROM book_generation_tasks WHERE id=$1 AND claim_token=$2 AND status='generating' FOR UPDATE", [task.id, task.token]);
@@ -173,11 +174,14 @@ export async function processNextBookTask({ generate = generateRetrievedDraft, r
 let timer;
 let running = false;
 export function startBookGenerationWorker() {
-  if (!ragEnabled() || !process.env.DEEPSEEK_API_KEY || timer) return;
+  if (!process.env.DEEPSEEK_API_KEY || timer) return;
   const tick = async () => {
     if (running) return;
     running = true;
-    try { await processNextBookTask(); } catch (error) { console.error('Book queue unavailable:', error.name); }
+    try {
+      if (ragEnabled()) await processNextBookTask();
+      await processNextIncidentTask();
+    } catch (error) { console.error('Book queue unavailable:', error.name); }
     finally { running = false; }
   };
   timer = setInterval(tick, 3000); timer.unref(); void tick();

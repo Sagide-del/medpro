@@ -13,7 +13,7 @@ test('provider requests preserve evidence, screen questions and cases, and rejec
     let result;
     if(data.task) result={preview_questions:Array.from({length:data.count},(_,i)=>({question:`What is the role of cell structure ${i}?`,options:['Cell','Tissue'],answer:'Cell',feedback:quote,type:'multiple_choice',difficulty:'intermediate',chunk_id:bad?'invented':'passage',evidence_quote:quote}))};
     else if(data.questions) result={checks:data.questions.map((_,index)=>({index,supported:true,scope_appropriate:true,numeric_consistent:true}))};
-    else if(data.schema) result={items:[{title:'Cell scenario',summary:'Source-grounded scenario',question:'Explain the cell concept.',sections:[{heading:'Evidence',text:quote,chunk_id:'passage',evidence_quote:quote}],rubric:[{criterion:'Cell',expected:quote,points:1}]}]};
+    else if(data.schema) result={items:[{title:'Cell scenario',summary:'Source-grounded scenario',question:'Explain the cell concept.',sections:[{heading:'Evidence',text:quote,chunk_id:'passage',evidence_quote:quote}],rubric:[{criterion:'Cell',expected:quote,points:1}],cards:[{front:'Cell concept',back:quote,visual:{kind:'sequence',steps:['Structure','Function']}}]}]};
     else result={supported:true,scope_appropriate:true,numeric_consistent:true};
     res.setHeader('Content-Type','application/json');res.end(JSON.stringify({choices:[{message:{content:'```json\n'+JSON.stringify(result)+'\n```'}}]}));
   });
@@ -27,6 +27,11 @@ test('provider requests preserve evidence, screen questions and cases, and rejec
     const cases=await generateRetrievedDraft({...options,destination:'psychometric_clinical'});
     assert.equal(cases.preview_questions[0].rubric.length,1);
     assert.equal(calls,4);
+    for(const destination of ['flashcards','study_guides','clinical_protocols','drug_reference','podcasts','kenya_cases']){
+      const resource=await generateRetrievedDraft({...options,destination});
+      assert.equal(resource.preview_questions[0].source_reference.chunk_id,'passage');
+      if(destination==='flashcards')assert.equal(resource.preview_questions[0].cards[0].visual.steps.length,2);
+    }
     bad=true;await assert.rejects(()=>generateRetrievedDraft({...options,destination:'question_bank'}),/source-evidence/);
   }finally{
     if(previous.key===undefined)delete process.env.DEEPSEEK_API_KEY;else process.env.DEEPSEEK_API_KEY=previous.key;

@@ -2,7 +2,7 @@ import { query, withTransaction } from '../config/database.js';
 
 function normalizeDifficulty(value) {
   const normalized = String(value || '').trim().toLowerCase();
-  return ({ easy: 'beginner', medium: 'intermediate', hard: 'advanced' })[normalized] || value;
+  return ({ basic: 'beginner', easy: 'beginner', medium: 'intermediate', hard: 'advanced' })[normalized] || normalized;
 }
 
 function dbExecutor(executor) {

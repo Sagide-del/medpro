@@ -2,7 +2,7 @@ import { createHash } from 'node:crypto';
 import { PROGRAMS } from '../utils/programs.js';
 import { ragError } from './ragService.js';
 
-export const BOOK_DESTINATIONS = ['question_bank', 'flashcards', 'notes', 'psychometric_clinical'];
+export const BOOK_DESTINATIONS = ['question_bank', 'psychometric_clinical', 'psychometric_situational', 'psychometric_readiness', 'study_guides', 'drug_reference', 'clinical_protocols', 'cheat_sheets', 'podcasts', 'skills_videos', 'flashcards', 'notes', 'mnemonics', 'diagrams'];
 export function sourceSupportsProgram(sourceProgram, program) {
   return sourceProgram === program || sourceProgram === 'all' || (sourceProgram === 'both' && ['EMT', 'Paramedic'].includes(program));
 }
@@ -22,6 +22,10 @@ export function buildBookPlan(source, passages, input) {
   if (targets.some((target) => target.moduleId && !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(target.moduleId))) throw ragError('Invalid question module identifier.');
   const destinations = [...new Set(input.destinations || ['question_bank', 'psychometric_clinical'])];
   if (!destinations.length || destinations.some((destination) => !BOOK_DESTINATIONS.includes(destination))) throw ragError('Choose a supported book destination.');
+  const difficulty = input.difficulty || 'intermediate';
+  if (!['beginner', 'intermediate', 'advanced'].includes(difficulty)) throw ragError('Choose a supported difficulty.');
+  const questionTypes = input.questionTypes || ['multiple_choice'];
+  if (!Array.isArray(questionTypes) || !questionTypes.length || questionTypes.some(type => !['multiple_choice','true_false','scenario'].includes(type))) throw ragError('Choose supported question types.');
   const count = Number(input.questionsPerBatch ?? 10);
   if (!Number.isInteger(count) || count < 5 || count > 20) throw ragError('Choose 5–20 questions per batch.');
   const chapters = input.chapters;
@@ -45,7 +49,7 @@ export function buildBookPlan(source, passages, input) {
     chunkIds: group.passages.map((passage) => passage.chunk_id),
   }))));
   if (tasks.length > 200) throw ragError(`This plan requires ${tasks.length} batches. Select fewer chapters, destinations, or a smaller PDF page range; each run is limited to 200 batches.`);
-  return { targets, destinations, questionsPerBatch: count, tasks, estimatedModelCalls: tasks.length * 2,
+  return { targets, destinations, difficulty, questionTypes: [...new Set(questionTypes)], questionsPerBatch: count, tasks, estimatedModelCalls: tasks.length * 2,
     passageCount: selected.length, readablePages: new Set(selected.map((passage) => passage.page_number)).size,
     questionDraftTarget: tasks.filter((task) => task.destination === 'question_bank').length * count };
 }

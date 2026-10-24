@@ -147,6 +147,7 @@ export async function publishApproved({ job, adminId, decisions, items }) {
     const destination = {
       question_bank: 'questions',
       ems_cases: 'kenya_cases',
+      kenya_cases: 'kenya_cases',
       psychometric_clinical: 'psychometric_clinical',
       psychometric_situational: 'psychometric_situational',
       psychometric_readiness: 'psychometric_readiness',

@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../services/api';
 import { homeForRole } from '../services/auth';
-import heroImage from '../assets/hero-paramedics.png';
+import AuthShell from '../components/AuthShell';
 
 const LOGIN_MODES = {
   student: {
@@ -28,8 +28,11 @@ export default function Login() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
-  async function handleSubmit() {
+  async function handleSubmit(event) {
+    event.preventDefault();
+    if (busy) return;
     setError('');
     setBusy(true);
     try {
@@ -62,55 +65,39 @@ export default function Login() {
   const active = LOGIN_MODES[mode];
 
   return (
-    <div className="auth-wrap">
-      <div className="auth-card">
-          <div className="auth-brand-panel" style={{ '--auth-hero-image': `url(${heroImage})` }}>
-          <Link to="/" className="auth-brand-link" aria-label="MedPro home">
-            <img src="/medpro-logo.png" alt="MedPro" />
-          </Link>
-          <div className="auth-brand-copy">
-            <span>EMS LEARNING PLATFORM</span>
-            <h2>Prepare with purpose.</h2>
-            <p>Focused revision for EMT and Paramedic practice.</p>
-          </div>
-        </div>
-        <div className="auth-form-panel">
-        <Link to="/" className="back-link">&larr; Back to home</Link>
-        <h1>Welcome back</h1>
-        <div className="tag">Sign in to your MedPro account</div>
-
+    <AuthShell title="Welcome back" subtitle="A little practice today. More confidence tomorrow.">
         <div className="role-tabs">
-          <button type="button" className={`role-tab${mode === 'student' ? ' active' : ''}`} onClick={() => { setMode('student'); setError(''); }}>
+          <button type="button" aria-pressed={mode === 'student'} className={`role-tab${mode === 'student' ? ' active' : ''}`} onClick={() => { setMode('student'); setError(''); }}>
             Student Login
           </button>
-          <button type="button" className={`role-tab${mode === 'staff' ? ' active' : ''}`} onClick={() => { setMode('staff'); setError(''); }}>
+          <button type="button" aria-pressed={mode === 'staff'} className={`role-tab${mode === 'staff' ? ' active' : ''}`} onClick={() => { setMode('staff'); setError(''); }}>
             Staff Login
           </button>
         </div>
 
-        <div className="field" style={{ marginTop: 18 }}>
+        <form className="auth-fields" onSubmit={handleSubmit}>
+        <div className="field">
           <label htmlFor="email">Email</label>
-          <input id="email" type="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder={active.placeholder} />
+          <input required name="email" autoComplete="username" id="email" type="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder={active.placeholder} />
         </div>
         <div className="field">
           <label htmlFor="password">Password</label>
-          <input id="password" type="password" value={password} onChange={(event) => setPassword(event.target.value)} onKeyDown={(event) => event.key === 'Enter' && handleSubmit()} />
+          <div className="auth-password">
+            <input required name="password" autoComplete="current-password" id="password" type={showPassword ? 'text' : 'password'} value={password} onChange={(event) => setPassword(event.target.value)} />
+            <button type="button" onClick={() => setShowPassword(!showPassword)} aria-pressed={showPassword}>{showPassword ? 'Hide' : 'Show'}</button>
+          </div>
         </div>
         <div style={{ fontSize: 12.5, color: 'var(--ink-soft)', marginBottom: 14 }}>{active.subtitle}</div>
-        <button className="primary" onClick={handleSubmit} disabled={busy} style={{ width: '100%' }}>
+        <button className="primary" type="submit" disabled={busy}>
           {busy ? 'Signing in...' : active.button}
         </button>
-        {error && <div className="error-note">{error}</div>}
+        {error && <div className="error-note" role="alert">{error}</div>}
+        </form>
         {mode === 'student' && (
           <div className="switch">
             New student? <Link to="/register">Create an account</Link>
           </div>
         )}
-        <div style={{ marginTop: 22, fontSize: 11, color: 'var(--ink-soft)' }}>
-          Andolih EdTech Studios
-        </div>
-        </div>
-      </div>
-    </div>
+    </AuthShell>
   );
 }

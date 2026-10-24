@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { homeForRole } from '../services/auth';
-import PulseLine from '../components/PulseLine';
+import AuthShell from '../components/AuthShell';
 
 export default function Register() {
   const { register } = useAuth();
@@ -10,12 +10,15 @@ export default function Register() {
   const [form, setForm] = useState({ fullName: '', email: '', phone: '', password: '', program: '', regNumber: '' });
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   function set(key) {
     return (e) => setForm((f) => ({ ...f, [key]: e.target.value }));
   }
 
-  async function handleSubmit() {
+  async function handleSubmit(event) {
+    event.preventDefault();
+    if (busy) return;
     setError('');
     setBusy(true);
     try {
@@ -29,50 +32,50 @@ export default function Register() {
   }
 
   return (
-    <div className="auth-wrap">
-      <div className="auth-card">
-        <Link to="/" className="back-link">&larr; Back to home</Link>
-        <h1>Med<span>Pro</span>Hub</h1>
-        <div className="tag">Create your student account</div>
-        <PulseLine color="#cc0000" width={330} />
-        <div className="field" style={{ marginTop: 18 }}>
+    <AuthShell title="Your next chapter starts here" subtitle="Create your student account and build a consistent study routine.">
+      <form className="auth-fields" onSubmit={handleSubmit}>
+        <div className="field">
           <label htmlFor="fullName">Full name</label>
-          <input id="fullName" value={form.fullName} onChange={set('fullName')} />
+          <input required name="name" autoComplete="name" placeholder="Your full name" id="fullName" value={form.fullName} onChange={set('fullName')} />
         </div>
         <div className="field">
           <label htmlFor="email">Email</label>
-          <input id="email" type="email" value={form.email} onChange={set('email')} />
+          <input required name="email" autoComplete="email" placeholder="you@example.com" id="email" type="email" value={form.email} onChange={set('email')} />
         </div>
         <div className="form-grid">
           <div className="field">
             <label htmlFor="phone">Phone (M-Pesa)</label>
-            <input id="phone" value={form.phone} onChange={set('phone')} placeholder="07XX XXX XXX" />
+            <input type="tel" name="phone" autoComplete="tel" id="phone" value={form.phone} onChange={set('phone')} placeholder="07XX XXX XXX" />
           </div>
           <div className="field">
             <label htmlFor="regNumber">Registration number</label>
-            <input id="regNumber" value={form.regNumber} onChange={set('regNumber')} placeholder="Optional" />
+            <input name="regNumber" autoComplete="off" id="regNumber" value={form.regNumber} onChange={set('regNumber')} placeholder="Optional" />
           </div>
         </div>
         <div className="field">
           <label htmlFor="program">Program</label>
-          <input id="program" value={form.program} onChange={set('program')} placeholder="e.g. Diploma in Paramedicine" />
+          <select id="program" name="program" required value={form.program} onChange={set('program')}>
+            <option value="" disabled>Select your study track</option>
+            <option value="EMT">EMT</option><option value="Paramedic">Paramedic</option>
+          </select>
+          <small>Current study tracks: EMT and Paramedic.</small>
         </div>
         <div className="field">
           <label htmlFor="password">Password</label>
-          <input id="password" type="password" value={form.password} onChange={set('password')}
-            onKeyDown={(e) => e.key === 'Enter' && handleSubmit()} />
+          <div className="auth-password">
+            <input id="password" name="password" autoComplete="new-password" required minLength={8} type={showPassword ? 'text' : 'password'} value={form.password} onChange={set('password')} aria-describedby="password-help" />
+            <button type="button" onClick={() => setShowPassword(!showPassword)} aria-pressed={showPassword}>{showPassword ? 'Hide' : 'Show'}</button>
+          </div>
+          <small id="password-help">Use at least 8 characters.</small>
         </div>
-        <button className="primary" onClick={handleSubmit} disabled={busy} style={{ width: '100%' }}>
-          {busy ? 'Creating account…' : 'Create account'}
+        {error && <div className="error-note" role="alert">{error}</div>}
+        <button className="primary" type="submit" disabled={busy}>
+          {busy ? 'Creating account…' : 'Create student account →'}
         </button>
-        {error && <div className="error-note">{error}</div>}
+      </form>
         <div className="switch">
           Already have an account? <Link to="/login">Sign in</Link>
         </div>
-        <div style={{ marginTop: 22, fontSize: 11, color: 'var(--ink-soft)' }}>
-          Andolih EdTech Studios
-        </div>
-      </div>
-    </div>
+    </AuthShell>
   );
 }

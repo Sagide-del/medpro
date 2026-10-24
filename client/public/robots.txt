@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+Disallow: /student/
+Disallow: /teacher/
+Disallow: /admin/
+Disallow: /superadmin/
+Disallow: /api/
+Sitemap: https://www.medprohub.co.ke/sitemap.xml

@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react';
+import RouteMetadata from './components/RouteMetadata';
+import { lazy, Suspense, useEffect, useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { api } from './services/api';
@@ -11,78 +12,78 @@ import Home from './pages/Home';
 import Login from './pages/Login';
 import Register from './pages/Register';
 
-import StudentAssessments from './components/student/Assessments';
-import StudentDashboard from './components/student/Dashboard';
-import StudentProgressAnalytics from './components/student/ProgressAnalytics';
-import StudentSettings from './components/student/Settings';
-import StudentStudyPlanner from './components/student/StudyPlanner';
-import StudentSpacedRepetition from './components/student/SpacedRepetition';
-import StudentBookmarks from './components/student/Bookmarks';
-import StudentKenyaEMSHub from './components/student/KenyaEMSHub';
-import StudentMyContent from './components/student/MyContent';
-import StudentResourceLibrary from './components/student/ResourceLibrary';
-import StudentNotes from './components/student/Notes';
-import StudentLearningPaths from './components/student/LearningPaths';
-import StudentAssignments from './components/student/Assignments';
-import StudentEssays from './components/student/Essays';
-import StudentClinicalReferenceCards from './components/student/ClinicalReferenceCards';
-import StudentExamPreparation from './components/student/ExamPreparation';
-import StudentWorksheets from './components/student/Worksheets';
-import StudentFlashcards from './components/student/Flashcards';
-import StudentGraphics from './components/student/Graphics';
-import StudentLogbook from './components/student/Logbook';
-import StudentVideos from './components/student/Videos';
-import PublishedPodcasts from './components/student/PublishedPodcasts';
-import PublishedLibrary from './components/student/PublishedLibrary';
-import StudentPayments from './components/student/Payments';
-import StudentResearch from './components/student/Research';
-import StudentSimulations from './components/student/Simulations';
-import StudentGroups from './components/student/Groups';
-import StudentProctoredExams from './components/student/ProctoredExams';
-import StudentKenyaEmsCases from './pages/student/KenyaEmsCases';
-import StudentMockPreTest from './components/student/exams/mockPreTest/MockPreTestPage';
-import StudentPsychometricTest from './components/student/PsychometricTest';
-import MedProhubEmsAssignments from './components/medprohub/student/EmsAssignments';
-import MedProhubEmsPlayer from './components/medprohub/student/EmsPlayer';
+const StudentAssessments = lazy(() => import('./components/student/Assessments'));
+const StudentDashboard = lazy(() => import('./components/student/Dashboard'));
+const StudentProgressAnalytics = lazy(() => import('./components/student/ProgressAnalytics'));
+const StudentSettings = lazy(() => import('./components/student/Settings'));
+const StudentStudyPlanner = lazy(() => import('./components/student/StudyPlanner'));
+const StudentSpacedRepetition = lazy(() => import('./components/student/SpacedRepetition'));
+const StudentBookmarks = lazy(() => import('./components/student/Bookmarks'));
+const StudentKenyaEMSHub = lazy(() => import('./components/student/KenyaEMSHub'));
+const StudentMyContent = lazy(() => import('./components/student/MyContent'));
+const StudentResourceLibrary = lazy(() => import('./components/student/ResourceLibrary'));
+const StudentNotes = lazy(() => import('./components/student/Notes'));
+const StudentLearningPaths = lazy(() => import('./components/student/LearningPaths'));
+const StudentAssignments = lazy(() => import('./components/student/Assignments'));
+const StudentEssays = lazy(() => import('./components/student/Essays'));
+const StudentClinicalReferenceCards = lazy(() => import('./components/student/ClinicalReferenceCards'));
+const StudentExamPreparation = lazy(() => import('./components/student/ExamPreparation'));
+const StudentWorksheets = lazy(() => import('./components/student/Worksheets'));
+const StudentFlashcards = lazy(() => import('./components/student/Flashcards'));
+const StudentGraphics = lazy(() => import('./components/student/Graphics'));
+const StudentLogbook = lazy(() => import('./components/student/Logbook'));
+const StudentVideos = lazy(() => import('./components/student/Videos'));
+const PublishedPodcasts = lazy(() => import('./components/student/PublishedPodcasts'));
+const PublishedLibrary = lazy(() => import('./components/student/PublishedLibrary'));
+const StudentPayments = lazy(() => import('./components/student/Payments'));
+const StudentResearch = lazy(() => import('./components/student/Research'));
+const StudentSimulations = lazy(() => import('./components/student/Simulations'));
+const StudentGroups = lazy(() => import('./components/student/Groups'));
+const StudentProctoredExams = lazy(() => import('./components/student/ProctoredExams'));
+const StudentKenyaEmsCases = lazy(() => import('./pages/student/KenyaEmsCases'));
+const StudentMockPreTest = lazy(() => import('./components/student/exams/mockPreTest/MockPreTestPage'));
+const StudentPsychometricTest = lazy(() => import('./components/student/PsychometricTest'));
+const MedProhubEmsAssignments = lazy(() => import('./components/medprohub/student/EmsAssignments'));
+const MedProhubEmsPlayer = lazy(() => import('./components/medprohub/student/EmsPlayer'));
 
-import TeacherDashboard from './components/teacher/Dashboard';
-import TeacherAssignments from './components/teacher/Assignments';
-import TeacherQuestionBank from './components/teacher/QuestionBank';
-import TeacherAiAssignmentGenerator from './components/teacher/AiAssignmentGenerator';
-import TeacherContentCustomizer from './pages/teacher/ContentCustomizer';
-import MedProhubEmsBrowser from './components/medprohub/teacher/EmsBrowser';
-import MedProhubEmsCustomizer from './components/medprohub/teacher/EmsCustomizer';
-import TeacherMarkingQueue from './components/teacher/MarkingQueue';
-import TeacherStudentPerformance from './components/teacher/StudentPerformance';
-import TeacherSimulationPerformance from './components/teacher/SimulationPerformance';
-import TeacherCreateAssessment from './components/teacher/CreateAssessment';
-import TeacherClinicalReferenceCards from './components/teacher/ClinicalReferenceCards';
-import TeacherGradeSubmissions from './components/teacher/GradeSubmissions';
-import TeacherReviewLogbook from './components/teacher/ReviewLogbook';
-import TeacherAnalytics from './components/teacher/Analytics';
-import TeacherSendAlerts from './components/teacher/SendAlerts';
-import TeacherVideoAssessments from './components/teacher/VideoAssessments';
-import TeacherProctoredExams from './components/teacher/ProctoredExams';
+const TeacherDashboard = lazy(() => import('./components/teacher/Dashboard'));
+const TeacherAssignments = lazy(() => import('./components/teacher/Assignments'));
+const TeacherQuestionBank = lazy(() => import('./components/teacher/QuestionBank'));
+const TeacherAiAssignmentGenerator = lazy(() => import('./components/teacher/AiAssignmentGenerator'));
+const TeacherContentCustomizer = lazy(() => import('./pages/teacher/ContentCustomizer'));
+const MedProhubEmsBrowser = lazy(() => import('./components/medprohub/teacher/EmsBrowser'));
+const MedProhubEmsCustomizer = lazy(() => import('./components/medprohub/teacher/EmsCustomizer'));
+const TeacherMarkingQueue = lazy(() => import('./components/teacher/MarkingQueue'));
+const TeacherStudentPerformance = lazy(() => import('./components/teacher/StudentPerformance'));
+const TeacherSimulationPerformance = lazy(() => import('./components/teacher/SimulationPerformance'));
+const TeacherCreateAssessment = lazy(() => import('./components/teacher/CreateAssessment'));
+const TeacherClinicalReferenceCards = lazy(() => import('./components/teacher/ClinicalReferenceCards'));
+const TeacherGradeSubmissions = lazy(() => import('./components/teacher/GradeSubmissions'));
+const TeacherReviewLogbook = lazy(() => import('./components/teacher/ReviewLogbook'));
+const TeacherAnalytics = lazy(() => import('./components/teacher/Analytics'));
+const TeacherSendAlerts = lazy(() => import('./components/teacher/SendAlerts'));
+const TeacherVideoAssessments = lazy(() => import('./components/teacher/VideoAssessments'));
+const TeacherProctoredExams = lazy(() => import('./components/teacher/ProctoredExams'));
 
-import AdminClinicalReferenceCardsManager from './components/admin/ClinicalReferenceCardsManager';
-import AdminDashboard from './components/admin/Dashboard';
-import AdminInstitutions from './components/admin/Institutions';
-import AdminUsers from './components/admin/Users';
-import AdminRevenue from './components/admin/Revenue';
-import AdminClinicalRotations from './components/admin/ClinicalRotations';
-import AdminKenyaEmsCasesManager from './components/admin/KenyaEmsCasesManager';
-import AdminContentBank from './pages/admin/ContentBank';
-import MedProhubEmsBankManager from './components/medprohub/admin/EmsBankManager';
-import MedProhubEmsCaseGenerator from './components/medprohub/admin/EmsCaseGenerator';
+const AdminClinicalReferenceCardsManager = lazy(() => import('./components/admin/ClinicalReferenceCardsManager'));
+const AdminDashboard = lazy(() => import('./components/admin/Dashboard'));
+const AdminInstitutions = lazy(() => import('./components/admin/Institutions'));
+const AdminUsers = lazy(() => import('./components/admin/Users'));
+const AdminRevenue = lazy(() => import('./components/admin/Revenue'));
+const AdminClinicalRotations = lazy(() => import('./components/admin/ClinicalRotations'));
+const AdminKenyaEmsCasesManager = lazy(() => import('./components/admin/KenyaEmsCasesManager'));
+const AdminContentBank = lazy(() => import('./pages/admin/ContentBank'));
+const MedProhubEmsBankManager = lazy(() => import('./components/medprohub/admin/EmsBankManager'));
+const MedProhubEmsCaseGenerator = lazy(() => import('./components/medprohub/admin/EmsCaseGenerator'));
 
-import SuperAdminDashboard from './components/superadmin/Dashboard';
-import SuperAdminInstitutions from './components/superadmin/Institutions';
-import SuperAdminContentUpload from './components/superadmin/ContentUpload';
-import SuperAdminClinicalReferenceCardsManager from './components/superadmin/ClinicalReferenceCardsManager';
-import SuperAdminRevenueAnalytics from './components/superadmin/RevenueAnalytics';
-import SuperAdminELibraryManager from './components/superadmin/ELibraryManager';
-import SuperAdminAiGenerator from './components/superadmin/AiGenerator';
-import SuperAdminUserCommunications from './components/superadmin/UserCommunications';
+const SuperAdminDashboard = lazy(() => import('./components/superadmin/Dashboard'));
+const SuperAdminInstitutions = lazy(() => import('./components/superadmin/Institutions'));
+const SuperAdminContentUpload = lazy(() => import('./components/superadmin/ContentUpload'));
+const SuperAdminClinicalReferenceCardsManager = lazy(() => import('./components/superadmin/ClinicalReferenceCardsManager'));
+const SuperAdminRevenueAnalytics = lazy(() => import('./components/superadmin/RevenueAnalytics'));
+const SuperAdminELibraryManager = lazy(() => import('./components/superadmin/ELibraryManager'));
+const SuperAdminAiGenerator = lazy(() => import('./components/superadmin/AiGenerator'));
+const SuperAdminUserCommunications = lazy(() => import('./components/superadmin/UserCommunications'));
 
 
 const STUDENT_LINKS = [
@@ -465,7 +466,8 @@ export default function App() {
     <AuthProvider>
       <div className={typographyV2Enabled ? 'typography-v2' : ''}>
         <BrowserRouter>
-          <AppRoutes />
+          <RouteMetadata />
+          <Suspense fallback={<Loading />}><AppRoutes /></Suspense>
         </BrowserRouter>
       </div>
     </AuthProvider>

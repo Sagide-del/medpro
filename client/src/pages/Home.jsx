@@ -1,12 +1,7 @@
 import { Link } from 'react-router-dom';
 import Footer from '../components/shared/Footer';
 
-// Stand-in photo (Unsplash License — free for commercial use, no attribution
-// required): paramedics beside an ambulance at night, grayscale-filtered in CSS
-// to match the reference mockup's monochrome treatment.
-// https://unsplash.com/photos/Ygyp2kXy2I0
-const HERO_IMAGE =
-  'https://images.unsplash.com/photo-1634025130850-1d24389e25c7?auto=format&fit=crop&w=1400&q=80';
+import heroImage from '../assets/hero-paramedics.png';
 
 function PulseIcon(props) {
   return (
@@ -83,7 +78,8 @@ const FEATURES = [
 
 export default function Home() {
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+    <div className="marketing-home" style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+      <a className="public-skip-link" href="#main-content">Skip to content</a>
       <header className="home-navbar">
         <Link to="/" className="public-brand" aria-label="MedPro home">
           <img className="home-brand-logo" src="/medpro-logo.png" alt="MedPro" />
@@ -98,16 +94,17 @@ export default function Home() {
         </div>
       </header>
 
+      <main id="main-content">
       <section className="split-hero">
         <div className="split-hero-text">
-          <div className="home-eyebrow">EMS revision, built for the field</div>
-          <h1>Build confidence for your next <b>clinical decision.</b></h1>
+          <div className="home-eyebrow">FOR THE NEXT GENERATION OF CLINICIANS</div>
+          <h1>EMT &amp; paramedic revision.<br /><b>Ready for what’s next.</b></h1>
           <p className="split-hero-sub">
-            Focused revision for EMTs and Paramedics: topic mastery, realistic practice, and practical case review in one place.
+            Turn study time into clinical confidence. Practise exam questions, work through patient scenarios, and revisit the topics that matter — wherever you are in your training.
           </p>
           <div className="cta">
             <Link to="/register" className="btn-solid">
-              <CapIcon /> Start revising <ArrowIcon style={{ width: 14, height: 14 }} />
+              <CapIcon /> Create your student account <ArrowIcon style={{ width: 14, height: 14 }} />
             </Link>
             <Link to="/login" className="btn-outline">
               <UserIcon /> Sign in
@@ -115,7 +112,7 @@ export default function Home() {
           </div>
         </div>
         <div className="split-hero-image">
-          <img src={HERO_IMAGE} alt="Paramedics beside an ambulance at night" loading="eager" />
+          <img src={heroImage} alt="Emergency medical professionals preparing for patient care" loading="eager" fetchpriority="high" />
         </div>
       </section>
 
@@ -132,7 +129,25 @@ export default function Home() {
         })}
       </section>
 
-      <div className="home-footer-line">MedPro &middot; Practical revision for EMS professionals</div>
+      <section className="home-section" aria-labelledby="program-heading">
+        <div className="section-kicker">FIND YOUR FOCUS</div>
+        <h2 id="program-heading">Clinical learning, with a clear direction.</h2>
+        <p className="section-lead">Study support for learners in Kenya and beyond. Choose a study track or explore the clinical foundations shared across healthcare.</p>
+        <div className="program-cards">
+          <article><span className="program-number">01 / EMT</span><h3>Build your emergency care foundation</h3><p>Revise EMT topics including patient assessment, airway management, trauma, and emergency care with questions and case-based practice.</p><Link to="/register">Start EMT revision →</Link></article>
+          <article><span className="program-number">02 / PARAMEDIC</span><h3>Think through the next clinical decision</h3><p>Support your paramedic studies with clinical scenarios, exam practice, flashcards, and structured revision resources.</p><Link to="/register">Explore paramedic study →</Link></article>
+          <article><span className="program-number">03 / NURSING FOUNDATIONS</span><h3>Connect the fundamentals of patient care</h3><p>Studying nursing? Explore shared topics such as patient assessment, anatomy, and emergency care. Current study tracks are EMT and Paramedic; a dedicated nursing curriculum is not yet available.</p><a href="#study-faq">Learn about study coverage →</a></article>
+        </div>
+      </section>
+      <section className="home-study-banner"><div><div className="section-kicker">A SMALL HABIT. A STRONGER FOUNDATION.</div><h2>Practise. Reflect. Keep moving forward.</h2><p>Use practice questions to identify gaps, revisit a topic with flashcards, then apply what you’ve learned to a clinical case.</p></div><Link to="/register" className="btn-solid">Build your study routine →</Link></section>
+      <section className="home-section home-faq" id="study-faq" aria-labelledby="faq-heading"><div className="section-kicker">BEFORE YOU GET STARTED</div><h2 id="faq-heading">Your study questions, answered.</h2>
+        <details><summary>What can I use for EMT and paramedic exam preparation?</summary><p>MedProHub brings together practice questions, clinical cases, flashcards, and revision resources to supplement your EMT or paramedic training. Available content depends on your account and subscription.</p></details>
+        <details><summary>Can nursing students use MedProHub?</summary><p>Nursing students may find shared clinical foundations useful, including patient assessment and emergency care. MedProHub currently offers EMT and Paramedic study tracks, rather than a dedicated nursing or nursing licensing exam course.</p></details>
+        <details><summary>Is MedProHub a qualification or an accredited training college?</summary><p>MedProHub is a supplementary study platform. It does not replace accredited training, clinical supervision, or professional certification.</p></details>
+        <details><summary>How do I get started?</summary><p>Create a student account, choose the EMT or Paramedic track, and sign in to explore the learning platform. Check the subscription page for current access and pricing.</p></details>
+      </section>
+      </main>
+      <div className="home-footer-line">MedProHub · Keep learning. Be ready.</div>
 
       <Footer />
     </div>

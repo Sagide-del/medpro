@@ -1,3 +1,4 @@
+import {expireSession} from '../utils/sessionLifecycle';
 const BASE = import.meta.env.VITE_API_BASE_URL || '/api';
 
 function getToken() {
@@ -17,6 +18,7 @@ export async function api(path, { method = 'GET', body, headers = {} } = {}) {
   });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
+    if(res.status===401 && token && !/^\/auth\/(?:login|register)(?:$|[?])/.test(path))expireSession(token);
     const retryAfterSeconds=Number(data.retryAfterSeconds || res.headers.get('Retry-After')) || null;
     const error = new Error(data.error || (res.status===429?`Too many requests. ${retryAfterSeconds?`Try again in ${retryAfterSeconds} seconds.`:'Please wait a moment and try again.'}`:`Request failed (${res.status})`));
     error.retryAfterSeconds=retryAfterSeconds;

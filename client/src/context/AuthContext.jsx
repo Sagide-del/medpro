@@ -1,6 +1,7 @@
+import {expireSession,tokenExpired} from '../utils/sessionLifecycle';
 import { restoreSessionUser } from '../utils/sessionUser';
 import { normalizeProgram } from '../data/programs';
-import { createContext, useContext, useState } from 'react';
+import { createContext, useContext, useEffect, useState } from 'react';
 import { loginRequest, registerRequest, setToken, clearToken } from '../services/auth';
 
 const AuthContext = createContext(null);
@@ -8,10 +9,15 @@ const AuthContext = createContext(null);
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(() => {
     sessionStorage.removeItem('medpro_program');
+    const token=sessionStorage.getItem('medpro_token');
+    if(!token)return null;
+    if(tokenExpired(token)){expireSession(token);return null;}
     const restored=restoreSessionUser(sessionStorage.getItem('medpro_user'),sessionStorage.getItem('medpro_token') || '');
     if(restored)sessionStorage.setItem('medpro_user',JSON.stringify(restored));
     return restored;
   });
+
+  useEffect(()=>{const expired=()=>setUser(null);window.addEventListener('medpro:session-expired',expired);return()=>window.removeEventListener('medpro:session-expired',expired);},[]);
 
   async function login(email, password) {
     const data = await loginRequest(email, password);

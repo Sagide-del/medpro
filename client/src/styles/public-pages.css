@@ -95,3 +95,4 @@
 .revision-topics li { padding: 18px; background: #eaf4f8; border-radius: 8px; color: #17344c; }
 .revision-links a { display: inline-block; padding: 12px 24px 12px 0; color: #09658b; }
 @media (max-width: 600px) { .revision-topics { grid-template-columns: 1fr; } }
+.auth-session-notice{padding:11px 13px;border:1px solid #cfe3f2;border-radius:8px;background:#eff7fd;color:#285d7d;font-size:13px;line-height:1.6}

@@ -284,7 +284,7 @@ function RequireStudentSubscription({ children }) {
     return () => {
       ignore = true;
     };
-  }, [user?.role, user?.sub, retry]);
+  }, [user?.role, user?.id, retry]);
 
   if (user?.role !== 'student') return children;
   if (state.loading) return <Loading label="Checking subscription..." />;

@@ -1,7 +1,7 @@
+import {sessionDestination} from '../utils/sessionLifecycle';
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { api } from '../services/api';
 import { homeForRole } from '../services/auth';
 import AuthShell from '../components/AuthShell';
 
@@ -23,7 +23,8 @@ const LOGIN_MODES = {
 export default function Login() {
   const { login, logout } = useAuth();
   const navigate = useNavigate();
-  const [mode, setMode] = useState('student');
+  const [expired]=useState(()=>sessionStorage.getItem('medpro_session_expired')==='true');
+  const [mode, setMode] = useState(()=>sessionStorage.getItem('medpro_return_to')?.startsWith('/student/')===false?'staff':'student');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -49,12 +50,10 @@ export default function Login() {
         setError('This login is for staff accounts only. Students should use Student Login.');
         return;
       }
-      if (isStudent) {
-        const subscription = await api('/subscriptions/student/current');
-        navigate(subscription.subscription?.allowed ? '/student/dashboard' : '/student/subscription');
-        return;
-      }
-      navigate(homeForRole(user.role));
+      const destination=sessionDestination(sessionStorage.getItem('medpro_return_to'),user.role);
+      sessionStorage.removeItem('medpro_return_to');
+      sessionStorage.removeItem('medpro_session_expired');
+      navigate(destination || (isStudent?'/student/dashboard':homeForRole(user.role)),{replace:true});
     } catch (err) {
       setError(err.message);
     } finally {
@@ -75,6 +74,7 @@ export default function Login() {
           </button>
         </div>
 
+        {expired&&<p className="auth-session-notice" role="status">Your session expired. Sign in to continue.</p>}
         <form className="auth-fields" onSubmit={handleSubmit}>
         <div className="field">
           <label htmlFor="email">Email</label>

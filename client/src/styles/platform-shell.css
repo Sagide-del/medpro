@@ -77,3 +77,8 @@
 
 .shell.platform-shell .platform-track-picker strong{display:block;padding:8px 12px;background:#edf6fc;color:#14547b;border-radius:8px;font-size:14px}.shell.platform-shell .program-switcher>strong{color:#14547b;font-size:14px}
 .shell.platform-shell .platform-case-search{display:none}@media(max-width:900px){.shell.platform-shell.case-workspace .platform-topbar{padding-top:10px;padding-bottom:10px}.shell.platform-shell.case-workspace:not(.case-search-open) .platform-search{display:none}.shell.platform-shell.case-workspace .platform-case-search{display:grid;place-items:center;min-width:40px;min-height:40px;border:1px solid #dce7ef;border-radius:9px;background:#fff;color:#254e65;cursor:pointer}}
+
+/* A compact, search-free header across all student workspaces. */
+.shell.platform-shell.role-student .platform-topbar{min-height:68px;padding-top:12px;padding-bottom:12px;flex-wrap:nowrap}.shell.platform-shell.role-student .platform-track-picker{display:flex;align-items:center;gap:10px;flex:0 1 auto;max-width:none;font-size:12px;white-space:nowrap}.shell.platform-shell.role-student .platform-track-picker strong{padding:4px 9px;border:1px solid #dbe8f1;border-radius:6px;background:#f1f7fb;font-size:12px;line-height:1.5}.role-student .platform-user-role{display:none}
+
+@media(max-width:900px){.shell.platform-shell.role-student .platform-topbar{margin-bottom:20px;min-height:64px}.shell.platform-shell.role-student .platform-track-picker{margin:0}.shell.platform-shell.role-student .platform-topbar-actions{gap:6px}.shell.platform-shell.role-student .platform-track-picker>span{display:none}}

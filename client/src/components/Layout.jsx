@@ -33,7 +33,6 @@ export default function Layout({ links, roleLabel }) {
   const navigate = useNavigate();
   const location = useLocation();
   const caseWorkspace=user?.role==='student' && (location.pathname.startsWith('/student/learn/kenya-ems/') || location.pathname==='/student/drug-reference' || location.pathname==='/student/cheat-sheets' || location.pathname==='/student/mock-prep-tests');
-  const [caseSearchOpen,setCaseSearchOpen]=useState(false);
   const sidebarRef = useRef(null);
   const menuRef = useRef(null);
   const [mobile,setMobile] = useState(() => window.matchMedia('(max-width: 900px)').matches);
@@ -65,7 +64,7 @@ export default function Layout({ links, roleLabel }) {
   const visibleLinks = links.filter((item) => item.group !== 'Aliases');
 
   return (
-    <div className={`shell platform-shell${user?.role === 'student' ? ' role-student' : ''}${caseWorkspace?' case-workspace':''}${caseSearchOpen?' case-search-open':''}`}>
+    <div className={`shell platform-shell${user?.role === 'student' ? ' role-student' : ''}${caseWorkspace?' case-workspace':''}`}>
 
       <aside id="platform-navigation" ref={sidebarRef} aria-label="Main navigation" inert={mobile && !navigationOpen ? '' : undefined} className={`sidebar${navigationOpen ? ' open' : ''}`}>
 
@@ -168,12 +167,11 @@ export default function Layout({ links, roleLabel }) {
           >
             <span className="platform-hamburger" aria-hidden="true"><i /><i /><i /></span>
           </button>
-          {caseWorkspace && <button type="button" className="platform-case-search" aria-label="Search" aria-expanded={caseSearchOpen} aria-controls="platform-search-field" onClick={()=>setCaseSearchOpen(value=>!value)}><UiIcon name="search"/></button>}
-          <label className="platform-search" id="platform-search-field">
+          {user?.role !== 'student' && <label className="platform-search" id="platform-search-field">
             <UiIcon name="search" />
             <span className="sr-only">Search MedPro</span>
             <input type="search" placeholder="Search questions, topics, or keywords..." />
-          </label>
+          </label>}
           {user?.role === 'student' && <div className="platform-track-picker" aria-label="Account study track"><span>Study track</span><strong>{user.program}</strong></div>}
           <div className="platform-topbar-actions">
             <NotificationBell user={user} />

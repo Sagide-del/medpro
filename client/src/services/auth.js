@@ -1,11 +1,11 @@
 import { api, setToken, clearToken } from './api';
 
 export async function loginRequest(email, password) {
-  return api('/auth/login', { method: 'POST', body: { email, password } });
+  return api('/auth/login', { method: 'POST', body: { email, password }, timeoutMs:15000 });
 }
 
 export async function registerRequest(payload) {
-  return api('/auth/register', { method: 'POST', body: payload });
+  return api('/auth/register', { method: 'POST', body: payload, timeoutMs:30000 });
 }
 
 export async function fetchMe() {

@@ -1,3 +1,4 @@
+import {query} from '../config/database.js';
 import { StudentSubscription } from '../models/StudentSubscription.js';
 import { Institution } from '../models/Institution.js';
 import { SubscriptionPlan } from '../models/SubscriptionPlan.js';
@@ -146,4 +147,12 @@ export async function resolveInstitutionSubscriptionAccess(institutionId) {
 
 export function describePremiumFeature(featureKey) {
   return PREMIUM_FEATURES[featureKey] || 'Premium feature';
+}
+
+// The route guard needs one authorization decision, not plans or transaction history.
+export async function resolveStudentAccessOnly(user){
+ if(isBypassEnabled()){logBypassOnce();return {allowed:true};}
+ const {rows}=await query(`SELECT EXISTS(SELECT 1 FROM student_subscriptions WHERE student_id=$1 AND status='active' AND expires_at>now()) AS personal,
+  COALESCE((SELECT status IN ('active','trial') AND expires_at>now() FROM institution_subscriptions WHERE institution_id=$2 ORDER BY expires_at DESC,created_at DESC LIMIT 1),false) AS institution`,[user.sub,user.institutionId||null]);
+ return {allowed:rows[0].personal||rows[0].institution};
 }

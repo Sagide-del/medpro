@@ -273,9 +273,11 @@ function RequireStudentSubscription({ children }) {
     }
 
     setState({loading:true,allowed:false});
-    api('/subscriptions/student/current')
+    const controller=new AbortController();
+    api('/subscriptions/student/current?accessOnly=true',{timeoutMs:10000,signal:controller.signal})
       .then((data) => {
-        if (!ignore) setState({ loading: false, allowed: !!data.subscription?.allowed });
+        if(typeof data.subscription?.allowed!=='boolean')throw new Error('The server returned an invalid access response. Please try again.');
+        if (!ignore) setState({ loading: false, allowed: data.subscription.allowed });
       })
       .catch(error => {
         if (!ignore) setState({ loading: false, allowed: false, error:error.message });
@@ -283,6 +285,7 @@ function RequireStudentSubscription({ children }) {
 
     return () => {
       ignore = true;
+      controller.abort();
     };
   }, [user?.role, user?.id, retry]);
 

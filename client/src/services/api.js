@@ -1,3 +1,4 @@
+import {requestJson} from './requestJson';
 import {expireSession} from '../utils/sessionLifecycle';
 const BASE = import.meta.env.VITE_API_BASE_URL || '/api';
 
@@ -5,9 +6,9 @@ function getToken() {
   return sessionStorage.getItem('medpro_token');
 }
 
-export async function api(path, { method = 'GET', body, headers = {} } = {}) {
+export async function api(path, { method = 'GET', body, headers = {}, timeoutMs = method==='GET'?15000:120000, signal } = {}) {
   const token = getToken();
-  const res = await fetch(`${BASE}${path}`, {
+  const {res,data} = await requestJson(`${BASE}${path}`, {
     method,
     headers: {
       ...(body && !(body instanceof FormData) ? { 'Content-Type': 'application/json' } : {}),
@@ -15,8 +16,7 @@ export async function api(path, { method = 'GET', body, headers = {} } = {}) {
       ...headers,
     },
     body: body instanceof FormData ? body : body ? JSON.stringify(body) : undefined,
-  });
-  const data = await res.json().catch(() => ({}));
+  },{timeoutMs,signal});
   if (!res.ok) {
     if(res.status===401 && token && !/^\/auth\/(?:login|register)(?:$|[?])/.test(path))expireSession(token);
     const retryAfterSeconds=Number(data.retryAfterSeconds || res.headers.get('Retry-After')) || null;

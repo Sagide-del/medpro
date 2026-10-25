@@ -1,7 +1,8 @@
-import { useEffect, useRef, useState } from 'react';
+import { Suspense, useEffect, useRef, useState } from 'react';
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import ErrorBoundary from './ErrorBoundary';
+import Loading from './shared/Loading';
 import PlatformFooter from './shared/PlatformFooter';
 import UiIcon from './shared/UiIcon';
 import NotificationBell from './shared/NotificationBell';
@@ -181,7 +182,7 @@ export default function Layout({ links, roleLabel }) {
         </header>
 
         <ErrorBoundary key={location.pathname}>
-          <Outlet />
+          <Suspense fallback={<Loading label="Loading page…" />}><Outlet /></Suspense>
         </ErrorBoundary>
 
         <PlatformFooter />

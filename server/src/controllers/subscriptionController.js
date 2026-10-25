@@ -5,7 +5,7 @@ import { Institution } from '../models/Institution.js';
 import { Notification } from '../models/Notification.js';
 import { initiatePayment, recordPaymentAttempt, handleCallback } from '../services/paymentService.js';
 import { createPayment as createTatuaPayment } from '../services/tatuaService.js';
-import { resolveStudentSubscriptionAccess, resolveInstitutionSubscriptionAccess } from '../services/subscriptionAccess.js';
+import { resolveStudentAccessOnly, resolveStudentSubscriptionAccess, resolveInstitutionSubscriptionAccess } from '../services/subscriptionAccess.js';
 import { asyncHandler } from '../utils/helpers.js';
 
 export const listPlans = asyncHandler(async (req, res) => {
@@ -21,6 +21,7 @@ export const updatePlan = asyncHandler(async (req, res) => {
 });
 
 export const studentSubscriptionSummary = asyncHandler(async (req, res) => {
+  if(req.query.accessOnly==='true')return res.json({subscription:await resolveStudentAccessOnly(req.user)});
   const summary = await resolveStudentSubscriptionAccess(req.user);
   const transactions = await Payment.historyForStudent(req.user.sub, { limit: 20 });
   res.json({ subscription: summary, transactions });

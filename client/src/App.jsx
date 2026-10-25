@@ -73,6 +73,7 @@ const AdminInstitutions = lazy(() => import('./components/admin/Institutions'));
 const AdminUsers = lazy(() => import('./components/admin/Users'));
 const AdminRevenue = lazy(() => import('./components/admin/Revenue'));
 const AdminClinicalRotations = lazy(() => import('./components/admin/ClinicalRotations'));
+const PodcastStudio=lazy(()=>import('./components/superadmin/PodcastStudio'));
 const DrugReferenceImages = lazy(() => import('./components/superadmin/DrugReferenceImages'));
 const AdminContentBank = lazy(() => import('./pages/admin/ContentBank'));
 
@@ -211,6 +212,11 @@ const SUPERADMIN_LINKS = [
         to: '/superadmin/content',
         label: 'Content Studio',
         icon: 'document',
+      },
+      {
+        to:'/superadmin/podcast-studio',
+        label:'Podcast Studio',
+        icon:'activity',
       },
       {
         to: '/superadmin/elibrary',
@@ -444,6 +450,7 @@ function AppRoutes() {
           <Route path="/superadmin/users" element={<SuperAdminUserCommunications defaultTab="users" />} />
           <Route path="/superadmin/communications" element={<SuperAdminUserCommunications defaultTab="communications" />} />
           <Route path="/superadmin/kenya-ems-cases" element={<KenyaCaseManager />} />
+          <Route path="/superadmin/podcast-studio" element={<PodcastStudio/>} />
           <Route path="/superadmin/drug-reference-images" element={<DrugReferenceImages />} />
           <Route path="/superadmin/content" element={<SuperAdminContentUpload />} />
           <Route path="/superadmin/ai-generator" element={<SuperAdminAiGenerator />} />

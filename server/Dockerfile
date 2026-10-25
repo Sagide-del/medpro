@@ -1,5 +1,9 @@
 FROM node:20-alpine
 
+RUN apk add --no-cache python3 py3-pip
+COPY podcast-requirements.txt /tmp/podcast-requirements.txt
+RUN python3 -m venv /opt/podcast-tts && /opt/podcast-tts/bin/pip install --no-cache-dir -r /tmp/podcast-requirements.txt
+
 WORKDIR /app
 
 COPY package*.json ./

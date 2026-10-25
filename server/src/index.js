@@ -1,3 +1,5 @@
+import podcastRoutes from './routes/podcasts.js';
+import {startPodcastWorker,stopPodcastWorker} from './services/podcastStudio.js';
 import { adminKenyaRouter, studentKenyaRouter } from './routes/kenyaCaseSeries.js';
 import { startBookGenerationWorker, stopBookGenerationWorker } from './services/bookGenerationService.js';
 import express from 'express';
@@ -132,6 +134,7 @@ app.use('/api/alerts', alertRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/content', contentRoutes);
 app.use('/api/published-content', publishedContentRoutes);
+app.use('/api/podcasts',podcastRoutes);
 app.use('/api/subscriptions', subscriptionRoutes);
 app.use('/api/practical-videos', practicalVideoRoutes);
 app.use('/api/clinical-rotations', clinicalRotationRoutes);
@@ -169,6 +172,7 @@ app.use((err, _req, res, _next) => {
 const { ensureQuestionBankSchema } = await import('./services/questionBankSchema.js');
 await ensureQuestionBankSchema();
 startBookGenerationWorker();
+startPodcastWorker();
 
 const server = app.listen(port, () => {
   logger.info(`MedPro Server running on port ${port}`);
@@ -178,6 +182,7 @@ const server = app.listen(port, () => {
 
 function shutdown(signal) {
   stopBookGenerationWorker();
+  stopPodcastWorker();
   logger.info(`${signal} received, shutting down gracefully...`);
   server.close(async () => {
     try {

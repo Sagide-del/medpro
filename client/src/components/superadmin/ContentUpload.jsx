@@ -3,6 +3,7 @@ import UiIcon from '../shared/UiIcon';
 import './contentWorkspace.css';
 
 const workspaces = [
+  ['/superadmin/podcast-studio','activity','Podcast Studio','Upload a topic script, create a female African voice recording, preview it, and publish an episode.','Create a podcast'],
   ['/superadmin/ai-generator?workspace=books', 'learn', 'Books & learning resources', 'Use RAG to draft Cheat Sheets, Drug Reference, Study Guides and the three Psychometric Test areas from reviewed PDFs.', 'Add a learning resource'],
   ['/superadmin/kenya-ems-cases', 'cases', 'Kenya EMS Cases', 'Build your permanent case repository. Upload JSON, save drafts, and publish cases for each student track.', 'Manage case repository'],
   ['/superadmin/ai-generator?workspace=advanced', 'document', 'Generated drafts', 'Review generated material, check evidence, and manage publication across student sections.', 'Review drafts'],

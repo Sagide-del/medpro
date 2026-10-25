@@ -39,7 +39,8 @@ export const clearToken = () => sessionStorage.removeItem('medpro_token');
 export function mediaUrl(value) {
   if (typeof value !== 'string') return '';
   if (/^https:\/\//i.test(value)) return value;
-  if (!value.startsWith('/uploads/')) return '';
+  if (/^\/podcasts\/emt\/episode-\d{2}\.mp3$/.test(value)) return new URL(value,window.location.origin).href;
+  if (!value.startsWith('/uploads/') && !/^\/api\/podcasts\/[a-f0-9-]+\/audio\?/.test(value)) return '';
   const backend = new URL(BASE, window.location.origin);
   return new URL(value, backend.origin).href;
 }

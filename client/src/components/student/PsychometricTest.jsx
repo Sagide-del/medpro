@@ -25,9 +25,9 @@ export default function PsychometricTest(){
   event.preventDefault();activate(next);tabs.current[next]?.focus();
  }
  return <div className="psychometric-workspace">
-  <header className="pt-heading"><span className="pt-heading-icon"><UiIcon name="practice"/></span><h1>Psychometric Test</h1></header>
+  <header className="pt-heading"><span className="pt-heading-icon"><UiIcon name="practice"/></span><h1>Assessment Practice</h1></header>
   <nav className="pt-tabs" role="tablist" aria-label="Assessment areas">{AREAS.map((item,i)=><button key={item.key} ref={element=>{tabs.current[i]=element;}} id={`pt-tab-${i}`} type="button" role="tab" aria-selected={index===i} aria-controls={`pt-panel-${i}`} tabIndex={index===i?0:-1} onClick={()=>activate(i)} onKeyDown={navigate}><UiIcon name={item.icon}/><span>{item.label}</span></button>)}</nav>
-  {AREAS.map((item,i)=><section key={item.key} role="tabpanel" id={`pt-panel-${i}`} aria-labelledby={`pt-tab-${i}`} hidden={index!==i}><div className="pt-area-heading"><h2>{item.title}</h2></div>{visited.includes(i)&&<PsychometricActivity destination={item.key} title={item.title} compact/>}</section>)}
+  {AREAS.map((item,i)=><section key={item.key} role="tabpanel" id={`pt-panel-${i}`} aria-labelledby={`pt-tab-${i}`} hidden={index!==i}><h2 className="sr-only">{item.title}</h2>{visited.includes(i)&&<PsychometricActivity destination={item.key} title={item.title} compact/>}</section>)}
   <details className="pt-exam-details"><summary>Licensing exam guidance</summary><p>Confirm the current blueprint for your profession with your regulator.</p><div><a href="https://scfhs.org.sa/en" target="_blank" rel="noreferrer">Saudi Arabia · SCFHS <span aria-hidden="true">↗</span></a><a href="https://dhp.moph.gov.qa/en/Pages/QualifyingExamination.aspx" target="_blank" rel="noreferrer">Qatar · DHP <span aria-hidden="true">↗</span></a></div></details>
  </div>;
 }

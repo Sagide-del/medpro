@@ -12,3 +12,5 @@ ReactDOM.createRoot(document.getElementById('root')).render(
 );
 
 import "./styles/public-pages.css";
+
+import "./styles/typography.css";

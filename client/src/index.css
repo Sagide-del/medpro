@@ -1,6 +1,3 @@
-/* Kenya EMS premium module fonts (Google Fonts) -- must precede all other
-   rules per the CSS spec for @import to be honored by the browser. */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap');
 
 /* ============================================================
    MedProHub student SaaS design system
@@ -25,12 +22,12 @@
   --amber: #b3790a;
   --amber-tint: #fdf2dc;
   --radius: 10px;
-  --font-display: 'Inter', 'Roboto', system-ui, sans-serif;
-  --font-body: 'Inter', 'Roboto', system-ui, sans-serif;
-  --font-mono: 'Inter', 'Roboto', system-ui, sans-serif;
-  --font-primary: 'Open Sans', sans-serif;
-  --font-heading: 'Merriweather', serif;
-  --font-ui: 'Roboto', sans-serif;
+  --font-display: var(--font-app);
+  --font-body: var(--font-app);
+  --font-mono: var(--font-app);
+  --font-primary: var(--font-app);
+  --font-heading: var(--font-app);
+  --font-ui: var(--font-app);
 }
 
 * { box-sizing: border-box; margin: 0; }
@@ -3586,8 +3583,8 @@ button:disabled { opacity: 0.5; cursor: default; }
   --kems-shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.05), 0 1px 3px rgba(15, 23, 42, 0.06);
   --kems-shadow-md: 0 6px 16px rgba(15, 23, 42, 0.08);
   --kems-shadow-lg: 0 16px 36px rgba(15, 23, 42, 0.14);
-  --kems-font-display: 'Plus Jakarta Sans', 'Inter', -apple-system, sans-serif;
-  --kems-font-body: 'Inter', -apple-system, sans-serif;
+  --kems-font-display: var(--font-app);
+  --kems-font-body: var(--font-app);
 
   max-width: 1180px; margin: 0 auto; padding: 4px 4px 90px;
   font-family: var(--kems-font-body); color: var(--kems-text);
@@ -6061,9 +6058,9 @@ button:disabled { opacity: 0.5; cursor: default; }
 
 /* Global typography system. Set VITE_TYPOGRAPHY_V2_ENABLED=false to roll back. */
 .typography-v2 {
-  --font-primary: 'Open Sans', sans-serif;
-  --font-heading: 'Merriweather', serif;
-  --font-ui: 'Roboto', sans-serif;
+  --font-primary: var(--font-app);
+  --font-heading: var(--font-app);
+  --font-ui: var(--font-app);
   --type-primary: #1A1A2E;
   --type-secondary: #4A4A6A;
   --type-muted: #8A8AA8;

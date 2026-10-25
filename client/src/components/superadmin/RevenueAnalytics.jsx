@@ -44,8 +44,8 @@ export default function RevenueAnalytics() {
         <ResponsiveContainer width="100%" height={240}>
           <LineChart data={monthly}>
             <CartesianGrid stroke="#e2e2e2" vertical={false} />
-            <XAxis dataKey="month" tick={{ fontSize: 11, fontFamily: 'IBM Plex Mono' }} />
-            <YAxis tickFormatter={kesShort} tick={{ fontSize: 11, fontFamily: 'IBM Plex Mono' }} width={80} />
+            <XAxis dataKey="month" tick={{ fontSize: 11, fontFamily: 'Inter' }} />
+            <YAxis tickFormatter={kesShort} tick={{ fontSize: 11, fontFamily: 'Inter' }} width={80} />
             <Tooltip formatter={(value) => kes(value)} />
             <Line type="monotone" dataKey="total" stroke="#cc0000" strokeWidth={2} dot={{ r: 3 }} />
           </LineChart>

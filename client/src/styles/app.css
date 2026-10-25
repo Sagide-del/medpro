@@ -1,8 +1,7 @@
 /* ============================================================
    MedPro design system — "patient monitor" identity
    Palette: scrubs teal · paper · signal red · vitals amber
-   Type:    Archivo (display, condensed) · IBM Plex Sans (body)
-            IBM Plex Mono (all figures — monitor readout)
+   Type:    Inter throughout; shared configuration in typography.css
    ============================================================ */
 :root {
   --teal-900: #0b3230;
@@ -19,9 +18,9 @@
   --amber: #de9b2d;       /* revenue */
   --pulse: #3fd0a4;       /* live/positive — the ECG green */
   --radius: 10px;
-  --font-display: 'Archivo', sans-serif;
-  --font-body: 'IBM Plex Sans', system-ui, sans-serif;
-  --font-mono: 'IBM Plex Mono', monospace;
+  --font-display: var(--font-app);
+  --font-body: var(--font-app);
+  --font-mono: var(--font-app);
 }
 
 * { box-sizing: border-box; margin: 0; }

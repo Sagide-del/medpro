@@ -47,8 +47,8 @@ export default function Revenue() {
         <ResponsiveContainer width="100%" height={240}>
           <LineChart data={data.monthly.map((m) => ({ ...m, revenue: Number(m.revenue) }))}>
             <CartesianGrid stroke="#e2e9e7" vertical={false} />
-            <XAxis dataKey="month" tick={{ fontSize: 11, fontFamily: 'IBM Plex Mono' }} />
-            <YAxis tickFormatter={kesShort} tick={{ fontSize: 11, fontFamily: 'IBM Plex Mono' }} width={80} />
+            <XAxis dataKey="month" tick={{ fontSize: 11, fontFamily: 'Inter' }} />
+            <YAxis tickFormatter={kesShort} tick={{ fontSize: 11, fontFamily: 'Inter' }} width={80} />
             <Tooltip formatter={(v) => kes(v)} />
             <Line type="monotone" dataKey="revenue" stroke="#17544f" strokeWidth={2} dot={{ r: 3 }} />
           </LineChart>

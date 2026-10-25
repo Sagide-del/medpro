@@ -1,0 +1,37 @@
+/* One shared text family for public pages, every role, forms, tables and charts.
+   Self-hosted Inter variable fonts; redistribution license: /fonts/OFL.txt. */
+@font-face {
+  font-family: 'Inter';
+  src: url('/fonts/inter-variable.woff2') format('woff2');
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Inter';
+  src: url('/fonts/inter-italic-variable.woff2') format('woff2');
+  font-style: italic;
+  font-weight: 100 900;
+  font-display: swap;
+}
+:root {
+  --font-app: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-display: var(--font-app);
+  --font-body: var(--font-app);
+  --font-mono: var(--font-app);
+  --font-primary: var(--font-app);
+  --font-heading: var(--font-app);
+  --font-ui: var(--font-app);
+  --kems-font-body: var(--font-app);
+  --kems-font-display: var(--font-app);
+}
+html { font-size: 16px; -webkit-text-size-adjust: 100%; }
+body { line-height: 1.6; font-optical-sizing: auto; }
+/* Legacy and lazy-loaded screens include local font shorthands and inline SVG
+   chart fonts. Enforce only the family here, preserving their sizes and weights. */
+body, body :where(*) { font-family: var(--font-app) !important; }
+button, input, select, textarea { font-size: inherit; }
+input, select, textarea { line-height: 1.5; }
+::placeholder { font-family: var(--font-app); }
+:is(h1,h2,h3,h4,h5,h6) { text-wrap: balance; }
+:is(td.num, .num, time, progress, .drug-total, .cs-page-heading>small) { font-variant-numeric: tabular-nums; }

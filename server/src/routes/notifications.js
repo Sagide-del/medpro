@@ -1,3 +1,4 @@
+import {syncNotificationEvents} from '../services/notificationEvents.js';
 import { Router } from 'express';
 import { Notification } from '../models/Notification.js';
 import { authenticate } from '../middleware/auth.js';
@@ -7,9 +8,9 @@ const router = Router();
 router.use(authenticate);
 
 router.get('/', asyncHandler(async (req, res) => {
-  const unreadOnly = req.query.unread === 'true';
-  const notifications = await Notification.listForUser(req.user.sub, { unreadOnly });
-  res.json({ notifications });
+  await syncNotificationEvents(req.user);
+  const notifications=await Notification.listForUser(req.user.sub,{unreadOnly:req.query.unread==='true'||req.query.filter==='unread',actionOnly:req.query.filter==='action'});
+  res.json({notifications,counts:await Notification.summary(req.user.sub)});
 }));
 
 router.get('/unread-count', asyncHandler(async (req, res) => {
@@ -18,7 +19,9 @@ router.get('/unread-count', asyncHandler(async (req, res) => {
 }));
 
 router.patch('/:id/read', asyncHandler(async (req, res) => {
+  if(!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(req.params.id))return res.status(400).json({error:'Invalid notification identifier.'});
   const notification = await Notification.markRead(req.params.id, req.user.sub);
+  if(!notification)return res.status(404).json({error:'Notification not found.'});
   res.json({ notification });
 }));
 

@@ -27,6 +27,7 @@ export async function api(path, { method = 'GET', body, headers = {} } = {}) {
     error.details = data;
     throw error;
   }
+  if (method !== 'GET' && /(?:\/submit|\/responses|\/planner\/(?:generate|update)|\/payments\/(?:purchase|subscribe))$/.test(path)) window.dispatchEvent(new Event('medpro:notifications-refresh'));
   return data;
 }
 

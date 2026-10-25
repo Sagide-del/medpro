@@ -88,6 +88,7 @@ export const submitAttempt = asyncHandler(async (req, res) => {
     userId: req.user.sub,
     type: 'grade',
     title: 'Assessment submitted',
+    eventKey: `assessment:${attemptId}`,link:'/student/assessments',actionLabel:'Open assessments',
     message: `You scored ${result.scorePct}% ${result.needsManualReview ? '(scenario steps pending teacher review)' : ''}`,
   });
 
@@ -114,6 +115,7 @@ export const gradeManual = asyncHandler(async (req, res) => {
     userId: fresh.student_id,
     type: 'grade',
     title: 'Assessment graded',
+    eventKey: `assessment:${attemptId}`,link:'/student/assessments',actionLabel:'Open assessments',
     message: feedback || `Your assessment has been graded: ${scorePct}%`,
   });
 
@@ -171,6 +173,7 @@ export const submitMcqModule = asyncHandler(async (req, res) => {
     userId: req.user.sub,
     type: 'grade',
     title: 'Revision module submitted',
+    eventKey: `mcq:${result.attempt.id}`,link:'/student/progress-analytics',actionLabel:'View progress',
     message: `You scored ${result.attempt.percentage}% in ${result.progress.title}.`,
   });
 

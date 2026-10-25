@@ -1,3 +1,4 @@
+import {paymentEvent} from '../services/notificationEvents.js';
 import { Payment } from '../models/Payment.js';
 import { Worksheet } from '../models/Worksheet.js';
 import { FlashcardDeck } from '../models/FlashcardDeck.js';
@@ -77,21 +78,13 @@ export const mpesaCallback = asyncHandler(async (req, res) => {
       await Payment.grantAccess(txn.student_id, txn.item_type, txn.item_id, ACCESS_DURATION_HOURS[txn.item_type] || 48);
       if (MODELS[txn.item_type]) await MODELS[txn.item_type].incrementPurchases(txn.item_id);
     }
-    await Notification.create({
-      userId: txn.student_id,
-      type: 'payment',
-      title: 'Purchase confirmed',
-      message: `Your payment of Ksh ${txn.amount} was successful.`,
-    });
+
   } else {
     await Payment.markFailed(result.checkoutRequestId);
-    await Notification.create({
-      userId: txn.student_id,
-      type: 'payment',
-      title: 'Payment failed',
-      message: result.resultDesc || 'Your M-Pesa payment could not be completed.',
-    });
+
   }
+  const updated=await Payment.findById(txn.transaction_id);
+  if(updated)await Notification.create(paymentEvent(updated));
 });
 
 export const paymentStatus = asyncHandler(async (req, res) => {

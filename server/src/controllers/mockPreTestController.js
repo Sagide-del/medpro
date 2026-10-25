@@ -58,6 +58,7 @@ export const submitMockPreTest = asyncHandler(async (req, res) => {
     userId: req.user.sub,
     type: 'grade',
     title: 'Mock Pre-Test submitted',
+    link:'/student/mock-prep-tests',actionLabel:'Open practice',
     message: `You scored ${result.score}% (${result.correctCount}/${result.totalCount}) on the ${result.module} Mock Pre-Test.`,
   });
 

@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import ErrorBoundary from './ErrorBoundary';
 import PlatformFooter from './shared/PlatformFooter';
 import UiIcon from './shared/UiIcon';
+import NotificationBell from './shared/NotificationBell';
 import '../styles/platform-v2.css';
 import '../styles/platform-shell.css';
 
@@ -175,7 +176,7 @@ export default function Layout({ links, roleLabel }) {
           </label>
           {user?.role === 'student' && <div className="platform-track-picker" aria-label="Account study track"><span>Study track</span><strong>{user.program}</strong></div>}
           <div className="platform-topbar-actions">
-            <button type="button" aria-label="Notifications"><UiIcon name="alert" /></button>
+            <NotificationBell user={user} />
             <span className="platform-user-role">{roleLabel || user?.role || 'Account'}</span>
             <span className="platform-user-avatar" aria-hidden="true">{String(user?.name || user?.full_name || 'A').charAt(0).toUpperCase()}</span>
           </div>

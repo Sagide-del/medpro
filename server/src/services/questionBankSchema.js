@@ -12,6 +12,7 @@ export async function ensureQuestionBankSchema() {
   const bookSql = await readFile(new URL('../migrations/book-generation.sql', import.meta.url), 'utf8');
   const kenyaSql=await readFile(new URL('../migrations/kenya-case-series.sql',import.meta.url),'utf8');
   const psychometricSql=await readFile(new URL('../migrations/psychometric-practice.sql',import.meta.url),'utf8');
+  const notificationSql=await readFile(new URL('../migrations/notification-actions.sql',import.meta.url),'utf8');
   await withTransaction(async (db) => {
     await db.query("SELECT pg_advisory_xact_lock(72603128)");
     await db.query(sql);
@@ -22,6 +23,7 @@ export async function ensureQuestionBankSchema() {
     await db.query(bookSql);
     await db.query(kenyaSql);
     await db.query(psychometricSql);
+    await db.query(notificationSql);
     const existing=await db.query("SELECT * FROM ai_published_content WHERE destination_key='kenya_cases' AND status='published' ORDER BY program,published_at,id");
     for(const content of existing.rows)await syncPublishedKenyaCase(db,content);
   });

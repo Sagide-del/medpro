@@ -1,3 +1,4 @@
+import {GuideCards} from './RevisionGuides';
 import { Link } from 'react-router-dom';
 import Footer from '../components/shared/Footer';
 
@@ -146,6 +147,7 @@ export default function Home() {
         <details><summary>Is MedProHub a qualification or an accredited training college?</summary><p>MedProHub is a supplementary study platform. It does not replace accredited training, clinical supervision, or professional certification.</p></details>
         <details><summary>How do I get started?</summary><p>Create a student account, choose the EMT, Paramedic, or Nursing track, and sign in to explore the learning platform. Check the subscription page for current access and pricing.</p></details>
       </section>
+      <section className="home-section" aria-labelledby="revision-guides-heading"><div className="section-kicker">FREE STUDY GUIDES</div><h2 id="revision-guides-heading">Read, revise and check your understanding.</h2><GuideCards/><Link className="guide-reading-link" to="/revision-guides">Browse revision guides →</Link></section>
       </main>
       <div className="home-footer-line">MedProHub · Keep learning. Be ready.</div>
 

@@ -1,3 +1,4 @@
+import {ARTICLE_HUB,REVISION_ARTICLES} from './revisionArticles.js';
 // Edit public titles, descriptions and topic coverage here; the build uses the
 // same data for static HTML, canonical tags and the sitemap.
 export const SITE_ORIGIN = 'https://www.medprohub.co.ke';
@@ -38,9 +39,15 @@ export const REVISION_PAGES = [
     topics: ['Nursing fundamentals and communication', 'Patient assessment and recognising deterioration', 'Infection prevention and sharps safety', 'Medication safety and escalation'],
     sections: [
       ['A focused starting point for nursing students', 'The Nursing track starts with eight original practice questions across four fundamentals modules. Each question includes an explanation to help you reflect on the answer.'],
-      ['Your nursing revision stays in its own track', 'Choose Nursing when registering or use the study-track selector in your account. Nursing questions and topic filters are kept separate from the EMT and paramedic banks.'],
+      ['Your nursing revision stays in its own track', 'Choose Nursing when registering. Your enrolled nursing track keeps its questions and topic filters separate from the EMT and paramedic banks.'],
       ['Know the scope before subscribing', 'This is a starter nursing fundamentals bank, not a complete nursing curriculum or an NCK licensing examination course. Check the available content and subscription terms in your account before purchasing.']
     ]
   }
 ];
-export const PUBLIC_PAGES = [HOME_SEO, ...REVISION_PAGES];
+export const PUBLIC_PAGES = [HOME_SEO, ...REVISION_PAGES,ARTICLE_HUB,...REVISION_ARTICLES];
+
+export function publicPageSchema(page){
+ const schema={'@context':'https://schema.org','@type':page.path==='/'?'WebSite':page.kind==='guides'?'CollectionPage':page.kind==='article'?'Article':'WebPage',name:page.title,url:SITE_ORIGIN+page.path,inLanguage:'en',description:page.description};
+ if(page.kind==='article')Object.assign(schema,{headline:page.heading,mainEntityOfPage:SITE_ORIGIN+page.path,datePublished:page.datePublished,dateModified:page.dateModified,author:{'@type':'Organization',name:'MedProHub'},publisher:{'@type':'Organization',name:'MedProHub',url:SITE_ORIGIN}});
+ return schema;
+}

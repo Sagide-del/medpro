@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 
-import { SITE_ORIGIN as origin, PUBLIC_PAGES } from '../data/publicSeo';
+import { SITE_ORIGIN as origin, PUBLIC_PAGES,publicPageSchema } from '../data/publicSeo';
 export default function RouteMetadata() {
   const { pathname } = useLocation();
   useEffect(() => {
@@ -9,6 +9,8 @@ export default function RouteMetadata() {
     const home = Boolean(page);
     const title = home ? page.title : `${pathname === '/login' ? 'Sign in' : pathname === '/register' ? 'Create your student account' : 'Learning portal'} | MedProHub`;
     document.title = title;
+    let schema=document.querySelector('script[type="application/ld+json"]');
+    if(page){if(!schema){schema=document.createElement('script');schema.type='application/ld+json';document.head.appendChild(schema);}schema.textContent=JSON.stringify(publicPageSchema(page));}else schema?.remove();
     const set = (selector, content) => document.querySelector(selector)?.setAttribute('content', content);
     set('meta[name="robots"]', home ? 'index, follow' : 'noindex, follow');
     set('meta[name="description"]', home ? page.description : 'Access your MedProHub learning account.');

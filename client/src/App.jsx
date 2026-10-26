@@ -1,3 +1,5 @@
+import {REVISION_ARTICLES} from './data/revisionArticles';
+import RevisionGuides from './pages/RevisionGuides';
 import { REVISION_PAGES } from './data/publicSeo';
 import RouteMetadata from './components/RouteMetadata';
 import { lazy, Suspense, useEffect, useState } from 'react';
@@ -316,6 +318,8 @@ function AppRoutes() {
       <Routes>
 
         <Route path="/" element={<Home />} />
+        <Route path="/revision-guides" element={<RevisionGuides/>}/>
+        {REVISION_ARTICLES.map(article=><Route key={article.path} path={article.path} element={<RevisionGuides article={article}/>}/>)}
         <Route path="/emt-revision" element={<RevisionLanding page={REVISION_PAGES[0]} />} />
         <Route path="/paramedic-revision" element={<RevisionLanding page={REVISION_PAGES[1]} />} />
         <Route path="/nursing-revision" element={<RevisionLanding page={REVISION_PAGES[2]} />} />

@@ -1,0 +1,20 @@
+import {Link} from 'react-router-dom';
+import Footer from '../components/shared/Footer';
+import {REVISION_ARTICLES} from '../data/revisionArticles';
+import '../styles/revision-guides.css';
+export function GuideCards({program}){
+ return <div className="guide-cards">{REVISION_ARTICLES.filter(item=>!program||item.program===program).map(item=><article key={item.path}><span>{item.program} · Study guide</span><h3><Link to={item.path}>{item.heading}</Link></h3><p>{item.description}</p><Link to={item.path}>Read guide →</Link></article>)}</div>;
+}
+export default function RevisionGuides({article}){
+ const register=`/register${article?`?program=${encodeURIComponent(article.program)}`:''}`;
+ return <div className="marketing-home revision-guides"><a className="public-skip-link" href="#main-content">Skip to content</a><header className="home-navbar"><Link to="/" aria-label="MedProHub home"><img className="home-brand-logo" src="/medpro-logo.png" alt="MedProHub"/></Link><nav className="nav-actions" aria-label="Account"><Link to="/login" className="home-nav-link">Sign in</Link><Link to={register} className="btn-solid">Create account →</Link></nav></header><main id="main-content">
+  <div className="guide-container"><nav className="guide-breadcrumb" aria-label="Breadcrumb"><Link to="/">Home</Link><span aria-hidden="true">/</span>{article?<><Link to="/revision-guides">Revision guides</Link><span aria-hidden="true">/</span><span>{article.program}</span></>:<span>Revision guides</span>}</nav>
+  {article?<article className="guide-article"><header className="guide-article-heading"><span className="guide-kicker">{article.program} revision</span><h1>{article.heading}</h1><p>{article.intro}</p><div className="guide-byline">By MedProHub editorial team <span aria-hidden="true">·</span> <time dateTime={article.datePublished}>26 October 2026</time></div></header><nav className="guide-contents" aria-label="In this guide"><strong>In this guide</strong>{article.sections.map(section=><a key={section.id} href={`#${section.id}`}>{section.heading}</a>)}<a href="#practice-questions">Practice questions</a></nav>
+   {article.sections.map(section=><section className="guide-section" id={section.id} key={section.id}><h2>{section.heading}</h2>{section.paragraphs?.map(paragraph=><p key={paragraph}>{paragraph}</p>)}{section.bullets&&<ul>{section.bullets.map(text=><li key={text}>{text}</li>)}</ul>}{section.steps&&<ol>{section.steps.map(text=><li key={text}>{text}</li>)}</ol>}</section>)}
+   <section className="guide-section guide-questions" id="practice-questions"><h2>Check your understanding</h2><p>Answer each question before opening the explanation.</p>{article.questions.map((item,index)=><details key={item.question}><summary><span>{index+1}.</span>{item.question}</summary><p>{item.answer}</p></details>)}</section>
+   <section className="guide-section guide-references"><h2>Further reading</h2><ul>{article.references.map(reference=><li key={reference.url}><a href={reference.url} target="_blank" rel="noreferrer">{reference.label} ↗</a></li>)}</ul><p>Educational revision material. Use your course, current local guidance and appropriate supervision for clinical practice.</p></section>
+   <aside className="guide-join"><h2>Continue your {article.program} revision</h2><p>Explore the study track and check available resources and subscription options.</p><div><Link className="btn-solid" to={register}>Create a {article.program} account →</Link><Link to={article.trackPath}>Explore {article.program} revision</Link></div></aside>
+  </article>:<><header className="guide-article-heading"><span className="guide-kicker">MedProHub learning library</span><h1>Revision guides</h1><p>Free study articles for EMT, paramedic and nursing students, with practical revision methods and original questions to check your understanding.</p></header><GuideCards/></>}
+  {article&&<section className="guide-related"><h2>More revision guides</h2><div className="guide-related-links">{REVISION_ARTICLES.filter(item=>item.path!==article.path).map(item=><Link to={item.path} key={item.path}>{item.heading} →</Link>)}</div></section>}
+  </div></main><Footer/></div>;
+}

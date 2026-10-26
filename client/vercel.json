@@ -1,6 +1,22 @@
 {
   "rewrites": [
     {
+      "source": "/revision-guides",
+      "destination": "/revision-guides.html"
+    },
+    {
+      "source": "/emt-primary-assessment-revision",
+      "destination": "/emt-primary-assessment-revision.html"
+    },
+    {
+      "source": "/paramedic-airway-assessment-revision",
+      "destination": "/paramedic-airway-assessment-revision.html"
+    },
+    {
+      "source": "/nursing-medication-safety-revision",
+      "destination": "/nursing-medication-safety-revision.html"
+    },
+    {
       "source": "/emt-revision",
       "destination": "/emt-revision.html"
     },
